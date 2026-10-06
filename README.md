@@ -28,6 +28,12 @@ Converts all `dataset_yamls/*.yaml` files into structured reStructuredText (`doc
 * **Tag & Download Formatting:** Renders annotations as code badges and links downloadable remotes.
 * **Collapsible Dropdowns:** Packages detailed dataset docstrings, citations, and download instructions into Sphinx dropdown admonitions.
 * **Single-Line Normalization:** Collapses whitespace and license descriptions to ensure clean Sphinx HTML list rendering.
+### 3. `utils/llm_summarization.py` 
+Takes the about docstring (unformatted throughout datasets) and formats it - current state - too short.
+**TODO**
+* Perhaps combine the processes of yaml generation and the summary generation(llm).
+* Decide important aspects in the summary we wish to include and change the prompt accordingly.
+* 
 ---
 ## Full Build Workflow
 ```bash
