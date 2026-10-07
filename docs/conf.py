@@ -8,8 +8,8 @@ import importlib
 # -- Project information -----------------------------------------------------
 
 project = "mirdata"
-copyright = "2019-2020, mirdata development team."
-author = "The mirdata development team"
+copyright = "2026 mirdata development team."
+author = "mirdata"
 
 mirdata_version = importlib.import_module("mirdata.version")
 

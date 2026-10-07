@@ -38,13 +38,6 @@ div.wy-nav-content {
 
 }
 
-.gallery-filter-sidebar {
-    width: 100%;
-    border: none;
-    box-shadow: none;
-    padding: 15px;
-}
-
 /* Container holding Middle & Right columns */
 .gallery-layout {
     display: flex;
@@ -58,6 +51,8 @@ div.wy-nav-content {
     width: 100%;
     padding: 16px;
     box-sizing: border-box;
+    border: none;
+    box-shadow: none;
 }
 
 .gallery-filter-sidebar h4 {
