@@ -18,7 +18,7 @@ The AcousticBrainz Genre dataset includes genre and subgenre annotations from Al
 
 * **License:** This dataset is composed of 4 subdatasets. Three of them are Creative Commons Attribution Non Commercial Share Alike 4.0 International and the other one is non-comercial. Details about which license correspond to each subdataset can be found in the following websites: * https://zenodo.org/record/2553414#.X_nxnOn7RUI * https://zenodo.org/record/2554044#.X_nw2en7RUI
 * **Downloadable Remotes:** ``validation-01``, ``validation-89``, ``train-01``, ``train-23``, ``train-45``, ``train-67``, ``train-89``, ``train-ab``, ``train-cd``, ``train-ef``
-* **YAML File:** :download:`acousticbrainz_genre.yaml<../dataset_yamls/acousticbrainz_genre.yaml>`
+* **YAML File:** :download:`acousticbrainz_genre.yaml<../cards/acousticbrainz_genre.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -37,7 +37,7 @@ The AcousticBrainz Genre dataset includes genre and subgenre annotations from Al
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/acousticbrainz_genre.yaml
+   .. literalinclude:: ../cards/acousticbrainz_genre.yaml
       :language: yaml
 
 baf
@@ -53,7 +53,7 @@ The BAF dataset includes 2,000 reference tracks and 57 hours of TV broadcast que
 
 * **License:** Given the different ownership of the elements of the dataset, the dataset is licensed under the following conditions: * User's access request * Research only, non-commercial purposes * No adaptations nor derivative works * Attribution to Epidemic Sound and the authors as it is indicated in the ”citation” section.
 * **Downloadable Remotes:** *No direct download available*
-* **YAML File:** :download:`baf.yaml<../dataset_yamls/baf.yaml>`
+* **YAML File:** :download:`baf.yaml<../cards/baf.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -110,7 +110,7 @@ The BAF dataset includes 2,000 reference tracks and 57 hours of TV broadcast que
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/baf.yaml
+   .. literalinclude:: ../cards/baf.yaml
       :language: yaml
 
 ballroom
@@ -126,7 +126,7 @@ The Ballroom Rhythm Dataset includes beat and bar annotations for various ballro
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** ``audio``, ``tempo``, ``beats``
-* **YAML File:** :download:`ballroom.yaml<../dataset_yamls/ballroom.yaml>`
+* **YAML File:** :download:`ballroom.yaml<../cards/ballroom.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -147,7 +147,7 @@ The Ballroom Rhythm Dataset includes beat and bar annotations for various ballro
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/ballroom.yaml
+   .. literalinclude:: ../cards/ballroom.yaml
       :language: yaml
 
 beatles
@@ -163,7 +163,7 @@ The Beatles Dataset provides annotations for 179 songs including beat and metric
 
 * **License:** Unfortunately we couldn't find the license information for the Beatles dataset.
 * **Downloadable Remotes:** ``annotations``
-* **YAML File:** :download:`beatles.yaml<../dataset_yamls/beatles.yaml>`
+* **YAML File:** :download:`beatles.yaml<../cards/beatles.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -198,7 +198,7 @@ The Beatles Dataset provides annotations for 179 songs including beat and metric
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/beatles.yaml
+   .. literalinclude:: ../cards/beatles.yaml
       :language: yaml
 
 beatport_key
@@ -214,7 +214,7 @@ The beatport_key dataset includes 1486 two-minute EDM audio excerpts annotated w
 
 * **License:** Creative Commons Attribution Share Alike 4.0 International.
 * **Downloadable Remotes:** ``keys``, ``metadata``, ``audio``
-* **YAML File:** :download:`beatport_key.yaml<../dataset_yamls/beatport_key.yaml>`
+* **YAML File:** :download:`beatport_key.yaml<../cards/beatport_key.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -238,7 +238,7 @@ The beatport_key dataset includes 1486 two-minute EDM audio excerpts annotated w
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/beatport_key.yaml
+   .. literalinclude:: ../cards/beatport_key.yaml
       :language: yaml
 
 billboard
@@ -254,7 +254,7 @@ The McGill Billboard dataset contains audio features and annotations for 890 Bil
 
 * **License:** This data is released under a Creative Commons 0 license, effectively dedicating it to the public domain. More information about this dedication and your rights, please see the details here: http://creativecommons.org/publicdomain/zero/1.0/ and http://creativecommons.org/publicdomain/zero/1.0/legalcode.
 * **Downloadable Remotes:** ``metadata``, ``annotation_salami``, ``annotation_lab``, ``annotation_mirex13``, ``annotation_chordino``
-* **YAML File:** :download:`billboard.yaml<../dataset_yamls/billboard.yaml>`
+* **YAML File:** :download:`billboard.yaml<../cards/billboard.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -279,7 +279,7 @@ The McGill Billboard dataset contains audio features and annotations for 890 Bil
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/billboard.yaml
+   .. literalinclude:: ../cards/billboard.yaml
       :language: yaml
 
 brid
@@ -295,7 +295,7 @@ The BRID dataset includes 367 solo and multiple-instrument recordings of 10 Braz
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** ``annotations``, ``audio``
-* **YAML File:** :download:`brid.yaml<../dataset_yamls/brid.yaml>`
+* **YAML File:** :download:`brid.yaml<../cards/brid.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -313,7 +313,7 @@ The BRID dataset includes 367 solo and multiple-instrument recordings of 10 Braz
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/brid.yaml
+   .. literalinclude:: ../cards/brid.yaml
       :language: yaml
 
 candombe
@@ -329,7 +329,7 @@ The Candombe dataset includes over 2 hours of stereo audio from 35 performances,
 
 * **License:** Creative Commons Attribution 4.0 International
 * **Downloadable Remotes:** ``annotations``, ``audio``
-* **YAML File:** :download:`candombe.yaml<../dataset_yamls/candombe.yaml>`
+* **YAML File:** :download:`candombe.yaml<../cards/candombe.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -350,7 +350,7 @@ The Candombe dataset includes over 2 hours of stereo audio from 35 performances,
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/candombe.yaml
+   .. literalinclude:: ../cards/candombe.yaml
       :language: yaml
 
 cante100
@@ -366,7 +366,7 @@ cante100 includes 100 tracks with annotations on vocal sections, F0, and automat
 
 * **License:** The provided datasets are offered free of charge for internal non-commercial use. We do not grant any rights for redistribution or modification. All data collections were gathered by the COFLA team. COFLA 2015. All rights reserved.
 * **Downloadable Remotes:** ``spectrogram``, ``melody``, ``notes``, ``metadata``, ``README``
-* **YAML File:** :download:`cante100.yaml<../dataset_yamls/cante100.yaml>`
+* **YAML File:** :download:`cante100.yaml<../cards/cante100.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -424,7 +424,7 @@ cante100 includes 100 tracks with annotations on vocal sections, F0, and automat
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/cante100.yaml
+   .. literalinclude:: ../cards/cante100.yaml
       :language: yaml
 
 compmusic_carnatic_rhythm
@@ -440,7 +440,7 @@ This dataset includes audio excerpts from Carnatic music, annotated with time-al
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** *No direct download available*
-* **YAML File:** :download:`compmusic_carnatic_rhythm.yaml<../dataset_yamls/compmusic_carnatic_rhythm.yaml>`
+* **YAML File:** :download:`compmusic_carnatic_rhythm.yaml<../cards/compmusic_carnatic_rhythm.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -471,7 +471,7 @@ This dataset includes audio excerpts from Carnatic music, annotated with time-al
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/compmusic_carnatic_rhythm.yaml
+   .. literalinclude:: ../cards/compmusic_carnatic_rhythm.yaml
       :language: yaml
 
 compmusic_carnatic_varnam
@@ -487,7 +487,7 @@ The dataset includes 28 solo Carnatic varnam recordings featuring 7 rāgas, with
 
 * **License:** Creative Commons Attribution Non Commercial No Derivatives 4.0 International
 * **Downloadable Remotes:** ``all``
-* **YAML File:** :download:`compmusic_carnatic_varnam.yaml<../dataset_yamls/compmusic_carnatic_varnam.yaml>`
+* **YAML File:** :download:`compmusic_carnatic_varnam.yaml<../cards/compmusic_carnatic_varnam.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -512,7 +512,7 @@ The dataset includes 28 solo Carnatic varnam recordings featuring 7 rāgas, with
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/compmusic_carnatic_varnam.yaml
+   .. literalinclude:: ../cards/compmusic_carnatic_varnam.yaml
       :language: yaml
 
 compmusic_hindustani_rhythm
@@ -528,7 +528,7 @@ This dataset includes two-minute stereo mp3 audio excerpts from Hindustani music
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** *No direct download available*
-* **YAML File:** :download:`compmusic_hindustani_rhythm.yaml<../dataset_yamls/compmusic_hindustani_rhythm.yaml>`
+* **YAML File:** :download:`compmusic_hindustani_rhythm.yaml<../cards/compmusic_hindustani_rhythm.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -557,7 +557,7 @@ This dataset includes two-minute stereo mp3 audio excerpts from Hindustani music
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/compmusic_hindustani_rhythm.yaml
+   .. literalinclude:: ../cards/compmusic_hindustani_rhythm.yaml
       :language: yaml
 
 compmusic_iamms
@@ -573,7 +573,7 @@ This dataset includes audio excerpts from Carnatic and Hindustani music with ann
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** ``all``
-* **YAML File:** :download:`compmusic_iamms.yaml<../dataset_yamls/compmusic_iamms.yaml>`
+* **YAML File:** :download:`compmusic_iamms.yaml<../cards/compmusic_iamms.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -593,7 +593,7 @@ This dataset includes audio excerpts from Carnatic and Hindustani music with ann
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/compmusic_iamms.yaml
+   .. literalinclude:: ../cards/compmusic_iamms.yaml
       :language: yaml
 
 compmusic_indian_tonic
@@ -609,7 +609,7 @@ This dataset includes audio excerpts of Indian Art Music, with annotations of to
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** ``remote_data``
-* **YAML File:** :download:`compmusic_indian_tonic.yaml<../dataset_yamls/compmusic_indian_tonic.yaml>`
+* **YAML File:** :download:`compmusic_indian_tonic.yaml<../cards/compmusic_indian_tonic.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -639,7 +639,7 @@ This dataset includes audio excerpts of Indian Art Music, with annotations of to
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/compmusic_indian_tonic.yaml
+   .. literalinclude:: ../cards/compmusic_indian_tonic.yaml
       :language: yaml
 
 compmusic_jingju_acappella
@@ -655,7 +655,7 @@ This dataset includes a cappella Jingju singing recordings with annotations for 
 
 * **License:** audio files ending with upf or lon: Creative Commons Attribution Non-Commercial 4.0 International, audio files ending with qm: http://isophonics.org/SingingVoiceDataset
 * **Downloadable Remotes:** ``annotation_txt``, ``catalogue_dan``, ``catalogue_laosheng``, ``wav``
-* **YAML File:** :download:`compmusic_jingju_acappella.yaml<../dataset_yamls/compmusic_jingju_acappella.yaml>`
+* **YAML File:** :download:`compmusic_jingju_acappella.yaml<../cards/compmusic_jingju_acappella.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -686,7 +686,7 @@ This dataset includes a cappella Jingju singing recordings with annotations for 
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/compmusic_jingju_acappella.yaml
+   .. literalinclude:: ../cards/compmusic_jingju_acappella.yaml
       :language: yaml
 
 compmusic_otmm_makam
@@ -702,7 +702,7 @@ This dataset includes 200 recordings from 20 common makams, each with a unique M
 
 * **License:** Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License
 * **Downloadable Remotes:** ``all``
-* **YAML File:** :download:`compmusic_otmm_makam.yaml<../dataset_yamls/compmusic_otmm_makam.yaml>`
+* **YAML File:** :download:`compmusic_otmm_makam.yaml<../cards/compmusic_otmm_makam.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -726,7 +726,7 @@ This dataset includes 200 recordings from 20 common makams, each with a unique M
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/compmusic_otmm_makam.yaml
+   .. literalinclude:: ../cards/compmusic_otmm_makam.yaml
       :language: yaml
 
 compmusic_raga
@@ -742,7 +742,7 @@ The compmusic_raga dataset includes full-length audio recordings of Carnatic and
 
 * **License:** Creative Commons Attribution 4.0 International
 * **Downloadable Remotes:** ``features``
-* **YAML File:** :download:`compmusic_raga.yaml<../dataset_yamls/compmusic_raga.yaml>`
+* **YAML File:** :download:`compmusic_raga.yaml<../cards/compmusic_raga.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -774,7 +774,7 @@ The compmusic_raga dataset includes full-length audio recordings of Carnatic and
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/compmusic_raga.yaml
+   .. literalinclude:: ../cards/compmusic_raga.yaml
       :language: yaml
 
 cuidado
@@ -790,7 +790,7 @@ The Cuidado Rhythm Dataset includes beat and bar annotations for various ballroo
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** *No direct download available*
-* **YAML File:** :download:`cuidado.yaml<../dataset_yamls/cuidado.yaml>`
+* **YAML File:** :download:`cuidado.yaml<../cards/cuidado.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -827,7 +827,7 @@ The Cuidado Rhythm Dataset includes beat and bar annotations for various ballroo
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/cuidado.yaml
+   .. literalinclude:: ../cards/cuidado.yaml
       :language: yaml
 
 da_tacos
@@ -843,7 +843,7 @@ Da-TACOS includes 25,000 pre-extracted features and metadata for cover songs, fo
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International
 * **Downloadable Remotes:** ``metadata``, ``benchmark_cens``, ``benchmark_crema``, ``benchmark_hpcp``, ``benchmark_key``, ``benchmark_madmom``, ``benchmark_mfcc``, ``coveranalysis_tags``, ``coveranalysis_cens``, ``coveranalysis_crema``, ``coveranalysis_hpcp``, ``coveranalysis_key``, ``coveranalysis_madmom``, ``coveranalysis_mfcc``
-* **YAML File:** :download:`da_tacos.yaml<../dataset_yamls/da_tacos.yaml>`
+* **YAML File:** :download:`da_tacos.yaml<../cards/da_tacos.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -863,7 +863,7 @@ Da-TACOS includes 25,000 pre-extracted features and metadata for cover songs, fo
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/da_tacos.yaml
+   .. literalinclude:: ../cards/da_tacos.yaml
       :language: yaml
 
 dagstuhl_choirset
@@ -879,7 +879,7 @@ Dagstuhl ChoirSet includes multitrack a cappella choral recordings with close-up
 
 * **License:** Creative Commons Attribution 4.0 International
 * **Downloadable Remotes:** ``full_dataset``
-* **YAML File:** :download:`dagstuhl_choirset.yaml<../dataset_yamls/dagstuhl_choirset.yaml>`
+* **YAML File:** :download:`dagstuhl_choirset.yaml<../cards/dagstuhl_choirset.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -904,7 +904,7 @@ Dagstuhl ChoirSet includes multitrack a cappella choral recordings with close-up
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/dagstuhl_choirset.yaml
+   .. literalinclude:: ../cards/dagstuhl_choirset.yaml
       :language: yaml
 
 dali
@@ -920,7 +920,7 @@ DALI includes 5358 audio files with time-aligned vocal melodies, lyrics at four 
 
 * **License:** Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
 * **Downloadable Remotes:** ``metadata``
-* **YAML File:** :download:`dali.yaml<../dataset_yamls/dali.yaml>`
+* **YAML File:** :download:`dali.yaml<../cards/dali.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -960,7 +960,7 @@ DALI includes 5358 audio files with time-aligned vocal melodies, lyrics at four 
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/dali.yaml
+   .. literalinclude:: ../cards/dali.yaml
       :language: yaml
 
 egfxset
@@ -976,7 +976,7 @@ EGFxSet includes 8,970 5-second audio recordings of electric guitar tones proces
 
 * **License:** Creative Commons Attribution 4.0 International
 * **Downloadable Remotes:** ``bluesDriver``, ``chorus``, ``clean``, ``digitalDelay``, ``flanger``, ``hallReverb``, ``phaser``, ``plateReverb``, ``rat``, ``spring-Reverb``, ``sweepEcho``, ``tapeEcho``, ``tubeScreamer``, ``metadata``
-* **YAML File:** :download:`egfxset.yaml<../dataset_yamls/egfxset.yaml>`
+* **YAML File:** :download:`egfxset.yaml<../cards/egfxset.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -995,7 +995,7 @@ EGFxSet includes 8,970 5-second audio recordings of electric guitar tones proces
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/egfxset.yaml
+   .. literalinclude:: ../cards/egfxset.yaml
       :language: yaml
 
 filosax
@@ -1011,7 +1011,7 @@ The Filosax dataset includes 48 multitrack jazz recordings with 8 audio stems an
 
 * **License:** The Filosax dataset contains copyright material and is shared with researchers under the following conditions: 1. Filosax may only be used by the individual signing below and by members of the research group or organisation of this individual. This permission is not transferable. 2. Filosax may be used only for non-commercial research purposes. 3. Filosax (or data enabling the its reproduction) may not be sold, leased, published or distributed to any third party without written permission from the Filosax administrator. 4. When research results obtained using Filosax are publicly released (in the form of reports, publications, or derivative software), clear indication of the use of Filosax shall be given, usually in the form of a citation of the following paper: D. Foster and S. Dixon (2021), Filosax: A Dataset of Annotated Jazz Saxophone Recordings. 22nd International Society for Music Information Retrieval Conference (ISMIR). 5. Queen Mary University of London shall not be held liable for any errors in the content of Filosax nor damage arising from the use of Filosax. 6. The Filosax administrator may update these conditions of use at any time.
 * **Downloadable Remotes:** *No direct download available*
-* **YAML File:** :download:`filosax.yaml<../dataset_yamls/filosax.yaml>`
+* **YAML File:** :download:`filosax.yaml<../cards/filosax.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -1068,7 +1068,7 @@ The Filosax dataset includes 48 multitrack jazz recordings with 8 audio stems an
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/filosax.yaml
+   .. literalinclude:: ../cards/filosax.yaml
       :language: yaml
 
 fma_keys
@@ -1084,7 +1084,7 @@ FMA Keys includes 5489 songs across 17 genres, providing song-level key and mode
 
 * **License:** Creative Commons Attribution 4.0 International
 * **Downloadable Remotes:** ``metadata``, ``tracks-000-019``, ``tracks-020-039``, ``tracks-040-049``, ``tracks-050-059``, ``tracks-060-069``, ``tracks-070-079``, ``tracks-080-089``, ``tracks-090-099``, ``tracks-100-109``, ``tracks-110-124``
-* **YAML File:** :download:`fma_keys.yaml<../dataset_yamls/fma_keys.yaml>`
+* **YAML File:** :download:`fma_keys.yaml<../cards/fma_keys.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1104,7 +1104,7 @@ FMA Keys includes 5489 songs across 17 genres, providing song-level key and mode
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/fma_keys.yaml
+   .. literalinclude:: ../cards/fma_keys.yaml
       :language: yaml
 
 four_way_tabla
@@ -1120,7 +1120,7 @@ The Four-Way Tabla Dataset includes 236 audio samples of tabla solo with onset a
 
 * **License:** Creative Commons Attribution 4.0 International License.
 * **Downloadable Remotes:** ``remote_data``
-* **YAML File:** :download:`four_way_tabla.yaml<../dataset_yamls/four_way_tabla.yaml>`
+* **YAML File:** :download:`four_way_tabla.yaml<../cards/four_way_tabla.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1138,7 +1138,7 @@ The Four-Way Tabla Dataset includes 236 audio samples of tabla solo with onset a
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/four_way_tabla.yaml
+   .. literalinclude:: ../cards/four_way_tabla.yaml
       :language: yaml
 
 freesound_one_shot_percussive_sounds
@@ -1154,7 +1154,7 @@ The dataset includes 10,254 one-shot percussive sounds from Freesound.org, annot
 
 * **License:** The dataset is licensed under The Creative Commons Attribution Non Commercial Share Alike 4.0 International. Please check the specific license of each sound by running track.license
 * **Downloadable Remotes:** ``audio``, ``analysis``, ``sound_info_analysis``, ``metadata``, ``readme``
-* **YAML File:** :download:`freesound_one_shot_percussive_sounds.yaml<../dataset_yamls/freesound_one_shot_percussive_sounds.yaml>`
+* **YAML File:** :download:`freesound_one_shot_percussive_sounds.yaml<../cards/freesound_one_shot_percussive_sounds.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1172,7 +1172,7 @@ The dataset includes 10,254 one-shot percussive sounds from Freesound.org, annot
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/freesound_one_shot_percussive_sounds.yaml
+   .. literalinclude:: ../cards/freesound_one_shot_percussive_sounds.yaml
       :language: yaml
 
 giantsteps_key
@@ -1188,7 +1188,7 @@ The giantsteps_key dataset includes 600 two-minute EDM excerpts annotated with s
 
 * **License:** Creative Commons Attribution Share Alike 4.0 International.
 * **Downloadable Remotes:** ``audio``, ``keys``, ``metadata``
-* **YAML File:** :download:`giantsteps_key.yaml<../dataset_yamls/giantsteps_key.yaml>`
+* **YAML File:** :download:`giantsteps_key.yaml<../cards/giantsteps_key.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1207,7 +1207,7 @@ The giantsteps_key dataset includes 600 two-minute EDM excerpts annotated with s
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/giantsteps_key.yaml
+   .. literalinclude:: ../cards/giantsteps_key.yaml
       :language: yaml
 
 giantsteps_tempo
@@ -1223,7 +1223,7 @@ The giantsteps_tempo dataset includes 664 2-minute audio previews of electronic 
 
 * **License:** Creative Commons Attribution Share Alike 4.0 International.
 * **Downloadable Remotes:** ``annotations``
-* **YAML File:** :download:`giantsteps_tempo.yaml<../dataset_yamls/giantsteps_tempo.yaml>`
+* **YAML File:** :download:`giantsteps_tempo.yaml<../cards/giantsteps_tempo.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -1265,7 +1265,7 @@ The giantsteps_tempo dataset includes 664 2-minute audio previews of electronic 
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/giantsteps_tempo.yaml
+   .. literalinclude:: ../cards/giantsteps_tempo.yaml
       :language: yaml
 
 good_sounds
@@ -1281,7 +1281,7 @@ The Good-Sounds dataset includes monophonic recordings of 12 instruments, with "
 
 * **License:** Creative Commons Attribution Share Alike 4.0 International.
 * **Downloadable Remotes:** ``packs``, ``ratings``, ``sounds``, ``takes``, ``audios``
-* **YAML File:** :download:`good_sounds.yaml<../dataset_yamls/good_sounds.yaml>`
+* **YAML File:** :download:`good_sounds.yaml<../cards/good_sounds.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1300,7 +1300,7 @@ The Good-Sounds dataset includes monophonic recordings of 12 instruments, with "
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/good_sounds.yaml
+   .. literalinclude:: ../cards/good_sounds.yaml
       :language: yaml
 
 groove_midi
@@ -1316,7 +1316,7 @@ The Groove MIDI Dataset includes 13.6 hours of aligned MIDI and synthesized audi
 
 * **License:** Creative Commons Attribution 4.0 International (CC BY 4.0) License.
 * **Downloadable Remotes:** ``all``
-* **YAML File:** :download:`groove_midi.yaml<../dataset_yamls/groove_midi.yaml>`
+* **YAML File:** :download:`groove_midi.yaml<../cards/groove_midi.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1335,7 +1335,7 @@ The Groove MIDI Dataset includes 13.6 hours of aligned MIDI and synthesized audi
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/groove_midi.yaml
+   .. literalinclude:: ../cards/groove_midi.yaml
       :language: yaml
 
 gtzan_genre
@@ -1351,7 +1351,7 @@ The GTZAN Genre Dataset includes 1000 30-second audio tracks (10 genres, 100 tra
 
 * **License:** Unfortunately we couldn't find the license information for the GTZAN_genre dataset.
 * **Downloadable Remotes:** ``all``, ``mini``, ``tempo_beat_annotations``
-* **YAML File:** :download:`gtzan_genre.yaml<../dataset_yamls/gtzan_genre.yaml>`
+* **YAML File:** :download:`gtzan_genre.yaml<../cards/gtzan_genre.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1369,7 +1369,7 @@ The GTZAN Genre Dataset includes 1000 30-second audio tracks (10 genres, 100 tra
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/gtzan_genre.yaml
+   .. literalinclude:: ../cards/gtzan_genre.yaml
       :language: yaml
 
 guitarset
@@ -1385,7 +1385,7 @@ GuitarSet includes 360 30-second acoustic guitar excerpts across various styles,
 
 * **License:** MIT License.
 * **Downloadable Remotes:** ``annotations``, ``audio_hex_debleeded``, ``audio_hex_original``, ``audio_mic``, ``audio_mix``
-* **YAML File:** :download:`guitarset.yaml<../dataset_yamls/guitarset.yaml>`
+* **YAML File:** :download:`guitarset.yaml<../cards/guitarset.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1403,7 +1403,7 @@ GuitarSet includes 360 30-second acoustic guitar excerpts across various styles,
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/guitarset.yaml
+   .. literalinclude:: ../cards/guitarset.yaml
       :language: yaml
 
 hainsworth
@@ -1419,7 +1419,7 @@ The Hainsworth Dataset includes 222 one-minute musical excerpts across six genre
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** *No direct download available*
-* **YAML File:** :download:`hainsworth.yaml<../dataset_yamls/hainsworth.yaml>`
+* **YAML File:** :download:`hainsworth.yaml<../cards/hainsworth.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -1457,7 +1457,7 @@ The Hainsworth Dataset includes 222 one-minute musical excerpts across six genre
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/hainsworth.yaml
+   .. literalinclude:: ../cards/hainsworth.yaml
       :language: yaml
 
 idmt_smt_audio_effects
@@ -1473,7 +1473,7 @@ This dataset includes 55,044 mono and stereo WAV files of electric guitar and ba
 
 * **License:** Creative Commons BY-NC-ND 4.0. https://creativecommons.org/licenses/by-nc-nd/4.0/
 * **Downloadable Remotes:** ``full_dataset``
-* **YAML File:** :download:`idmt_smt_audio_effects.yaml<../dataset_yamls/idmt_smt_audio_effects.yaml>`
+* **YAML File:** :download:`idmt_smt_audio_effects.yaml<../cards/idmt_smt_audio_effects.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -1526,7 +1526,7 @@ This dataset includes 55,044 mono and stereo WAV files of electric guitar and ba
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/idmt_smt_audio_effects.yaml
+   .. literalinclude:: ../cards/idmt_smt_audio_effects.yaml
       :language: yaml
 
 ikala
@@ -1542,7 +1542,7 @@ The iKala dataset includes 30-second excerpts from 206 songs with separated voca
 
 * **License:** When it was distributed, Ikala used to have a custom license. Visit http://mac.citi.sinica.edu.tw/ikala/ for more details.
 * **Downloadable Remotes:** ``metadata``, ``notes_pyin``
-* **YAML File:** :download:`ikala.yaml<../dataset_yamls/ikala.yaml>`
+* **YAML File:** :download:`ikala.yaml<../cards/ikala.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -1579,7 +1579,7 @@ The iKala dataset includes 30-second excerpts from 206 songs with separated voca
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/ikala.yaml
+   .. literalinclude:: ../cards/ikala.yaml
       :language: yaml
 
 irmas
@@ -1595,7 +1595,7 @@ IRMAS includes 9,579 musical audio excerpts of 3 seconds each, covering 11 instr
 
 * **License:** Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 * **Downloadable Remotes:** ``training_data``, ``testing_data_1``, ``testing_data_2``, ``testing_data_3``
-* **YAML File:** :download:`irmas.yaml<../dataset_yamls/irmas.yaml>`
+* **YAML File:** :download:`irmas.yaml<../cards/irmas.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1617,7 +1617,7 @@ IRMAS includes 9,579 musical audio excerpts of 3 seconds each, covering 11 instr
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/irmas.yaml
+   .. literalinclude:: ../cards/irmas.yaml
       :language: yaml
 
 jtd
@@ -1633,7 +1633,7 @@ The Jazz Trio Database (JTD) includes 1,294 multitrack jazz performances, with a
 
 * **License:** The MIT License (MIT) Copyright (c) 2023, Huw Cheston Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 * **Downloadable Remotes:** ``annotations``
-* **YAML File:** :download:`jtd.yaml<../dataset_yamls/jtd.yaml>`
+* **YAML File:** :download:`jtd.yaml<../cards/jtd.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -1700,7 +1700,7 @@ The Jazz Trio Database (JTD) includes 1,294 multitrack jazz performances, with a
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/jtd.yaml
+   .. literalinclude:: ../cards/jtd.yaml
       :language: yaml
 
 maestro
@@ -1716,7 +1716,7 @@ MAESTRO includes over 200 hours of high-quality piano performances with precise 
 
 * **License:** Creative Commons Attribution Non-Commercial Share-Alike 4.0 (CC BY-NC-SA 4.0).
 * **Downloadable Remotes:** ``all``, ``midi``, ``metadata``
-* **YAML File:** :download:`maestro.yaml<../dataset_yamls/maestro.yaml>`
+* **YAML File:** :download:`maestro.yaml<../cards/maestro.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1736,7 +1736,7 @@ MAESTRO includes over 200 hours of high-quality piano performances with precise 
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/maestro.yaml
+   .. literalinclude:: ../cards/maestro.yaml
       :language: yaml
 
 mdb_stem_synth
@@ -1752,7 +1752,7 @@ The MDB-stem-synth dataset includes 230 solo stems from various musical instrume
 
 * **License:** Attribution-NonCommercial 4.0 International
 * **Downloadable Remotes:** ``mdb_stem_synth``
-* **YAML File:** :download:`mdb_stem_synth.yaml<../dataset_yamls/mdb_stem_synth.yaml>`
+* **YAML File:** :download:`mdb_stem_synth.yaml<../cards/mdb_stem_synth.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1770,7 +1770,7 @@ The MDB-stem-synth dataset includes 230 solo stems from various musical instrume
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/mdb_stem_synth.yaml
+   .. literalinclude:: ../cards/mdb_stem_synth.yaml
       :language: yaml
 
 medley_solos_db
@@ -1786,7 +1786,7 @@ The Medley-solos-DB dataset includes 3-second audio clips of solo instruments fr
 
 * **License:** Creative Commons Attribution 4.0 International.
 * **Downloadable Remotes:** ``annotations``, ``audio``
-* **YAML File:** :download:`medley_solos_db.yaml<../dataset_yamls/medley_solos_db.yaml>`
+* **YAML File:** :download:`medley_solos_db.yaml<../cards/medley_solos_db.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1804,7 +1804,7 @@ The Medley-solos-DB dataset includes 3-second audio clips of solo instruments fr
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/medley_solos_db.yaml
+   .. literalinclude:: ../cards/medley_solos_db.yaml
       :language: yaml
 
 medleydb_melody
@@ -1820,7 +1820,7 @@ MedleyDB melody includes multitrack recordings with melody f0 annotations for 20
 
 * **License:** Creative Commons Attribution Non-Commercial Share-Alike 4.0 (CC BY-NC-SA 4.0).
 * **Downloadable Remotes:** *No direct download available*
-* **YAML File:** :download:`medleydb_melody.yaml<../dataset_yamls/medleydb_melody.yaml>`
+* **YAML File:** :download:`medleydb_melody.yaml<../cards/medleydb_melody.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -1851,7 +1851,7 @@ MedleyDB melody includes multitrack recordings with melody f0 annotations for 20
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/medleydb_melody.yaml
+   .. literalinclude:: ../cards/medleydb_melody.yaml
       :language: yaml
 
 medleydb_pitch
@@ -1867,7 +1867,7 @@ MedleyDB pitch includes f0-annotated, monophonic stems from multitrack recording
 
 * **License:** Creative Commons Attribution Non-Commercial Share-Alike 4.0 (CC BY-NC-SA 4.0).
 * **Downloadable Remotes:** ``notes_pyin``
-* **YAML File:** :download:`medleydb_pitch.yaml<../dataset_yamls/medleydb_pitch.yaml>`
+* **YAML File:** :download:`medleydb_pitch.yaml<../cards/medleydb_pitch.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -1898,7 +1898,7 @@ MedleyDB pitch includes f0-annotated, monophonic stems from multitrack recording
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/medleydb_pitch.yaml
+   .. literalinclude:: ../cards/medleydb_pitch.yaml
       :language: yaml
 
 mridangam_stroke
@@ -1914,7 +1914,7 @@ The Mridangam Stroke dataset includes 6977 audio samples of 10 strokes across 6 
 
 * **License:** Creative Commons Attribution 3.0 Unported (CC BY 3.0) License.
 * **Downloadable Remotes:** ``remote_data``
-* **YAML File:** :download:`mridangam_stroke.yaml<../dataset_yamls/mridangam_stroke.yaml>`
+* **YAML File:** :download:`mridangam_stroke.yaml<../cards/mridangam_stroke.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -1938,7 +1938,7 @@ The Mridangam Stroke dataset includes 6977 audio samples of 10 strokes across 6 
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/mridangam_stroke.yaml
+   .. literalinclude:: ../cards/mridangam_stroke.yaml
       :language: yaml
 
 mtg_jamendo_autotagging_moodtheme
@@ -1954,7 +1954,7 @@ The dataset includes 18,486 full audio tracks from Jamendo with 195 mood/theme t
 
 * **License:** Creative Commons Attribution NonCommercial Share Alike 4.0 International.
 * **Downloadable Remotes:** ``metadata``
-* **YAML File:** :download:`mtg_jamendo_autotagging_moodtheme.yaml<../dataset_yamls/mtg_jamendo_autotagging_moodtheme.yaml>`
+* **YAML File:** :download:`mtg_jamendo_autotagging_moodtheme.yaml<../cards/mtg_jamendo_autotagging_moodtheme.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -1997,7 +1997,7 @@ The dataset includes 18,486 full audio tracks from Jamendo with 195 mood/theme t
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/mtg_jamendo_autotagging_moodtheme.yaml
+   .. literalinclude:: ../cards/mtg_jamendo_autotagging_moodtheme.yaml
       :language: yaml
 
 openmic2018
@@ -2013,7 +2013,7 @@ The OpenMIC-2018 dataset includes 20000 10-second excerpts from polyphonic music
 
 * **License:** Creative Commons Attribution 4.0 International
 * **Downloadable Remotes:** ``remote_data``
-* **YAML File:** :download:`openmic2018.yaml<../dataset_yamls/openmic2018.yaml>`
+* **YAML File:** :download:`openmic2018.yaml<../cards/openmic2018.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -2056,7 +2056,7 @@ The OpenMIC-2018 dataset includes 20000 10-second excerpts from polyphonic music
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/openmic2018.yaml
+   .. literalinclude:: ../cards/openmic2018.yaml
       :language: yaml
 
 orchset
@@ -2072,7 +2072,7 @@ Orchset includes 64 symphonic music audio excerpts with annotated melodies, aime
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** ``all``
-* **YAML File:** :download:`orchset.yaml<../dataset_yamls/orchset.yaml>`
+* **YAML File:** :download:`orchset.yaml<../cards/orchset.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -2094,7 +2094,7 @@ Orchset includes 64 symphonic music audio excerpts with annotated melodies, aime
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/orchset.yaml
+   .. literalinclude:: ../cards/orchset.yaml
       :language: yaml
 
 phenicx_anechoic
@@ -2110,7 +2110,7 @@ The PHENICX-Anechoic Dataset includes denoised anechoic recordings of symphonic 
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International
 * **Downloadable Remotes:** ``all``
-* **YAML File:** :download:`phenicx_anechoic.yaml<../dataset_yamls/phenicx_anechoic.yaml>`
+* **YAML File:** :download:`phenicx_anechoic.yaml<../cards/phenicx_anechoic.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -2140,7 +2140,7 @@ The PHENICX-Anechoic Dataset includes denoised anechoic recordings of symphonic 
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/phenicx_anechoic.yaml
+   .. literalinclude:: ../cards/phenicx_anechoic.yaml
       :language: yaml
 
 queen
@@ -2156,7 +2156,7 @@ Queen Dataset includes chord, key, and segmentation annotations for 51 songs fro
 
 * **License:** Unfortunately we couldn't find the license information for Queen dataset.
 * **Downloadable Remotes:** ``annotations``
-* **YAML File:** :download:`queen.yaml<../dataset_yamls/queen.yaml>`
+* **YAML File:** :download:`queen.yaml<../cards/queen.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -2191,7 +2191,7 @@ Queen Dataset includes chord, key, and segmentation annotations for 51 songs fro
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/queen.yaml
+   .. literalinclude:: ../cards/queen.yaml
       :language: yaml
 
 rwc_classical
@@ -2207,7 +2207,7 @@ The RWC Classical Dataset includes 50 classical music pieces with annotations fo
 
 * **License:** From the dataset's owner webpage: 'Users who have submitted the Pledge and received authorization may freely use the database for research purposes without facing the usual copyright restrictions, but all of the copyrights and neighboring rights connected with this database belong to the National Institute of Advanced Industrial Science and Technology and are managed by the RWC Music Database Administrator. Persons or organizations that have not submitted a Pledge and that have not received authorization may not use the database.' See https://staff.aist.go.jp/m.goto/RWC-MDB/ for more details.
 * **Downloadable Remotes:** ``annotations_beat``, ``annotations_sections``, ``metadata``
-* **YAML File:** :download:`rwc_classical.yaml<../dataset_yamls/rwc_classical.yaml>`
+* **YAML File:** :download:`rwc_classical.yaml<../cards/rwc_classical.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -2242,7 +2242,7 @@ The RWC Classical Dataset includes 50 classical music pieces with annotations fo
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/rwc_classical.yaml
+   .. literalinclude:: ../cards/rwc_classical.yaml
       :language: yaml
 
 rwc_jazz
@@ -2258,7 +2258,7 @@ The RWC Jazz Dataset includes 50 jazz pieces with instrumentation and style vari
 
 * **License:** From the dataset's owner webpage: 'Users who have submitted the Pledge and received authorization may freely use the database for research purposes without facing the usual copyright restrictions, but all of the copyrights and neighboring rights connected with this database belong to the National Institute of Advanced Industrial Science and Technology and are managed by the RWC Music Database Administrator. Persons or organizations that have not submitted a Pledge and that have not received authorization may not use the database.' See https://staff.aist.go.jp/m.goto/RWC-MDB/ for more details.
 * **Downloadable Remotes:** ``metadata``, ``annotations_beat``, ``annotations_sections``
-* **YAML File:** :download:`rwc_jazz.yaml<../dataset_yamls/rwc_jazz.yaml>`
+* **YAML File:** :download:`rwc_jazz.yaml<../cards/rwc_jazz.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -2293,7 +2293,7 @@ The RWC Jazz Dataset includes 50 jazz pieces with instrumentation and style vari
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/rwc_jazz.yaml
+   .. literalinclude:: ../cards/rwc_jazz.yaml
       :language: yaml
 
 rwc_popular
@@ -2309,7 +2309,7 @@ The RWC Popular Dataset includes 100 songs—20 English-lyric and 80 Japanese-ly
 
 * **License:** From the dataset's owner webpage: 'Users who have submitted the Pledge and received authorization may freely use the database for research purposes without facing the usual copyright restrictions, but all of the copyrights and neighboring rights connected with this database belong to the National Institute of Advanced Industrial Science and Technology and are managed by the RWC Music Database Administrator. Persons or organizations that have not submitted a Pledge and that have not received authorization may not use the database.' See https://staff.aist.go.jp/m.goto/RWC-MDB/ for more details.
 * **Downloadable Remotes:** ``metadata``, ``annotations_beat``, ``annotations_sections``, ``annotations_chords``, ``annotations_vocal_act``
-* **YAML File:** :download:`rwc_popular.yaml<../dataset_yamls/rwc_popular.yaml>`
+* **YAML File:** :download:`rwc_popular.yaml<../cards/rwc_popular.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -2361,7 +2361,7 @@ The RWC Popular Dataset includes 100 songs—20 English-lyric and 80 Japanese-ly
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/rwc_popular.yaml
+   .. literalinclude:: ../cards/rwc_popular.yaml
       :language: yaml
 
 salami
@@ -2377,7 +2377,7 @@ The SALAMI dataset includes structural annotations for over 1300 unique tracks, 
 
 * **License:** This data is released under a Creative Commons 0 license, effectively dedicating it to the public domain. More information about this dedication and your rights, please see the details here: http://creativecommons.org/publicdomain/zero/1.0/ and http://creativecommons.org/publicdomain/zero/1.0/legalcode.
 * **Downloadable Remotes:** ``annotations``
-* **YAML File:** :download:`salami.yaml<../dataset_yamls/salami.yaml>`
+* **YAML File:** :download:`salami.yaml<../cards/salami.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -2412,7 +2412,7 @@ The SALAMI dataset includes structural annotations for over 1300 unique tracks, 
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/salami.yaml
+   .. literalinclude:: ../cards/salami.yaml
       :language: yaml
 
 saraga_carnatic
@@ -2428,7 +2428,7 @@ The saraga_carnatic dataset includes 249 Carnatic music tracks with time-aligned
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** ``all``
-* **YAML File:** :download:`saraga_carnatic.yaml<../dataset_yamls/saraga_carnatic.yaml>`
+* **YAML File:** :download:`saraga_carnatic.yaml<../cards/saraga_carnatic.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -2453,7 +2453,7 @@ The saraga_carnatic dataset includes 249 Carnatic music tracks with time-aligned
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/saraga_carnatic.yaml
+   .. literalinclude:: ../cards/saraga_carnatic.yaml
       :language: yaml
 
 saraga_hindustani
@@ -2469,7 +2469,7 @@ This dataset includes 108 Hindustani music tracks with time-aligned melody, rhyt
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** ``all``
-* **YAML File:** :download:`saraga_hindustani.yaml<../dataset_yamls/saraga_hindustani.yaml>`
+* **YAML File:** :download:`saraga_hindustani.yaml<../cards/saraga_hindustani.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -2494,7 +2494,7 @@ This dataset includes 108 Hindustani music tracks with time-aligned melody, rhyt
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/saraga_hindustani.yaml
+   .. literalinclude:: ../cards/saraga_hindustani.yaml
       :language: yaml
 
 scms
@@ -2510,7 +2510,7 @@ This dataset includes 2460 Carnatic Music tracks with time-aligned vocal melodie
 
 * **License:** Creative Commons Attribution Non-Commercial Share-Alike 4.0 (CC BY-NC-SA 4.0).
 * **Downloadable Remotes:** ``scms``
-* **YAML File:** :download:`scms.yaml<../dataset_yamls/scms.yaml>`
+* **YAML File:** :download:`scms.yaml<../cards/scms.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -2531,7 +2531,7 @@ This dataset includes 2460 Carnatic Music tracks with time-aligned vocal melodie
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/scms.yaml
+   .. literalinclude:: ../cards/scms.yaml
       :language: yaml
 
 slakh
@@ -2547,7 +2547,7 @@ The slakh dataset includes 2100 multi-track audio samples and aligned MIDI for m
 
 * **License:** Creative Commons Attribution 4.0 International
 * **Downloadable Remotes:** ``2100-redux``, ``baby``
-* **YAML File:** :download:`slakh.yaml<../dataset_yamls/slakh.yaml>`
+* **YAML File:** :download:`slakh.yaml<../cards/slakh.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -2566,7 +2566,7 @@ The slakh dataset includes 2100 multi-track audio samples and aligned MIDI for m
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/slakh.yaml
+   .. literalinclude:: ../cards/slakh.yaml
       :language: yaml
 
 tinysol
@@ -2582,7 +2582,7 @@ TinySOL includes 2913 single-note samples from 14 instruments, suitable for MIR 
 
 * **License:** Creative Commons Attribution 4.0 International Public License.
 * **Downloadable Remotes:** ``audio``, ``annotations``
-* **YAML File:** :download:`tinysol.yaml<../dataset_yamls/tinysol.yaml>`
+* **YAML File:** :download:`tinysol.yaml<../cards/tinysol.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -2602,7 +2602,7 @@ TinySOL includes 2913 single-note samples from 14 instruments, suitable for MIR 
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/tinysol.yaml
+   .. literalinclude:: ../cards/tinysol.yaml
       :language: yaml
 
 tonality_classicaldb
@@ -2618,7 +2618,7 @@ The Tonality classicalDB Dataset includes 881 classical music pieces with single
 
 * **License:** Creative Commons Attribution Non Commercial Share Alike 4.0 International.
 * **Downloadable Remotes:** ``keys``, ``musicbrainz_metadata``, ``HPCPs``, ``spectrums``
-* **YAML File:** :download:`tonality_classicaldb.yaml<../dataset_yamls/tonality_classicaldb.yaml>`
+* **YAML File:** :download:`tonality_classicaldb.yaml<../cards/tonality_classicaldb.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -2654,7 +2654,7 @@ The Tonality classicalDB Dataset includes 881 classical music pieces with single
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/tonality_classicaldb.yaml
+   .. literalinclude:: ../cards/tonality_classicaldb.yaml
       :language: yaml
 
 tonas
@@ -2670,7 +2670,7 @@ The TONAS dataset includes 72 monophonic a cappella sung excerpts (16 Deblas, 36
 
 * **License:** The TONAS dataset is offered free of charge for internal non-commercial use only. You can not redistribute it nor modify it. Dataset by COFLA team. Copyright © 2012 COFLA project, Universidad de Sevilla. Distribution rights granted to Music Technology Group, Universitat Pompeu Fabra. All Rights Reserved.
 * **Downloadable Remotes:** *No direct download available*
-* **YAML File:** :download:`tonas.yaml<../dataset_yamls/tonas.yaml>`
+* **YAML File:** :download:`tonas.yaml<../cards/tonas.yaml>`
 
 
 .. admonition:: Download Instructions
@@ -2720,7 +2720,7 @@ The TONAS dataset includes 72 monophonic a cappella sung excerpts (16 Deblas, 36
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/tonas.yaml
+   .. literalinclude:: ../cards/tonas.yaml
       :language: yaml
 
 vocadito
@@ -2736,7 +2736,7 @@ vocadito includes 40 solo, monophonic singing excerpts in 7 languages; annotatio
 
 * **License:** Creative Commons Attribution 4.0 International
 * **Downloadable Remotes:** ``zenodo``
-* **YAML File:** :download:`vocadito.yaml<../dataset_yamls/vocadito.yaml>`
+* **YAML File:** :download:`vocadito.yaml<../cards/vocadito.yaml>`
 
 
 .. admonition:: BibTeX Citation
@@ -2756,5 +2756,5 @@ vocadito includes 40 solo, monophonic singing excerpts in 7 languages; annotatio
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/vocadito.yaml
+   .. literalinclude:: ../cards/vocadito.yaml
       :language: yaml

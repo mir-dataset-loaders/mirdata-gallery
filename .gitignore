@@ -2,3 +2,9 @@
 .DS_Store
 .vscode/
 logs/
+
+# build output & python caches
+docs/_build/
+__pycache__/
+*.pyc
+.python-version
