@@ -140,9 +140,11 @@ div.wy-nav-content {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
 }
 
+/* Default active pill (silver annotations, licenses); coloured annotation
+   types override this further down. */
 .filter-pill.active {
-    background: #a054d8;
-    border-color: #a054d8;
+    background: #475569;
+    border-color: #475569;
     color: #ffffff;
 }
 
@@ -279,11 +281,12 @@ div.wy-nav-content {
     color: #1e293b;
 }
 
-/* Badge pills for annotation tags */
+/* Badge pills for annotation tags. Silver by default; official
+   mirdata.annotations classes get their own colour further down. */
 .gallery-cards-information>section code {
-    background-color: #faf5ff;
-    color: #7928ca;
-    border: 1px solid #e9d5ff;
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
     border-radius: 10px;
     padding: 2px 10px;
     font-size: 0.85em;
@@ -404,51 +407,20 @@ div.wy-nav-content {
     border-color: #e11d48 !important;
 }
 
-/* 6. Genre: Genre (mirdata Purple) */
-[data-ann="Genre"] {
-    background-color: #faf5ff !important;
-    color: #7e22ce !important;
-    border-color: #e9d5ff !important;
-}
-
-.filter-pill[data-ann="Genre"].active {
-    background-color: #a054d8 !important;
-    color: #ffffff !important;
-    border-color: #a054d8 !important;
-}
-
-/* 7. Instrument: Instrument (Teal) */
-[data-ann="Instrument"] {
-    background-color: #f0fdfa !important;
-    color: #0f766e !important;
-    border-color: #99f6e4 !important;
-}
-
-.filter-pill[data-ann="Instrument"].active {
-    background-color: #0d9488 !important;
-    color: #ffffff !important;
-    border-color: #0d9488 !important;
-}
-
-/* 8. Events: EventData & EventDataExtended (Slate) */
+/* 6. Events: EventData & EventDataExtended (Yellow) */
 [data-ann="EventData"],
 [data-ann="EventDataExtended"] {
-    background-color: #f8fafc !important;
-    color: #475569 !important;
-    border-color: #cbd5e1 !important;
+    background-color: #fefce8 !important;
+    color: #a16207 !important;
+    border-color: #fde68a !important;
 }
 
 .filter-pill[data-ann="EventData"].active,
 .filter-pill[data-ann="EventDataExtended"].active {
-    background-color: #475569 !important;
+    background-color: #ca8a04 !important;
     color: #ffffff !important;
-    border-color: #475569 !important;
+    border-color: #ca8a04 !important;
 }
 
-
-/* 2. License Pill Active (Solid slate/gray when clicked & selected) */
-.filter-pill:not([data-ann]).active {
-    background-color: #475569 !important;
-    color: #ffffff !important;
-    border-color: #475569 !important;
-}
+/* Anything else (Instrument, Genre, future values without a colour here)
+   keeps the silver badge and the default active pill defined above. */
