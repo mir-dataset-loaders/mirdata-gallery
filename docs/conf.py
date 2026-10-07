@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath("_ext"))
 # -- Project information -----------------------------------------------------
 
 project = "mirdata"
-copyright = "2026 mirdata development team."
+copyright = "2026 mirdata development team"
 author = "mirdata"
 
 mirdata_version = importlib.import_module("mirdata.version")
