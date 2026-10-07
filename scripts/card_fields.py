@@ -6,6 +6,7 @@ fields on purpose, so ``generate_cards.py`` reads like the card itself.
 """
 
 import importlib
+import textwrap
 import typing
 
 import mirdata
@@ -39,8 +40,7 @@ FALLBACK_MAP = {
 
 
 def license(ds):
-    value = getattr(ds, "_license_info", "Not specified")
-    return value.strip() if isinstance(value, str) else value
+    return _clean(getattr(ds, "_license_info", "Not specified"))
 
 
 def remotes(ds):
@@ -52,11 +52,11 @@ def download_info(ds):
 
 
 def bibtex(ds):
-    return getattr(ds, "bibtex", None)
+    return _clean(getattr(ds, "bibtex", None))
 
 
 def docstring(ds):
-    return importlib.import_module(f"mirdata.datasets.{ds.name}").__doc__
+    return _clean(importlib.import_module(f"mirdata.datasets.{ds.name}").__doc__)
 
 
 def annotations(ds):
@@ -78,6 +78,19 @@ def annotations(ds):
         found.add("Genre")
 
     return sorted(found)
+
+
+def _clean(text):
+    """Tidy a multi-line string from mirdata so it stores cleanly in YAML.
+
+    Drops trailing spaces on every line (PyYAML refuses the readable `|`
+    block style otherwise), removes common indentation, and strips blank
+    lines around the text. Non-strings (None) pass through unchanged.
+    """
+    if not isinstance(text, str):
+        return text
+    lines = [line.rstrip() for line in text.splitlines()]
+    return textwrap.dedent("\n".join(lines)).strip()
 
 
 def _annotation_class_name(attr_name, item):
