@@ -2,10 +2,10 @@
 
 Usage:
     # 1. Using Hugging Face Transformers (Default, runs directly on GPU/CUDA):
-    python utils/summarize_datasets_llm.py --model Qwen/Qwen2.5-7B-Instruct
+    python scripts/summarize_datasets_llm.py --model Qwen/Qwen2.5-7B-Instruct
 
     # 2. Re-summarize all (even existing):
-    python utils/summarize_datasets_llm.py --force
+    python scripts/summarize_datasets_llm.py --force
 """
 
 import argparse
@@ -86,7 +86,7 @@ def main():
     )
     parser.add_argument(
         "--yaml-dir",
-        default="dataset_yamls",
+        default="cards",
         help="Directory containing dataset YAMLs",
     )
     parser.add_argument(

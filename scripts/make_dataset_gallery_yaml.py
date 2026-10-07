@@ -2,7 +2,7 @@
 
 Usage:
     python make_dataset_gallery_yaml.py
-    python make_dataset_gallery_yaml.py --output your/folder/containing/dataset_yamls
+    python make_dataset_gallery_yaml.py --output your/folder/containing/cards
 """
 import typing
 import argparse
@@ -149,8 +149,8 @@ def main():
     parser.add_argument(
         "--output",
         type=str,
-        default=os.path.join("dataset_yamls"),
-        help="Path where yaml files will be saved (default: dataset_yamls)",
+        default=os.path.join("cards"),
+        help="Path where yaml files will be saved (default: cards)",
     )
     parser.add_argument("--dataset", type=str, default=None,help="Specific dataset to generate yaml for")
     

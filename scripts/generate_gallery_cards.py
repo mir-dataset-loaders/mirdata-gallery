@@ -2,7 +2,7 @@ import textwrap
 from pathlib import Path
 import yaml
 
-yaml_dir = Path("dataset_yamls")
+yaml_dir = Path("cards")
 output_file = Path("docs/index.rst")
 
 header = """mirdata Dataset Gallery
@@ -78,7 +78,7 @@ for yml_path in sorted(yaml_dir.glob("*.yaml")):
     # 3. License, Remotes & YAML Download
     card += f"""* **License:** {license_str}
 * **Downloadable Remotes:** {remotes_str}
-* **YAML File:** :download:`{yml_path.name}<../dataset_yamls/{yml_path.name}>`
+* **YAML File:** :download:`{yml_path.name}<../cards/{yml_path.name}>`
 
 """
     
@@ -126,7 +126,7 @@ for yml_path in sorted(yaml_dir.glob("*.yaml")):
 .. admonition:: View Full YAML Definition
    :class: dropdown
 
-   .. literalinclude:: ../dataset_yamls/{yml_path.name}
+   .. literalinclude:: ../cards/{yml_path.name}
       :language: yaml
 """
 
