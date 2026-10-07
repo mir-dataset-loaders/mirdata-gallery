@@ -3,7 +3,6 @@
 # For a full list of options see:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import importlib
 import os
 import sys
 
@@ -16,12 +15,7 @@ project = "mirdata"
 copyright = "2026 mirdata development team"
 author = "mirdata"
 
-mirdata_version = importlib.import_module("mirdata.version")
-
-# The short X.Y version.
-version = mirdata_version.short_version
-# The full version, including alpha/beta/rc tags.
-release = mirdata_version.version
+# FIXME: Need to display mirdata.version
 
 # -- General configuration ---------------------------------------------------
 

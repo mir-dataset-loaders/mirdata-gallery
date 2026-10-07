@@ -1,0 +1,7 @@
+# Optional: only for scripts/summarize_datasets_llm.py (runs a local model,
+# needs a GPU to be practical).
+#   pip install -r requirements.txt -r requirements-llm.txt
+
+torch>=2.0
+transformers>=4.40
+accelerate>=0.26   # required by transformers for device_map="auto"

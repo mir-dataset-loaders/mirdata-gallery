@@ -1,9 +1,8 @@
-# Dependencies for the mirdata-gallery scripts.
-# For building the docs, see docs/requirements.txt.
+# Dependencies for the scripts and tests.
+#   pip install -r requirements.txt
+# LLM summaries need extra, heavy packages: see requirements-llm.txt.
+# Building the docs: see docs/requirements.txt.
 
-mirdata[dali,cipi,haydn_op20,multivox]>=1.0.0
-
+mirdata[cipi,compmusic_carnatic_rhythm,compmusic_hindustani_rhythm,dali,haydn_op20,multivox] @ git+https://github.com/mir-dataset-loaders/mirdata.git
 pyyaml>=6.0
-torch>=2.0
-transformers>=4.40
-accelerate>=0.26   # required by transformers for device_map="auto"
+pytest>=8.0
