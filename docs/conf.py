@@ -4,6 +4,11 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 import importlib
+import os
+import sys
+
+# Local extensions (the dataset-gallery directive lives in _ext/gallery.py)
+sys.path.insert(0, os.path.abspath("_ext"))
 
 # -- Project information -----------------------------------------------------
 
@@ -23,6 +28,7 @@ release = mirdata_version.version
 extensions = [
     "sphinx_togglebutton",
     "sphinx_copybutton",
+    "gallery",  # .. dataset-gallery:: directive, renders cards/*.yaml
 ]
 
 togglebutton_hint = ""

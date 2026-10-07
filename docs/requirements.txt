@@ -7,5 +7,7 @@ sphinx-rtd-theme>=1.3.0
 sphinx-togglebutton>=0.3.2
 sphinx-copybutton>=0.5.2
 
+pyyaml>=6.0
+
 # docs/conf.py imports mirdata.version to show the version in the sidebar
 mirdata>=1.0.0
