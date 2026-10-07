@@ -1,8 +1,8 @@
 """Script to generate yamls from mirdata dataset loaders.
 
 Usage:
-    python make_dataset_gallery_yaml.py
-    python make_dataset_gallery_yaml.py --output your/folder/containing/cards
+    python generate_cards.py
+    python generate_cards.py --output your/folder/containing/cards
 """
 import typing
 import argparse
