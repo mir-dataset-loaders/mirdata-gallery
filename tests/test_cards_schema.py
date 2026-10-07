@@ -1,99 +1,23 @@
-"""The contract every cards/*.yaml must satisfy.
+"""Check every cards/*.yaml against the schema in card_schema.py.
 
-SCHEMA — one entry per field, each a small dict of rules. This is the part
-to edit when the card format changes. Every field listed is required and no
-other keys are allowed in a card.
-
-Rule keywords:
- type         Python type, or a tuple of types. NoneType allows null.
- min_length   str: minimum length after stripping whitespace
- single_line  str: no line breaks allowed
- starts_with  str: must start with this (leading whitespace ignored)
- pattern      str: must fully match this regex
- items        list: type every element must have
- min_items    list: minimum number of elements
- unique       list: no duplicate elements
- sorted       list: elements must be in sorted order
- choices      the value (str) or every element (list) must be one of these
-
-Two rules apply to every card and are not per-field:
- - `name` must equal the file name without .yaml
- - no string may have trailing whitespace at the end of a line
+One test per card, so a failure names the card and lists every rule it breaks.
 """
 
+import os
 import re
+from types import NoneType
 
-NoneType = type(None)
+import pytest
+import yaml
 
-# =============================================================================
-# 1. SCHEMA
-# =============================================================================
+from card_schema import SCHEMA
 
-# Closed vocabulary for `annotations`. Mostly mirdata.annotations class names,
-# plus a few classification labels (Instrument, Genre) that are not classes.
-# Adding a value here also means adding a colour for it in
-# docs/_static/css/custom.css.
-ANNOTATION_TYPES = [
-    "BeatData",
-    "ChordData",
-    "EventData",
-    "EventDataExtended",
-    "F0Data",
-    "Genre",
-    "Instrument",
-    "KeyData",
-    "LyricData",
-    "MultiF0Data",
-    "NoteData",
-    "SectionData",
-    "TempoData",
-]
-
-AVAILABILITY = {
-    "free": "✅ Freely downloadable",
-    "request": "🔑 Available upon request",
-    "diy": "📺 Do-it-yourself download",
-    "features_only": "🧮 Features only",
-    "unavailable": "❌ Not available",
-}
-
-SCHEMA = {
-    "name": {
-        "type": str,
-        "pattern": r"[a-z0-9_]+",
-    },
-    "license": {
-        "type": str,
-        "min_length": 1,
-        "single_line": True,
-    },
-    "audio": {
-        "type": str,
-        "choices": list(AVAILABILITY),
-    },
-    "annotations": {
-        "type": list,
-        "items": str,
-        "min_items": 1,
-        "unique": True,
-        "sorted": True,
-        "choices": ANNOTATION_TYPES,
-    },
-    "bibtex": {
-        "type": str,
-        "min_length": 1,
-        "starts_with": "@",
-    },
-    # LLM summary shown as "About this dataset"
-    "summary": {
-        "type": (str, NoneType),
-        "min_length": 1,
-    },
-}
+CARDS_DIR = os.path.join(os.path.dirname(__file__), "..", "cards")
+CARD_FILES = sorted(f for f in os.listdir(CARDS_DIR) if f.endswith(".yaml"))
 
 
 # =============================================================================
-# 2. VALIDATION
+# Validation — applies the rule keywords documented in card_schema.py
 # =============================================================================
 
 
@@ -181,16 +105,8 @@ def _type_names(allowed):
 
 
 # =============================================================================
-# 3. TESTS
+# Tests
 # =============================================================================
-
-import os
-
-import pytest
-import yaml
-
-CARDS_DIR = os.path.join(os.path.dirname(__file__), "..", "cards")
-CARD_FILES = sorted(f for f in os.listdir(CARDS_DIR) if f.endswith(".yaml"))
 
 
 @pytest.mark.parametrize("filename", CARD_FILES, ids=lambda f: f.removesuffix(".yaml"))
