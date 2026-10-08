@@ -1,0 +1,76 @@
+name: rwc_popular
+license: |-
+  From the dataset's owner webpage:
+
+  'Users who have submitted the Pledge and received authorization may freely use the database for research purposes
+  without facing the usual copyright restrictions, but all of the copyrights and neighboring rights connected with
+  this database belong to the National Institute of Advanced Industrial Science and Technology and are managed by the
+  RWC Music Database Administrator. Persons or organizations that have not submitted a Pledge and that have not
+  received authorization may not use the database.'
+
+  See https://staff.aist.go.jp/m.goto/RWC-MDB/ for more details.
+remotes:
+- metadata
+- annotations_beat
+- annotations_sections
+- annotations_chords
+- annotations_vocal_act
+annotations:
+- BeatData
+- ChordData
+- TempoData
+- EventData
+- SectionData
+- Instrument
+download_info: |2
+
+      Unfortunately the audio files of the RWC-Popular dataset are not available
+      for download. If you have the RWC-Popular dataset, place the contents into a
+      folder called RWC-Popular with the following structure:
+          > RWC-Popular/
+              > annotations/
+              > audio/rwc-p-m0i with i in [1 .. 7]
+              > metadata-master/
+      and copy the RWC-Popular folder to {}
+bibtex: |-
+  @inproceedings{goto2002rwc,
+    title={RWC Music Database: Popular, Classical and Jazz Music Databases.},
+    author={Goto, Masataka and Hashiguchi, Hiroki and Nishimura, Takuichi and Oka, Ryuichi},
+    booktitle={3rd International Society for Music Information Retrieval Conference},
+    year={2002},
+    series={ISMIR},
+    note={Cite this if using audio, beat or section annotations},
+  }
+  @inproceedings{cho2011feature,
+    title={A feature smoothing method for chord recognition using recurrence plots},
+    author={Cho, Taemin and Bello, Juan P},
+    booktitle={12th International Society for Music Information Retrieval Conference},
+    year={2011},
+    series={ISMIR},
+    note={Cite this if using chord annotations},
+  }
+  @inproceedings{mauch2011timbre,
+    title={Timbre and Melody Features for the Recognition of Vocal Activity and Instrumental Solos in Polyphonic Music.},
+    author={Mauch, Matthias and Fujihara, Hiromasa and Yoshii, Kazuyoshi and Goto, Masataka},
+    booktitle={ISMIR},
+    year={2011},
+    series={ISMIR},
+    note={Cite this if using vocal-instrumental activity annotations},
+  }
+docstring: |+
+  RWC Popular Dataset Loader
+
+  .. admonition:: Dataset Info
+      :class: dropdown
+
+      The Popular Music Database consists of 100 songs — 20 songs with English lyrics
+      performed in the style of popular music typical of songs on the American hit
+      charts in the 1980s, and 80 songs with Japanese lyrics performed in the style of
+      modern Japanese popular music typical of songs on the Japanese hit charts in
+      the 1990s.
+
+      For more details, please visit: https://staff.aist.go.jp/m.goto/RWC-MDB/rwc-mdb-p.html
+
+summary: The RWC Popular Dataset includes 100 songs—20 English-lyric and 80 Japanese-lyric
+  popular music pieces from the 1980s and 1990s. Annotations provide metadata for
+  music information retrieval tasks.

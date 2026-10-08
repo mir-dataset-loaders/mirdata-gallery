@@ -1,0 +1,52 @@
+name: four_way_tabla
+license: Creative Commons Attribution 4.0 International License.
+remotes:
+- remote_data
+annotations:
+- BeatData
+download_info: null
+bibtex: |-
+  @article{RohitMA2021,
+      author = {M.A, Rohit and Bhattacharjee, Amitrajit and Rao, Preeti},
+      journal = {Proc. of the 22nd Int. Society for Music Information Retrieval Conf., Online, 2021},
+      title = {{Four-way Classification of Tabla Strokes with Models Adapted from Automatic Drum Transcription}},
+      year = {2021}
+  }
+docstring: |+
+  Four-Way Tabla Stroke Transcription and Classification Loader
+
+  .. admonition:: Dataset Info
+      :class: dropdown
+
+      The Four-Way Tabla Dataset includes audio recordings of tabla solo with onset annotations for particular
+      strokes types. This dataset was published in 2021 in the context of ISMIR2021 (Online), and may be used for
+      tasks related to tabla analysis, including problems such as onset detection and stroke classification.
+
+      Total audio samples: We do have a total of 226 samples for training and 10 for testing. Each audio has
+      an approximate duration of 1 minute.
+
+      Audio specifications:
+
+      * Sampling frequency: 44.1 kHz
+      * Bit-depth: 16 bit
+      * Audio format: .wav
+
+      Dataset usage: This dataset may be used for the data-driven research of tabla stroke transcription and
+      identification. In this dataset, four important tabla characteristic strokes are considered.
+
+      Dataset structure: The dataset is split in two subsets, containing training and testing samples. Within each
+      subset, there is a folder containing the audios, and another folder containing the onset annotations. The onset
+      annotations are organized in a folder per each stroke type: b, d, rb, rt. Therefore, the paths to onsets would
+      look like:
+
+      .. code-block:: bash
+
+          train/onsets/<StrokeType>/<ID>.onsets
+
+      The dataset is made available by CompMusic under a Creative Commons
+      Attribution 3.0 Unported (CC BY 3.0) License.
+
+summary: The Four-Way Tabla Dataset includes 236 audio samples of tabla solo with
+  onset annotations for four stroke types, suitable for tasks like onset detection
+  and stroke classification. Annotations are provided per stroke type in separate
+  folders, and the dataset is split into training and testing subsets.

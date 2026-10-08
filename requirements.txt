@@ -1,0 +1,8 @@
+# Dependencies for the scripts and tests.
+#   pip install -r requirements.txt
+# LLM summaries need extra, heavy packages: see requirements-llm.txt.
+# Building the docs: see docs/requirements.txt.
+
+mirdata[cipi,compmusic_carnatic_rhythm,compmusic_hindustani_rhythm,dali,haydn_op20,multivox] @ git+https://github.com/mir-dataset-loaders/mirdata.git
+pyyaml>=6.0
+pytest>=8.0

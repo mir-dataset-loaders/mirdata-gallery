@@ -1,0 +1,114 @@
+name: jtd
+license: "The MIT License (MIT)\nCopyright (c) 2023, Huw Cheston\n\nPermission is\
+  \ hereby granted, free of charge, to any person obtaining a copy of this software\
+  \ and associated \ndocumentation files (the \"Software\"), to deal in the Software\
+  \ without restriction, including without limitation the \nrights to use, copy, modify,\
+  \ merge, publish, distribute, sublicense, and/or sell copies of the Software, and\
+  \ to permit \npersons to whom the Software is furnished to do so, subject to the\
+  \ following conditions:\n\nThe above copyright notice and this permission notice\
+  \ shall be included in all copies or substantial portions of the \nSoftware.\n\n\
+  THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,\
+  \ INCLUDING BUT NOT LIMITED TO THE \nWARRANTIES OF MERCHANTABILITY, FITNESS FOR\
+  \ A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR \n\
+  COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN\
+  \ AN ACTION OF CONTRACT, TORT OR \nOTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\
+  \ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+remotes:
+- annotations
+annotations:
+- BeatData
+- NoteData
+- EventData
+download_info: "\nTo download the audio for files for JTD, visit: https://zenodo.org/records/13828030\
+  \ and request access.\n\nAfter you've been granted access, press the \"Download\
+  \ all\" button on the Zenodo record.\n\nThis will create a new file named files-archive\
+  \ (with no extension). Rename the file to files-archive.zip and extract \nusing\
+  \ any unzipping tool (7zip, WinRAR, the unarchiver) or the command line. This will\
+  \ give you a list of multi-part \nzip files in the form [processed.zip.001, processed.zip.002,\
+  \ ...] and [raw.zip.001, raw.zip.002, ...]. \n\nTo extract these, use 7zip from\
+  \ the command line:\n\n```\n7z x processed.zip.001\n7z x raw.zip.001\n```\n\nNote\
+  \ that the default `unzip` command on Linux can't handle these files, so you'll\
+  \ need to use 7zip. You may also be \nable to use a GUI tool like WinRAR, which\
+  \ was used to create the archive in the first place. \n\nThese commands will extract\
+  \ the audio to the current folder. You'll then need to move the results to {0}/processed\
+  \ and \n{0}/raw, respectively, creating these folders if they don't already exist.\n\
+  \nCombined with the annotation files (which can be obtained by calling `.download()`\
+  \ on the `mirdata.Dataset` instance \nyou've just initialized), the end result should\
+  \ be a file structure that looks like:\n\n```\n{0}\n├─ raw\n│  ├─ barronk-allgodschildren-drummondrrileyb-1990-8b77c067.wav\
+  \    # one to three audio files per performance\n│  ├─ ...\n├─ processed\n│  ├─\
+  \ barronk-allgodschildren-drummondrrileyb-1990-8b77c067_piano.wav     # always three\
+  \ audio files per performance\n│  ├─ barronk-allgodschildren-drummondrrileyb-1990-8b77c067_bass.wav\n\
+  │  ├─ barronk-allgodschildren-drummondrrileyb-1990-8b77c067_drums.wav\n│  ├─ ...\n\
+  ├─ annotations\n│  ├─ barronk-allgodschildren-drummondrrileyb-1990-8b77c067    #\
+  \ one folder per performance\n│  │  ├─ bass_onsets.csv\n│  │  ├─ beats.csv\n│  │\
+  \  ├─ ...\n│  ├─ barronk-beautifullove-mrazgrileyb-2009-c87abfa6\n│  ├─ ...\n```\n\
+  \n"
+bibtex: |2
+
+  @article{jazz-trio-database
+      title = {Jazz Trio Database: Automated Annotation of Jazz Piano Trio Recordings Processed Using Audio Source Separation},
+      url = {https://doi.org/10.5334/tismir.186},
+      doi = {10.5334/tismir.186},
+      publisher = {Transactions of the International Society for Music Information Retrieval},
+      author = {Cheston, Huw and Schlichting, Joshua L and Cross, Ian and Harrison, Peter M C},
+      year = {2024},
+  }
+docstring: |+
+  Jazz Trio Database (JTD) Loader
+
+  .. admonition:: Dataset Info
+      :class: dropdown
+
+      The Jazz Trio Database (JTD) is a dataset comprising 1,294 multitrack jazz performances (about 45 hours total)
+      annotated by an automated signal processing pipeline. All performances are commercial recordings of jazz piano
+      trios, comprising acoustic piano, upright bass, and drum kit, and are broadly in the "straight-ahead" jazz style.
+
+      Its purpose is to serve as a reference database for the design, evaluation, and implementation of various music
+      information retrieval systems related to jazz and improvised music, including (but not limited to) onset detection,
+      beat tracking, automatic music transcription, and performer identification.
+
+      For every performance, the following audio files are included:
+
+      1) the "raw" audio from the piano solo, typically including piano, bass, and drums (stereo, 44.1 kHz)
+          - for some performances, individual audio files for the left and right stereo channels are also included
+      2) unmixed piano audio obtained by applying a music source separation model to the "raw" audio
+      3) unmixed bass audio
+      4) unmixed drums audio
+
+      For the "raw" audio, there are the following annotations:
+
+      1) Beat timestamps for the start of each quarter note
+      2) Downbeat annotations for the start of each bar
+
+      For the three "unmixed" audio files, there are the following annotations:
+
+      1) MIDI transcription (frame-level, currently piano only)
+      2) Onset timestamps
+      3) Beat-matched onsets
+
+      To "match" onsets in the unmixed audio and beats in the "raw" audio, a window of -32nd/+16th note is applied to
+      every beat timestamp, and the nearest onset from every unmixed audio file is taken as the "match". In cases where
+      no onsets are contained inside the window, the beat is set to "missing" in the data, such that the number of
+      beat-matched onsets is always the same as the number of beats.
+
+      Finally, there are the following piece-level annotations:
+
+      1) Tempo, in quarter-note beats-per-minute
+      2) Time signature (either three or four quarter-note beats)
+      3) Timestamps for the duration of the piano solo within the performance
+      4) Metadata (e.g., recording year, performer names, album title)
+
+      The JTD was created by researchers at the Centre for Music & Science, University of Cambridge, as part of Huw
+      Cheston's PhD research, during the period 2023-2024.
+
+      The audio data is not publicly available and access must be requested on Zenodo. The annotations and metadata are
+      freely available. The database is made available for research and educational purposes under the MIT license
+      (https://github.com/HuwCheston/Jazz-Trio-Database/blob/main/LICENSE).
+
+      For more details, please visit our GitHub repository (https://github.com/HuwCheston/Jazz-Trio-Database/) or
+      our TISMIR publication (https://doi.org/10.5334/tismir.186).
+
+summary: The Jazz Trio Database (JTD) includes 1,294 multitrack jazz performances,
+  with annotations for beat and downbeat timestamps, MIDI transcriptions, and onset
+  timestamps for unmixed audio tracks, primarily for jazz piano trio performances.
+  The dataset supports tasks like onset detection, beat tracking, and automatic transcription.

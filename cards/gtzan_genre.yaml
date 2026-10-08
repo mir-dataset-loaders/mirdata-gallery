@@ -1,0 +1,39 @@
+name: gtzan_genre
+license: Unfortunately we couldn't find the license information for the GTZAN_genre
+  dataset.
+remotes:
+- all
+- mini
+- tempo_beat_annotations
+annotations:
+- BeatData
+- Genre
+- TempoData
+download_info: null
+bibtex: |-
+  @article{tzanetakis2002gtzan,
+    title={GTZAN genre collection},
+    author={Tzanetakis, George and Cook, P},
+    journal={Music Analysis, Retrieval and Synthesis for Audio Signals},
+    year={2002}
+  }
+docstring: |+
+  GTZAN-Genre Dataset Loader
+
+  .. admonition:: Dataset Info
+      :class: dropdown
+
+      This dataset was used for the well known genre classification paper:
+
+      .. code-block:: latex
+
+          "Musical genre classification of audio signals " by G. Tzanetakis and
+          P. Cook in IEEE Transactions on Audio and Speech Processing 2002.
+
+      The dataset consists of 1000 audio tracks each 30 seconds long. It
+      contains 10 genres, each represented by 100 tracks. The tracks are all
+      22050 Hz mono 16-bit audio files in .wav format.
+
+summary: The GTZAN Genre Dataset includes 1000 30-second audio tracks (10 genres,
+  100 tracks each) in .wav format. Annotations provide genre labels for each track,
+  primarily supporting genre classification tasks.

@@ -1,0 +1,104 @@
+name: cante100
+license: |-
+  The provided datasets are offered free of charge for internal non-commercial use.
+  We do not grant any rights for redistribution or modification. All data collections
+  were gathered by the COFLA team. COFLA 2015. All rights reserved.
+remotes:
+- spectrogram
+- melody
+- notes
+- metadata
+- README
+annotations:
+- F0Data
+- NoteData
+download_info: |2
+
+          This loader is designed to load the spectrum, as it is available for download.
+          However, the loader supports audio as well. Unfortunately the audio files of the
+          cante100 dataset are not available for free download, but upon request. However,
+          you can request de audio in both links here:
+          ==> http://www.cofla-project.com/?page_id=208
+          ==> https://zenodo.org/record/1324183
+          Then, locate the downloaded the cante100audio folder like this:
+              > cante100/
+                  > cante100_spectrum/
+                  ... (rest of the annotation folders)
+                  > cante100audio/
+          Remember to locate the cante100 folder to {}
+bibtex: |
+  @dataset{nadine_kroher_2018_1322542,
+    author       = {Nadine Kroher and
+                    José Miguel Díaz-Báñez and
+                    Joaquin Mora and
+                    Emilia Gómez},
+    title        = {cante100 Metadata},
+    month        = jul,
+    year         = 2018,
+    publisher    = {Zenodo},
+    version      = {1.0},
+    doi          = {10.5281/zenodo.1322542},
+    url          = {https://doi.org/10.5281/zenodo.1322542}
+  },
+  @dataset{nadine_kroher_2018_1324183,
+    author       = {Nadine Kroher and
+                    José Miguel Díaz-Báñez and
+                    Joaquin Mora and
+                    Emilia Gómez},
+    title        = {cante100 Audio},
+    month        = jul,
+    year         = 2018,
+    publisher    = {Zenodo},
+    version      = {1.0},
+    doi          = {10.5281/zenodo.1324183},
+    url          = {https://doi.org/10.5281/zenodo.1324183}
+  }
+docstring: |2+
+
+  cante100 Loader
+
+  .. admonition:: Dataset Info
+      :class: dropdown
+
+      The cante100 dataset contains 100 tracks taken from the COFLA corpus. We defined 10 style
+      families of which 10 tracks each are included. Apart from the style family, we manually
+      annotated the sections of the track in which the vocals are present. In addition, we
+      provide a number of low-level descriptors and the fundamental frequency corresponding to
+      the predominant melody for each track. The meta-information includes editoral meta-data
+      and the musicBrainz ID.
+
+      Total tracks: 100
+
+      cante100 audio is only available upon request. To download the audio request access in
+      this link: https://zenodo.org/record/1324183. Then
+      unzip the audio into the cante100 general dataset folder for the rest of annotations
+      and files.
+
+      Audio specifications:
+
+      - Sampling frequency: 44.1 kHz
+      - Bit-depth: 16 bit
+      - Audio format: .mp3
+
+      cante100 dataset has spectrogram available, in csv format. spectrogram is available to download
+      without request needed, so at first instance, cante100 loader uses the spectrogram of the tracks.
+
+      The available annotations are:
+
+      - F0 (predominant melody)
+      - Automatic transcription of notes (of singing voice)
+
+      CANTE100 LICENSE (COPIED FROM ZENODO PAGE)
+
+      .. code-block:: latex
+
+          The provided datasets are offered free of charge for internal non-commercial use.
+          We do not grant any rights for redistribution or modification. All data collections were gathered
+          by the COFLA team.
+          © COFLA 2015. All rights reserved.
+
+      For more details, please visit: http://www.cofla-project.com/?page_id=134
+
+summary: cante100 includes 100 tracks with annotations on vocal sections, F0, and
+  automatic note transcription; it supports tasks like style classification and vocal
+  detection.

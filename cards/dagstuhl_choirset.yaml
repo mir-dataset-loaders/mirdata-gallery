@@ -1,0 +1,70 @@
+name: dagstuhl_choirset
+license: Creative Commons Attribution 4.0 International
+remotes:
+- full_dataset
+annotations:
+- F0Data
+- NoteData
+download_info: null
+bibtex: |2
+
+  @article{RosenzweigCWSGM20_DCS_TISMIR,
+      author    = {Sebastian Rosenzweig and Helena Cuesta and Christof Wei{\ss} and Frank Scherbaum and Emilia G{'o}mez and Meinard M{"u}ller},
+      title     = {{D}agstuhl {ChoirSet}: {A} Multitrack Dataset for {MIR} Research on Choral Singing},
+      journal   = {Transactions of the International Society for Music Information Retrieval ({TISMIR})},
+      volume    = {3},
+      number    = {1},
+      year      = {2020},
+      pages     = {98--110},
+      publisher = {Ubiquity Press},
+      doi       = {10.5334/tismir.48},
+      url       = {http://doi.org/10.5334/tismir.48},
+      url-demo  = {https://www.audiolabs-erlangen.de/resources/MIR/2020-DagstuhlChoirSet}
+  }
+docstring: |
+  Dagstuhl ChoirSet Dataset Loader
+
+  .. admonition:: Dataset Info
+      :class: dropdown
+
+      Dagstuhl ChoirSet (DCS) is a multitrack dataset of a cappella choral music.
+      The dataset includes recordings of an amateur vocal ensemble performing two
+      choir pieces in full choir and quartet settings (total duration 55min 30sec).
+      The audio data was recorded during an MIR seminar at Schloss Dagstuhl using
+      different close-up microphones to capture the individual singers’ voices:
+
+      * Larynx microphone (LRX): contact microphone attached to the singer's throat.
+      * Dynamic microphone (DYN): handheld dynamic microphone.
+      * Headset microphone (HSM): microphone close to the singer's mouth.
+
+      LRX, DYN and HSM recordings are provided on the Track level.
+      All tracks in the dataset have a LRX recording, while only a subset has DYN and HSM recordings.
+
+      In addition to the close-up microphone tracks, the dataset also provides the following recordings:
+
+      * Room microphone mixdown (STM): mixdown of the stereo room microphone.
+      * Room microphone left (STL): left channel of the stereo microphone.
+      * Room microphone right (STR): right channel of the stereo microphone.
+      * Room microphone mixdown with reverb (StereoReverb_STM): STM signal with artificial reverb.
+      * Piano left (SPL): left channel of the piano accompaniment.
+      * Piano right (SPR): right channel of the piano accompaniment.
+
+      All room microphone and piano recordings are provided on the Multitrack level.
+      All multitracks have room microphone signals, while only a subset has piano recordings.
+
+      For more details, we refer to:
+      Sebastian Rosenzweig (1), Helena Cuesta (2), Christof Weiß (1),
+      Frank Scherbaum (3), Emilia Gómez (2,4), and Meinard Müller (1):
+      Dagstuhl ChoirSet: A Multitrack Dataset for MIR Research on Choral Singing.
+      Transactions of the International Society for Music Information Retrieval,
+      3(1), pp. 98–110, 2020.
+      DOI: https://doi.org/10.5334/tismir.48
+
+      (1) International Audio Laboratories Erlangen, DE
+      (2) Music Technology Group, Universitat Pompeu Fabra, Barcelona, ES
+      (3) University of Potsdam, DE
+      (4) Joint Research Centre, European Commission, Seville, ES
+summary: Dagstuhl ChoirSet includes multitrack a cappella choral recordings with close-up
+  (larynx, dynamic, headset) and room microphone tracks, along with piano accompaniment.
+  Annotations provide individual singer tracks for MIR tasks such as source separation
+  and pitch estimation.

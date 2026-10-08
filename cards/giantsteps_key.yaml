@@ -1,0 +1,54 @@
+name: giantsteps_key
+license: Creative Commons Attribution Share Alike 4.0 International.
+remotes:
+- audio
+- keys
+- metadata
+annotations:
+- TempoData
+- KeyData
+download_info: null
+bibtex: |-
+  @inproceedings{knees2015two,
+    title={Two data sets for tempo estimation and key detection in electronic dance music annotated from user corrections},
+    author={Knees, Peter and Faraldo P{'e}rez, {'A}ngel and Boyer, Herrera and Vogl, Richard and B{"o}ck, Sebastian and H{"o}rschl{"a}ger, Florian and Le Goff, Mickael and others},
+    booktitle={Proceedings of the 16th International Society for Music Information Retrieval Conference (ISMIR); 2015 Oct 26-30; M{'a}laga, Spain.[M{'a}laga]: International Society for Music Information Retrieval, 2015. p. 364-70.},
+    year={2015},
+    organization={International Society for Music Information Retrieval (ISMIR)}
+  }
+docstring: |+
+  giantsteps_key Dataset Loader
+
+  .. admonition:: Dataset Info
+      :class: dropdown
+
+      The GiantSteps+ EDM Key Dataset includes 600 two-minute sound excerpts from various EDM subgenres, annotated with
+      single-key labels, comments and confidence levels by Daniel G. Camhi, and thoroughly revised and expanded by Ángel
+      Faraldo at MTG UPF. Additionally, 500 tracks have been thoroughly analysed, containing pitch-class set descriptions,
+      key changes, and additional modal changes. This dataset is a revision of the original  GiantSteps Key Dataset, available
+      in Github (<https://github.com/GiantSteps/giantsteps-key-dataset>) and initially described in:
+
+      .. code-block:: latex
+
+          Knees, P., Faraldo, Á., Herrera, P., Vogl, R., Böck, S., Hörschläger, F., Le Goff, M. (2015).
+          Two Datasets for Tempo Estimation and Key Detection in Electronic Dance Music Annotated from User Corrections.
+          In Proceedings of the 16th International Society for Music Information Retrieval Conference, 364–370. Málaga, Spain.
+
+      The original audio samples belong to online audio snippets from Beatport, an online music store for DJ's and Electronic
+      Dance Music Producers (<http:\www.beatport.com>). If this dataset were used in further research, we would appreciate
+      the citation of the current DOI (10.5281/zenodo.1101082) and the following doctoral dissertation, where a detailed
+      description of the properties of this dataset can be found:
+
+      .. code-block:: latex
+
+          Ángel Faraldo (2017). Tonality Estimation in Electronic Dance Music: A Computational and Musically Informed Examination.
+          PhD Thesis. Universitat Pompeu Fabra, Barcelona.
+
+      This dataset is mainly intended to assess the performance of computational key estimation algorithms in electronic dance
+      music subgenres.
+
+      All the data of this dataset is licensed with Creative Commons Attribution Share Alike 4.0 International.
+
+summary: The giantsteps_key dataset includes 600 two-minute EDM excerpts annotated
+  with single-key labels and 500 tracks with pitch-class set descriptions; it aims
+  to evaluate key estimation algorithms in EDM.

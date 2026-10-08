@@ -1,0 +1,56 @@
+name: brid
+license: Creative Commons Attribution Non Commercial Share Alike 4.0 International.
+remotes:
+- annotations
+- audio
+annotations:
+- BeatData
+- TempoData
+download_info: null
+bibtex: |2
+
+  @inproceedings{Maia2018AND,
+    title={A Novel Dataset of Brazilian Rhythmic Instruments and Some Experiments in Computational Rhythm Analysis},
+    author={Lucas Maia and Pedro D. de Tomaz J{'u}nior and Magdalena Fuentes and Mart{'i}n Rocamora and Luiz W. P. Biscainho and Maur{'i}cio V. M. Costa and Sara Cohen},
+    year={2018},
+    url={https://api.semanticscholar.org/CorpusID:204762166}
+  }
+docstring: |
+  BRID Dataset Loader
+
+  .. admonition:: Dataset Info
+      :class: dropdown
+
+      The Brazilian Rhythmic Instruments Dataset (BRID) [1] is a valuable resource assembled for research in Music Information Retrieval (MIR). This dataset is designed to facilitate research in computational rhythm analysis, beat tracking, and rhythmic pattern recognition, particularly in the context of Brazilian music. BRID offers a comprehensive collection of solo and multiple-instrument recordings, featuring 10 different instrument classes playing in 5 main rhythm classes from Brazilian music, including samba, partido alto, samba-enredo, capoeira, and marcha.
+
+      **Dataset Overview:**
+
+      BRID comprises a total of 367 tracks, averaging about 30 seconds each, amounting to approximately 2 hours and 57 minutes of music. These tracks include recordings of various Brazilian instruments, played in different Brazilian rhythmic styles.
+
+      **Instruments and Rhythms:**
+
+      The recorded instruments in BRID represent the most significant instruments in Brazilian music, particularly samba. Ten different instrument classes were chosen, including agogoˆ, caixa (snare drum), cu ́ıca, pandeiro (frame drum), reco-reco, repique, shaker, surdo, tamborim, and tanta ̃. To ensure diversity in sound, these instruments vary in terms of shape, size, material, pitch/tuning, and the way they are struck, resulting in 32 variations.
+
+      **Rhythms in BRID:**
+
+      BRID features various Brazilian rhythmic styles, with a focus on samba and its sub-genres, samba-enredo and partido alto. Additionally, the dataset includes rhythms such as marcha, capoeira, and a few tracks of baia ̃o and maxixe styles. The dataset provides a faithful representation of each rhythm, all of which are in duple meter.
+
+      **Dataset Recording:**
+
+      All recordings in BRID were made in a professional recording studio in Manaus, Brazil, between October and November.
+
+      **Applications:**
+
+      The Brazilian Rhythmic Instruments Dataset (BRID) serves as a crucial resource for researchers in the field of Music Information Retrieval (MIR) and rhythm analysis. It showcases the richness of Brazilian rhythmic content and highlights the challenges that non-Western music presents to traditional computational musicology research. Researchers can use BRID to develop more robust MIR tools tailored to Brazilian music.
+
+      **Acknowledgments:**
+
+      We extend our gratitude to the creators of BRID for providing this valuable dataset for research purposes in the field of MIR. Additionally, we acknowledge the authors of the following research paper for their contributions to the dataset and experiments:
+
+      [1] Lucas Maia, Pedro D. de Tomaz Júnior, Magdalena Fuentes, Martín Rocamora, Luiz W. P. Biscainho, Maurício V. M. Costa, and Sara Cohen. "A Novel Dataset of Brazilian Rhythmic Instruments and Some Experiments in Computational Rhythm Analysis." In Proceedings of the {CONGRESO LATINOAMERICANO DE LA AES}, 2018. [Link](https://api.semanticscholar.org/CorpusID:204762166)
+
+      For more details on the dataset and its applications, please refer to the associated research papers and documentation.
+summary: The BRID dataset includes 367 solo and multiple-instrument recordings of
+  10 Brazilian instruments across 5 rhythm classes, providing annotations for beat
+  tracking and rhythmic pattern recognition. Primary tasks involve analyzing and understanding
+  Brazilian musical rhythms.

@@ -1,0 +1,67 @@
+name: idmt_smt_audio_effects
+license: |-
+  Creative Commons BY-NC-ND 4.0.
+  https://creativecommons.org/licenses/by-nc-nd/4.0/
+remotes:
+- full_dataset
+annotations:
+- Instrument
+- NoteData
+download_info: "\n    IDMT-SMT-Audio-Effects Dataset is available at:\n    https://www.idmt.fraunhofer.de/en/publications/datasets/audio_effects.html\n\
+  \    And Zenodo:\n    https://zenodo.org/records/7544032\n    \n    Folder tree:\n\
+  \    data_home/\n    ├── Bass monophon/\n    │   ├── Lists\n    │   └── Samples\n\
+  \    ├── Bass monophon2\n    ├── Gitarre monophon/\n    │   ├── Lists\n    │   ├──\
+  \ Samples\n    │   └── ReadMe.txt\n    ├── Gitarre monophon2\n    ├── Gitarre polyphon/\n\
+  \    │   ├── Lists\n    │   └── Samples\n    ├── Gitarre polyphon2\n    ├── Gitarre_polyphon2.zip\
+  \       # Duplicate of Gitarre polyphon2\n    ├── IDMT-SMT-AUDIO-EFFECTS/     #\
+  \ Empty folder\n    └── IDMT-SMT-Audio-Effects-Description.pdf\n            \n"
+bibtex: |2
+
+  @dataset{stein_michael_2023_7544032,
+    author       = {Stein, Michael},
+    title        = {IDMT-SMT-Audio-Effects Dataset},
+    month        = jan,
+    year         = 2023,
+    publisher    = {Zenodo},
+    version      = {1.0.0},
+    doi          = {10.5281/zenodo.7544032},
+    url          = {https://doi.org/10.5281/zenodo.7544032}
+  }
+docstring: |
+  IDMT-SMT-Audio-Effects Dataset Loader
+
+  .. admonition:: Dataset Info
+      :class: dropdown
+
+      IDMT-SMT-Audio-Effects is a large database for automatic detection of audio effects in recordings of electric guitar and bass and
+      related signal processing. The overall duration of the audio material is approx. 30 hours.
+
+      The dataset consists of 55044 WAV files (44.1 kHz, 16bit, mono) with single recorded notes:
+
+      20592 monophonic bass notes
+      20592 monophonic guitar notes
+      13860 polyphonic guitar sounds
+      Overall, 11 different audio effects are incorporated:
+      feedback delay, slapback delay, reverb, chorus, flanger, phaser, tremolo, vibrato,
+      distortion, overdrive, no effect (unprocessed notes/sounds)
+
+      2 different electric guitars and 2 different electric bass guitars, each with two different pick-up settings and
+      up to three different plucking styles (finger plucked - hard, finger plucked - soft, picked) were used for recording.
+      The notes cover the common pitch range of a 4-string bass guitar from E1 (41.2 Hz) to G3 (196.0 Hz) or the common
+      pitch range of a 6-string electric guitar from E2 (82.4 Hz) to E5 (659.3 Hz).
+      Effects processing was performed using a digital audio workstation and a variety of mostly freely available effect
+      plugins.
+
+      To organize the database, lists in XML format are used, which record all relevant information and are provided with
+      the database as well as a summary of the used effect plugins and parameter settings.
+
+      In addition, most of this information is also encoded in the first part of the file name of the audio files using
+      a simple alpha-numeric encoding scheme. The second part of the file name contains unique identification numbers.
+      This provides an option for fast and flexible structuring of the data for various purposes.
+
+      DOI
+      10.5281/zenodo.7544032
+summary: This dataset includes 55,044 mono and stereo WAV files of electric guitar
+  and bass notes with 11 types of audio effects, covering 30 hours of audio. Annotations
+  provide details on effects, instruments, and settings, facilitating the task of
+  detecting and classifying audio effects.

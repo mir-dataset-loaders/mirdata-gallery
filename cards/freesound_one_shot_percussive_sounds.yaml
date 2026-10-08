@@ -1,0 +1,60 @@
+name: freesound_one_shot_percussive_sounds
+license: |-
+  The dataset is licensed under The Creative Commons Attribution Non Commercial Share Alike 4.0 International.
+  Please check the specific license of each sound by running track.license
+remotes:
+- audio
+- analysis
+- sound_info_analysis
+- metadata
+- readme
+annotations: []
+download_info: null
+bibtex: "\n@inproceedings{ramires2020, \n    author = \"Antonio Ramires and Pritish\
+  \ Chandna and Xavier Favory and Emilia Gómez and Xavier Serra\",\n    title = \"\
+  Neural Percussive Synthesis Parametrerised by High-Level Timbral Features\",\n \
+  \   booktitle = \"Proc. of the IEEE Int. Conf. on Acoustics, Speech and Signal Processing\
+  \ (ICASSP)\",\n    year = \"2020\"\n}\n"
+docstring: |2
+
+  Freesound One-Shot Percussive Sounds Dataset Loader
+
+  .. admonition:: Dataset Info
+      :class: dropdown
+
+      Introduction:
+
+      This dataset contains 10254 one-shot (single event) percussive sounds from freesound.org, a timbral
+      analysis computed by two different extractors (FreesoundExtractor from Essentia and AudioCommons Extractor),
+      and a list of tags. There is also metadata information about the audio file, since the audio specifications
+      are not the same along all the dataset tracks. The analysis data was used to train the generative model
+      for "Neural Percussive Synthesis Parameterised by High-Level Timbral Features".
+
+      Dataset Construction:
+
+      To collect this dataset, the following steps were performed:
+      * Freesound was queried with words associated with percussive instruments, such as "percussion", "kick",
+      "wood" or "clave". Only sounds with less than one second of effective duration were selected.
+      * This stage retrieved some audio clips that contained multiple sound events or that were of low quality.
+      Therefore, we listened to all the retrieved sounds and manually discarded the sounds presenting one of these
+      characteristics. For this, the percussive-annotator was used (https://github.com/xavierfav/percussive-annotator).
+      This tool allows the user to annotate a dataset that focuses on percussive sounds.
+      * The sounds were then cut or padded to have 1-second length, normalized and downsampled to 16kHz.
+      * Finally, the sounds were analyzed with the AudioCommons Extractor, to obtain the AudioCommons timbral
+      descriptors.
+
+      Authors and Contact:
+
+      This dataset was developed by António Ramires, Pritish Chadna, Xavier Favory, Emilia Gómez and Xavier Serra.
+      Any questions related to this dataset please contact:
+      António Ramires (antonio.ramires@upf.edu / aframires@gmail.com)
+
+      Acknowledgements:
+
+      This work has received funding from the European Union's Horizon 2020 research and innovation programme under
+      the Marie Skłodowska-Curie grant agreement No. 765068 (MIP-Frontiers).
+      This work has received funding from the European Union's Horizon 2020 research and innovation programme under
+      grant agreement No. 770376 (TROMPA).
+summary: The dataset includes 10,254 one-shot percussive sounds from Freesound.org,
+  annotated with tags and timbral features from two extractors, for the task of percussive
+  sound analysis.
