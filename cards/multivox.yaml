@@ -1,0 +1,17 @@
+name: multivox
+license: Creative Commons Attribution 4.0 International (CC-BY-4.0)
+annotations:
+- KeyData
+bibtex: |-
+  @inproceedings{meza2025multivox,
+   author = {Meza, G. and Sepúlveda, M. and Roman, A. S. and Sigal Sefchovich, J. R. and Roman, I. R.},
+   title = {{MULTIVOX: A Spatial Audio-Visual Dataset of Singing Groups}},
+   booktitle = {Proceedings of the AES International Conference on Artificial Intelligence and Machine Learning for Audio (AES AIMLA)},
+   year = {2025},
+   address = {London},
+   doi = {10.5281/zenodo.17058101}
+  }
+summary: MULTIVOX includes a-cappella vocal performances with synchronized 360° video
+  and audio from various perspectives, supporting tasks like spatial audio, sound
+  event localization, and source separation. Annotations provide singer positions
+  and audio recordings from different spaces.

@@ -1,0 +1,19 @@
+name: haydn_op20
+license: Creative Commons Attribution Non Commercial Share Alike 4.0 International.
+annotations:
+- ChordData
+- KeyData
+- NoteData
+bibtex: |-
+  @dataset{nestor_napoles_lopez_2017_1095630,
+    author={N'apoles L'opez, N'estor},
+    title={{Joseph Haydn - String Quartets Op.20 - Harmonic Analysis Annotations Dataset}},
+    month=dec,
+    year=2017,
+    publisher={Zenodo},
+    version={v1.1-alpha},
+    doi={10.5281/zenodo.1095630},
+    url={https://doi.org/10.5281/zenodo.1095630}
+  }
+summary: The dataset includes 30 pieces by Joseph Haydn in symbolic format, each annotated
+  with harmonic analyses in harm syntax, for the primary MIR task of harmonic analysis.
