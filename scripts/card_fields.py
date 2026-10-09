@@ -5,7 +5,6 @@ and returns the value to store in the card. Function names match the card
 fields on purpose, so ``generate_cards.py`` reads like the card itself.
 """
 
-import importlib
 import textwrap
 import typing
 
@@ -53,10 +52,6 @@ def download_info(ds):
 
 def bibtex(ds):
     return _clean(getattr(ds, "bibtex", None))
-
-
-def docstring(ds):
-    return _clean(importlib.import_module(f"mirdata.datasets.{ds.name}").__doc__)
 
 
 def annotations(ds):
