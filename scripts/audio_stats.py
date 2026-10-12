@@ -161,7 +161,15 @@ class HTTPFile(io.RawIOBase):
             r.close()
             raise IOError("server ignored the range request")
         r.raise_for_status()
+        # A 206 must say which bytes it carries and carry all of them; anything
+        # else would hand the parsers a wrong slice of the file.
+        content_range = r.headers.get("Content-Range", "")
+        if not content_range.startswith(f"bytes {offset}-{end}/"):
+            r.close()
+            raise IOError(f"unexpected Content-Range {content_range!r} for bytes {offset}-{end}")
         data = r.content
+        if len(data) != end - offset + 1:
+            raise IOError(f"got {len(data)} bytes for a {end - offset + 1}-byte range")
         with self._lock:
             self.requests += 1
             self.bytes += len(data)
