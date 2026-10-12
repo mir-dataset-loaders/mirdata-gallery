@@ -41,6 +41,7 @@ import requests
 from mirdata import download_utils
 
 import audio_headers
+import histograms
 import remote_zip
 
 DEFAULT_DATASETS_DIR = os.path.join(os.path.expanduser("~"), "mir_datasets")  # mirdata's default
@@ -204,6 +205,7 @@ def summarize(index, durations, rates, errors):
         "n_tracks_with_audio": len(tracks),  # tracks whose index entry lists an audio file
         "n_tracks_counted": len(per_track),  # tracks whose audio file we actually read
         "total_seconds": round(sum(per_track.values()), 1),
+        "duration_histogram": histograms.duration_histogram(per_track.values()),
         "n_audio_files": len(wanted),
         "n_audio_files_counted": len(durations),
         "all_files_seconds": round(sum(durations.values()), 1),
@@ -246,6 +248,8 @@ def print_stats(stats, limit, elapsed):
     print(f"  with audio in index:    {stats['n_tracks_with_audio']}")
     print(f"  counted from files:     {stats['n_tracks_counted']}")
     print(f"  total duration:         {stats['total_seconds']:.0f} s = {hms(stats['total_seconds'])}")
+    if stats["duration_histogram"]:
+        print(f"  durations:              {histograms.format_histogram(stats['duration_histogram'])}")
     if stats["sample_rate"]:
         print(f"  sample rate:            {stats['sample_rate']} Hz (all files)")
     elif stats["sample_rates"]:

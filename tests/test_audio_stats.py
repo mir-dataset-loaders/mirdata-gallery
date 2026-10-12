@@ -15,6 +15,7 @@ EXPECTED_SUMMARY = {
     "n_tracks_with_audio": 4,
     "n_tracks_counted": 3,
     "total_seconds": 6.5,
+    "duration_histogram": {"unit": "s", "edges": [1, 2, 3, 4], "counts": [1, 1, 1]},
     "n_audio_files": 6,
     "n_audio_files_counted": 4,
     "all_files_seconds": 10.5,
