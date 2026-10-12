@@ -499,6 +499,14 @@ def print_stats(stats, limit, elapsed):
     print(f"  elapsed:                {elapsed:.1f} s")
 
 
+def positive_int(text):
+    """argparse type for --limit: 0 or a negative number would silently read nothing."""
+    value = int(text)
+    if value < 1:
+        raise argparse.ArgumentTypeError(f"must be a positive integer, got {text}")
+    return value
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--dataset", default=None, help="one dataset (default: every dataset)")
@@ -507,7 +515,10 @@ def main():
     )
     parser.add_argument("--workers", type=int, default=4, help="parallel range requests")
     parser.add_argument(
-        "--limit", type=int, default=None, help="only read the first N audio files per dataset"
+        "--limit",
+        type=positive_int,
+        default=None,
+        help="only read the first N audio files per dataset",
     )
     parser.add_argument("--verbose", action="store_true", help="print one line per audio file")
     parser.add_argument("--json", action="store_true", help="print the result as JSON")
