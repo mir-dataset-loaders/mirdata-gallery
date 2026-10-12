@@ -28,6 +28,7 @@ import io
 import json
 import os
 import struct
+import sys
 import threading
 import time
 import zipfile
@@ -87,7 +88,8 @@ class HTTPFile(io.RawIOBase):
 
     def __init__(self, url, session):
         self.session = session
-        head = session.head(url, allow_redirects=True, timeout=30)
+        self.url = url
+        head = self._request("HEAD", allow_redirects=True)
         head.raise_for_status()
         if "Content-Length" not in head.headers:
             raise IOError("server does not report the file size (no range support)")
@@ -97,6 +99,29 @@ class HTTPFile(io.RawIOBase):
         self.requests = 0
         self.bytes = 0
         self._lock = threading.Lock()
+
+    def _request(self, method, **kwargs):
+        """One HTTP request, retried on connection errors and on 429 (rate limit).
+
+        On 429 we wait as long as the server's Retry-After header asks, so a
+        burst of requests slows down instead of failing.
+        """
+        status = None
+        for attempt in range(6):
+            wait = 2**attempt
+            try:
+                r = self.session.request(method, self.url, timeout=60, **kwargs)
+                status = r.status_code
+                if status != 429:
+                    return r
+                r.close()
+                wait = max(wait, float(r.headers.get("Retry-After", 0)))
+                print(f"    (rate limited by the server, waiting {wait:.0f} s)", file=sys.stderr)
+            except requests.ConnectionError:
+                if attempt == 5:
+                    raise
+            time.sleep(wait)
+        raise IOError(f"server kept answering {status}")
 
     def readable(self):
         return True
@@ -129,35 +154,18 @@ class HTTPFile(io.RawIOBase):
         if n <= 0 or offset >= self.size:
             return b""
         end = min(offset + n, self.size) - 1
-        status = None
-        for attempt in range(6):
-            wait = 2**attempt
-            try:
-                r = self.session.get(
-                    self.url,
-                    headers={"Range": f"bytes={offset}-{end}"},
-                    stream=True,  # don't read the body until we know it's a range
-                    timeout=60,
-                )
-                status = r.status_code
-                if status == 206:
-                    data = r.content
-                    with self._lock:
-                        self.requests += 1
-                        self.bytes += len(data)
-                    return data
-                r.close()
-                if status == 200:
-                    raise IOError("server ignored the range request")
-                if status == 429:  # rate limited: wait as long as the server asks
-                    wait = max(wait, float(r.headers.get("Retry-After", 0)))
-                else:
-                    r.raise_for_status()
-            except requests.ConnectionError:
-                if attempt == 5:
-                    raise
-            time.sleep(wait)
-        raise IOError(f"range request kept failing (last status {status})")
+        # stream=True: don't read the body until we know it's a range, so a
+        # server that ignores Range can't make us download the whole file.
+        r = self._request("GET", headers={"Range": f"bytes={offset}-{end}"}, stream=True)
+        if r.status_code == 200:
+            r.close()
+            raise IOError("server ignored the range request")
+        r.raise_for_status()
+        data = r.content
+        with self._lock:
+            self.requests += 1
+            self.bytes += len(data)
+        return data
 
 
 def member_head(http, info):
@@ -179,13 +187,19 @@ def member_head(http, info):
     return data
 
 
-def match_members(zf, wanted):
-    """{index path: ZipInfo} for zip members that are audio files listed in the index."""
+def match_members(zf, wanted, destination_dir=None):
+    """{index path: ZipInfo} for zip members that are audio files listed in the index.
+
+    destination_dir is the folder mirdata unpacks this zip into; index paths
+    include it, zip member names don't.
+    """
     found = {}
     for info in zf.infolist():
         name = info.filename
         if info.is_dir() or "__MACOSX/" in name or os.path.basename(name).startswith("._"):
             continue  # macOS resource forks also end in .wav; they are not audio
+        if destination_dir:
+            name = f"{destination_dir}/{name}"
         parts = name.split("/")
         for i in range(len(parts)):  # the archive may add leading folders
             candidate = "/".join(parts[i:])
@@ -310,17 +324,20 @@ def record(results, durations, rates, errors, verbose):
             print(f"    {path:60s} {line}")
 
 
-def remote_durations(ds, wanted, workers, limit, verbose):
-    """Durations read over range requests from the dataset's zip remotes."""
-    if not ds.remotes:
-        return {}, {}, ["  (no remotes: the audio has to be obtained manually)"]
+def remote_durations(remotes, wanted, workers, limit, verbose):
+    """Durations read over range requests from the dataset's zip remotes.
+
+    remotes: {key: RemoteFileMetadata}, as in a loader's REMOTES dict.
+    """
+    if not remotes:
+        return {}, {}, {}, ["  (no remotes: the audio has to be obtained manually)"]
     session = requests.Session()
     adapter = requests.adapters.HTTPAdapter(pool_connections=workers, pool_maxsize=workers)
     session.mount("https://", adapter)
     session.mount("http://", adapter)
 
     durations, rates, errors, sources = {}, {}, {}, []
-    for key, remote in (ds.remotes or {}).items():
+    for key, remote in remotes.items():
         if not remote.filename.lower().endswith(".zip"):
             sources.append(f"  {key:22s} {remote.filename}: not a zip, skipped")
             continue
@@ -331,7 +348,7 @@ def remote_durations(ds, wanted, workers, limit, verbose):
         except Exception as e:  # unreachable, no range support, not a zip...
             sources.append(f"  {key:22s} {remote.filename}: {e}")
             continue
-        members = match_members(zf, wanted - durations.keys())
+        members = match_members(zf, wanted - durations.keys(), remote.destination_dir)
         if not members:
             sources.append(f"  {key:22s} {remote.filename}: no audio files from the index")
             continue
@@ -346,8 +363,13 @@ def remote_durations(ds, wanted, workers, limit, verbose):
             except Exception as e:
                 return path, None, f"{type(e).__name__}: {e}"
 
+        results = []
         with ThreadPoolExecutor(workers) as pool:
-            results = list(pool.map(read, items))
+            for i, result in enumerate(pool.map(read, items), 1):
+                results.append(result)
+                if i % 50 == 0 and i < len(items):  # progress for long runs
+                    pace = i / (time.time() - t0)
+                    print(f"    ... {i}/{len(items)} files, {pace:.1f} files/s", file=sys.stderr)
         record(results, durations, rates, errors, verbose)
         sources.append(
             f"  {key:22s} {remote.filename}  {http.size / 1e9:.2f} GB  "
@@ -382,21 +404,14 @@ def local_durations(data_home, wanted, limit, verbose):
     return durations, rates, errors, sources
 
 
-def dataset_stats(name, workers=4, limit=None, verbose=False, datasets_dir=None):
-    """Count tracks and read every audio duration of one dataset. Returns a dict.
+def summarize(index, durations, rates, errors):
+    """The per-dataset numbers, from the index and what was read per audio file.
 
-    datasets_dir: folder with one sub-folder per dataset. When given, the audio
-    is read from <datasets_dir>/<name> instead of the remotes (restricted audio).
+    durations and rates map index audio paths to seconds and sample rate;
+    errors maps the paths that could not be read to a message.
     """
-    ds = mirdata.initialize(name)
-    index = load_index(ds)
     tracks = track_audio_paths(index)
     wanted = {p for paths in tracks.values() for p in paths}
-    if datasets_dir is None:
-        durations, rates, errors, sources = remote_durations(ds, wanted, workers, limit, verbose)
-    else:
-        data_home = os.path.join(datasets_dir, name)
-        durations, rates, errors, sources = local_durations(data_home, wanted, limit, verbose)
     rate_counts = Counter(rates.values())
 
     # One number per track: its first audio file that we could read.
@@ -408,7 +423,6 @@ def dataset_stats(name, workers=4, limit=None, verbose=False, datasets_dir=None)
                 break
 
     return {
-        "name": name,
         "n_tracks": len(index.get("tracks", {})),
         "n_tracks_with_audio": len(tracks),  # tracks whose index entry lists an audio file
         "n_tracks_counted": len(per_track),  # tracks whose audio file we actually read
@@ -420,8 +434,23 @@ def dataset_stats(name, workers=4, limit=None, verbose=False, datasets_dir=None)
         "sample_rate": next(iter(rate_counts)) if len(rate_counts) == 1 else None,
         "sample_rates": dict(rate_counts.most_common()),
         "errors": errors,
-        "sources": sources,
     }
+
+
+def dataset_stats(name, index, remotes, workers=4, limit=None, verbose=False, data_home=None):
+    """Count tracks and read every audio duration of one dataset. Returns a dict.
+
+    index: the dataset's index dict; remotes: its REMOTES dict (may be empty).
+    data_home: when given, the audio is read from that local folder instead of
+    the remotes (restricted or licensed audio).
+    """
+    tracks = track_audio_paths(index)
+    wanted = {p for paths in tracks.values() for p in paths}
+    if data_home is None:
+        durations, rates, errors, sources = remote_durations(remotes, wanted, workers, limit, verbose)
+    else:
+        durations, rates, errors, sources = local_durations(data_home, wanted, limit, verbose)
+    return {"name": name, **summarize(index, durations, rates, errors), "sources": sources}
 
 
 def hms(seconds):
@@ -485,7 +514,6 @@ def main():
         names = [args.dataset]
     excluded = {n.strip() for n in args.exclude.split(",") if n.strip()}
     names = [n for n in names if n not in excluded]
-    datasets_dir = args.datasets_dir if args.local else None
 
     results, rows = {}, []
     for name in names:
@@ -493,7 +521,11 @@ def main():
         if not args.json:
             print(name)
         try:
-            stats = dataset_stats(name, args.workers, args.limit, args.verbose, datasets_dir)
+            ds = mirdata.initialize(name)
+            data_home = os.path.join(args.datasets_dir, name) if args.local else None
+            stats = dataset_stats(
+                name, load_index(ds), ds.remotes or {}, args.workers, args.limit, args.verbose, data_home
+            )
         except Exception as e:  # one broken loader must not stop the others
             results[name] = {"name": name, "error": f"{type(e).__name__}: {e}"}
             rows.append((name, "-", "-", "-", "-", f"{type(e).__name__}: {e}"))
