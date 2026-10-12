@@ -151,3 +151,27 @@ def test_http_file_retries_rate_limit(monkeypatch):
     assert remote.size == 4
     assert session.attempts == 2
     assert sleeps == [3.0]
+
+
+@pytest.mark.parametrize("compression", [zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED])
+def test_member_bytes_reads_whole_member(compression):
+    payload = b"0.5;1\n" * 5000  # bigger than the 4 KB header slack
+    archive = zip_bytes({"beats/a.csv": payload}, compression=compression)
+    info = zipfile.ZipFile(io.BytesIO(archive)).getinfo("beats/a.csv")
+    assert remote_zip.member_bytes(BytesHTTP(archive), info) == payload
+
+
+def test_member_bytes_rejects_corrupt_data():
+    archive = bytearray(zip_bytes({"a.csv": b"hello world"}, compression=zipfile.ZIP_STORED))
+    info = zipfile.ZipFile(io.BytesIO(bytes(archive))).getinfo("a.csv")
+    data_start = archive.index(b"hello world")
+    archive[data_start] ^= 0xFF
+    with pytest.raises(ValueError, match="CRC mismatch"):
+        remote_zip.member_bytes(BytesHTTP(bytes(archive)), info)
+
+
+def test_member_bytes_rejects_bad_local_header():
+    archive = zip_bytes({"a.csv": b"x"})
+    info = zipfile.ZipFile(io.BytesIO(archive)).getinfo("a.csv")
+    with pytest.raises(ValueError, match="bad local file header"):
+        remote_zip.member_bytes(BytesHTTP(b"\0" * len(archive)), info)

@@ -4,7 +4,7 @@ Servers like Zenodo honour HTTP range requests ("send me bytes X to Y"), so a
 zip's table of contents can be read from the end of the file and the first
 bytes of any member from its offset, while the rest of the archive is never
 transferred. audio_stats.py uses this to read audio headers out of multi-GB
-dataset archives.
+dataset archives, annotation_fetch.py to pull whole annotation files out.
 """
 
 import io
@@ -133,6 +133,31 @@ def member_head(http, info, n):
         data = zlib.decompressobj(-zlib.MAX_WBITS).decompress(data, n)
     elif info.compress_type != zipfile.ZIP_STORED:
         raise ValueError(f"unsupported zip compression {info.compress_type}")
+    return data
+
+
+def member_bytes(http, info):
+    """The whole content of one zip member, decompressed and CRC-checked.
+
+    One range request for the local header plus the compressed data (the
+    header's extra field is assumed to fit in 4 KB; a second request covers
+    the rare case where it does not).
+    """
+    slack = 30 + 4096
+    raw = http.read_at(info.header_offset, slack + info.compress_size)
+    if raw[:4] != b"PK\x03\x04":
+        raise ValueError("bad local file header")
+    name_len, extra_len = struct.unpack("<HH", raw[26:30])
+    start = 30 + name_len + extra_len
+    data = raw[start : start + info.compress_size]
+    if len(data) < info.compress_size:
+        data = http.read_at(info.header_offset + start, info.compress_size)
+    if info.compress_type == zipfile.ZIP_DEFLATED:
+        data = zlib.decompress(data, -zlib.MAX_WBITS)
+    elif info.compress_type != zipfile.ZIP_STORED:
+        raise ValueError(f"unsupported zip compression {info.compress_type}")
+    if zlib.crc32(data) != info.CRC:
+        raise ValueError("CRC mismatch")
     return data
 
 

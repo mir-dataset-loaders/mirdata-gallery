@@ -23,13 +23,19 @@ mirdata's own log warnings (e.g. guitarset's note on solo chords) are
 silenced while tracks are loaded.
 
 Usage:
-    python scripts/annotation_stats.py --dataset rwc_popular
+    python scripts/annotation_stats.py --dataset rwc_popular             # from the remotes
     python scripts/annotation_stats.py --dataset rwc_popular --limit 5   # first 5 tracks
     python scripts/annotation_stats.py --dataset rwc_popular --json
-    python scripts/annotation_stats.py --dataset rwc_popular --datasets-dir /path/to/mir_datasets
+    python scripts/annotation_stats.py --dataset rwc_popular --fetch-dir /tmp/ann  # keep the files
+    python scripts/annotation_stats.py --dataset rwc_popular --local     # from ~/mir_datasets/<name>
+    python scripts/annotation_stats.py --local --datasets-dir /path/to/mir_datasets
 
-The annotations are read from ~/mir_datasets/<name> (mirdata's default), so
-the dataset's annotation files must be downloaded first.
+Two modes, as in audio_stats.py. By default the annotation and metadata
+files the index lists are pulled out of the dataset's zip remotes with
+range requests (annotation_fetch.py), into a temporary folder or into
+--fetch-dir, and the audio is never downloaded. With --local the files are
+read from a local copy of the dataset instead, the way to go for datasets
+without remotes or with archives that cannot be read by range.
 """
 
 import argparse
@@ -37,11 +43,14 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import time
 
 import mirdata
 
+import annotation_fetch
 from annotation_types import ANNOTATION_TYPES, STATS
+from audio_stats import load_index
 from card_fields import _annotation_class_name
 from histograms import format_histogram
 
@@ -138,6 +147,31 @@ def dataset_stats(name, ds, limit=None, verbose=False):
     }
 
 
+def remote_stats(name, ds, data_home, limit=None, workers=4, verbose=False):
+    """Fetch the dataset's annotation files from its remotes into data_home, then dataset_stats.
+
+    ds must be initialized with that data_home. The result carries "sources"
+    (one line per remote) and "missing_files" ({path: why it was not fetched}).
+    """
+    index = load_index(ds)
+    track_ids = ds.track_ids[:limit] if limit else None
+    wanted = annotation_fetch.annotation_paths(index, track_ids)
+    _, missing, sources = annotation_fetch.fetch(
+        ds.remotes or {}, wanted, data_home, workers=workers, verbose=verbose
+    )
+    stats = dataset_stats(name, ds, limit, verbose)
+    return {**stats, "sources": sources, "missing_files": missing}
+
+
+def local_stats(name, data_home, limit=None, verbose=False):
+    """dataset_stats on a local copy of the dataset in data_home."""
+    if not os.path.isdir(data_home):
+        raise FileNotFoundError(f"no local copy at {data_home}")
+    ds = mirdata.initialize(name, data_home=data_home)
+    stats = dataset_stats(name, ds, limit, verbose)
+    return {**stats, "sources": [f"  local                  {data_home}"], "missing_files": {}}
+
+
 # --------------------------------------------------------------- command line
 
 
@@ -154,6 +188,12 @@ def fmt(value):
 
 def print_stats(stats, limit, elapsed):
     """The terminal block for one dataset."""
+    print("\n".join(stats.get("sources", [])))
+    missing = stats.get("missing_files", {})
+    if missing:
+        print(f"  files not fetched:      {len(missing)}")
+        for path, why in list(missing.items())[:5]:
+            print(f"    {path}: {why}")
     print(f"  tracks in index:        {stats['n_tracks']}")
     print(f"  tracks loaded:          {stats['n_tracks_loaded']}")
     if stats["tracks_with"]:
@@ -193,6 +233,15 @@ def main():
     )
     parser.add_argument("--verbose", action="store_true", help="print one line per track")
     parser.add_argument("--json", action="store_true", help="print the result as JSON")
+    parser.add_argument("--workers", type=int, default=4, help="parallel range requests")
+    parser.add_argument(
+        "--fetch-dir",
+        default=None,
+        help="keep the fetched files in this folder (default: a temporary folder, deleted)",
+    )
+    parser.add_argument(
+        "--local", action="store_true", help="read local copies of the datasets, not the remotes"
+    )
     parser.add_argument(
         "--datasets-dir",
         default=DEFAULT_DATASETS_DIR,
@@ -208,28 +257,32 @@ def main():
     excluded = {n.strip() for n in args.exclude.split(",") if n.strip()}
     names = [n for n in names if n not in excluded]
 
-    results = {}
-    for name in names:
-        t0 = time.time()
-        if not args.json:
-            print(name)
-        data_home = os.path.join(args.datasets_dir, name)
-        try:
-            if not os.path.isdir(data_home):
-                raise FileNotFoundError(f"no local copy at {data_home}")
-            ds = mirdata.initialize(name, data_home=data_home)
-            stats = dataset_stats(name, ds, args.limit, args.verbose)
-        except Exception as e:  # one broken loader must not stop the others
-            results[name] = {"name": name, "error": f"{type(e).__name__}: {e}"}
-            if not args.json:
-                print(f"  error: {type(e).__name__}: {e}")
-            continue
-        results[name] = stats
-        if not args.json:
-            print_stats(stats, args.limit, time.time() - t0)
-
+    with tempfile.TemporaryDirectory(prefix="annotation_stats_") as tmp:
+        fetch_root = args.fetch_dir or tmp
+        results = {name: run_one(name, args, fetch_root) for name in names}
     if args.json:
         print(json.dumps(results, indent=2))
+
+
+def run_one(name, args, fetch_root):
+    """Stats of one dataset in the mode the arguments ask for; printed unless --json."""
+    t0 = time.time()
+    if not args.json:
+        print(name)
+    try:
+        if args.local:
+            stats = local_stats(name, os.path.join(args.datasets_dir, name), args.limit, args.verbose)
+        else:
+            data_home = os.path.join(fetch_root, name)
+            ds = mirdata.initialize(name, data_home=data_home)
+            stats = remote_stats(name, ds, data_home, args.limit, args.workers, args.verbose)
+    except Exception as e:  # one broken loader must not stop the others
+        if not args.json:
+            print(f"  error: {type(e).__name__}: {e}")
+        return {"name": name, "error": f"{type(e).__name__}: {e}"}
+    if not args.json:
+        print_stats(stats, args.limit, time.time() - t0)
+    return stats
 
 
 if __name__ == "__main__":

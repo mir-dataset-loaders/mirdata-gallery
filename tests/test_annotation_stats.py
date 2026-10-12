@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import sys
 from collections import Counter
 from types import SimpleNamespace
@@ -13,8 +14,10 @@ from mirdata import annotations as A
 from mirdata.annotations import Annotation
 from mirdata.core import cached_property
 
+import annotation_fetch
 import annotation_stats
 import annotation_types
+from audio_fakes import FAKE_URL, FakeRangeSession, fake_remote, zip_bytes
 from annotation_types import STATS, Beats, Chords, F0, Keys, Notes, Tempo
 from histograms import histogram
 
@@ -423,7 +426,7 @@ def test_main_json(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["annotation_stats.py", "--dataset", "fake", "--datasets-dir", str(tmp_path), "--json"],
+        ["annotation_stats.py", "--dataset", "fake", "--local", "--datasets-dir", str(tmp_path), "--json"],
     )
     annotation_stats.main()
     result = json.loads(capsys.readouterr().out)
@@ -434,7 +437,7 @@ def test_main_json(tmp_path, monkeypatch, capsys):
 def test_main_reports_missing_local_copy(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(annotation_stats.mirdata, "list_datasets", lambda: ["fake"])
     monkeypatch.setattr(
-        sys, "argv", ["annotation_stats.py", "--datasets-dir", str(tmp_path), "--json"]
+        sys, "argv", ["annotation_stats.py", "--local", "--datasets-dir", str(tmp_path), "--json"]
     )
     annotation_stats.main()
     result = json.loads(capsys.readouterr().out)
@@ -455,3 +458,114 @@ def test_main_rejects_nonpositive_limit(limit, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         annotation_stats.main()
     assert exc.value.code == 2
+
+
+# ------------------------------------------------------------- remote mode
+
+
+class FileTrack:
+    """A track that, like a mirdata Track, reads its beats file from data_home."""
+
+    def __init__(self, data_home, path):
+        self.path = os.path.join(data_home, path)
+
+    @property
+    def beats(self) -> Optional[A.BeatData]:
+        with open(self.path) as f:
+            times = [float(line) for line in f if line.strip()]
+        return beats(times, list(range(1, len(times) + 1)))
+
+
+def remote_dataset(tmp_path, data_home):
+    """A dataset whose index, remotes and tracks point at a fake zip remote."""
+    index = {
+        "tracks": {
+            "a": {"audio": ["audio/a.wav", "x"], "beats": ["ann/a.txt", "x"]},
+            "b": {"audio": ["audio/b.wav", "x"], "beats": ["ann/b.txt", "x"]},
+        }
+    }
+    index_path = tmp_path / "index.json"
+    index_path.write_text(json.dumps(index))
+    paths = {"a": "ann/a.txt", "b": "ann/b.txt"}
+    return SimpleNamespace(
+        index_path=str(index_path),
+        remotes={"all": fake_remote("all.zip", FAKE_URL)},
+        _track_class=FileTrack,
+        track_ids=["a", "b"],
+        track=lambda track_id: FileTrack(data_home, paths[track_id]),
+    )
+
+
+ARCHIVE = {
+    "audio/a.wav": b"RIFF" + b"\0" * 100,
+    "ann/a.txt": b"0.0\n0.5\n1.0\n",  # 120 bpm
+    "ann/b.txt": b"0.0\n1.0\n2.0\n",  # 60 bpm
+}
+
+
+def test_remote_stats_fetches_annotations_and_computes(tmp_path, monkeypatch):
+    session = FakeRangeSession({FAKE_URL: zip_bytes(ARCHIVE)})
+    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    data_home = str(tmp_path / "fetch" / "fake")
+    ds = remote_dataset(tmp_path, data_home)
+
+    stats = annotation_stats.remote_stats("fake", ds, data_home)
+
+    assert stats["annotations"]["beats"]["tempo"] == histogram([120.0, 60.0], "bpm")
+    assert stats["n_tracks_loaded"] == 2
+    assert stats["errors"] == {}
+    assert stats["missing_files"] == {}
+    assert "2 matched, 2 fetched" in stats["sources"][0]
+    assert not os.path.exists(os.path.join(data_home, "audio"))
+
+
+def test_remote_stats_reports_missing_files_and_failing_tracks(tmp_path, monkeypatch):
+    archive = {k: v for k, v in ARCHIVE.items() if k != "ann/b.txt"}
+    session = FakeRangeSession({FAKE_URL: zip_bytes(archive)})
+    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    data_home = str(tmp_path / "fetch" / "fake")
+
+    stats = annotation_stats.remote_stats("fake", remote_dataset(tmp_path, data_home), data_home)
+
+    assert stats["missing_files"] == {"ann/b.txt": "not in any readable remote"}
+    assert stats["annotations"]["beats"]["n_tracks"] == 1
+    assert list(stats["errors"]) == ["b"]
+
+
+def test_remote_stats_limit_fetches_only_those_tracks(tmp_path, monkeypatch):
+    session = FakeRangeSession({FAKE_URL: zip_bytes(ARCHIVE)})
+    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    data_home = str(tmp_path / "fetch" / "fake")
+
+    stats = annotation_stats.remote_stats("fake", remote_dataset(tmp_path, data_home), data_home, limit=1)
+
+    assert os.path.exists(os.path.join(data_home, "ann/a.txt"))
+    assert not os.path.exists(os.path.join(data_home, "ann/b.txt"))
+    assert stats["n_tracks_loaded"] == 1
+
+
+def test_main_remote_is_the_default(tmp_path, monkeypatch, capsys):
+    session = FakeRangeSession({FAKE_URL: zip_bytes(ARCHIVE)})
+    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    datasets = {}
+
+    def initialize(name, data_home):
+        datasets[name] = remote_dataset(tmp_path, data_home)
+        return datasets[name]
+
+    monkeypatch.setattr(annotation_stats.mirdata, "list_datasets", lambda: ["fake"])
+    monkeypatch.setattr(annotation_stats.mirdata, "initialize", initialize)
+    fetch_dir = tmp_path / "kept"
+    monkeypatch.setattr(
+        sys, "argv", ["annotation_stats.py", "--dataset", "fake", "--fetch-dir", str(fetch_dir)]
+    )
+    annotation_stats.main()
+    out = capsys.readouterr().out
+    assert "2 matched, 2 fetched" in out
+    assert "beats (BeatData; 2 tracks)" in out
+    assert (fetch_dir / "fake" / "ann" / "a.txt").exists()  # --fetch-dir keeps the files
+
+
+def test_local_stats_without_local_copy(tmp_path):
+    with pytest.raises(FileNotFoundError, match="no local copy"):
+        annotation_stats.local_stats("fake", str(tmp_path / "missing"))
