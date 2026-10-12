@@ -4,13 +4,13 @@ WAV, FLAC and MP3 all announce their length near the start of the file: the
 data chunk size, the STREAMINFO sample count, the Xing frame count or the
 bitrate. So HEADER_BYTES from the start of a file are enough, and the audio
 itself is never decoded. read_file() reads them from disk, read_member() out
-of a remote zip (see remote_zip.py).
+of a remote zip (see stats/remote_zip.py).
 """
 
 import os
 import struct
 
-import remote_zip
+from stats import remote_zip
 
 HEADER_BYTES = 64 * 1024  # how much of each audio file we read: enough for any header
 

@@ -3,8 +3,8 @@
 Servers like Zenodo honour HTTP range requests ("send me bytes X to Y"), so a
 zip's table of contents can be read from the end of the file and the first
 bytes of any member from its offset, while the rest of the archive is never
-transferred. audio_stats.py uses this to read audio headers out of multi-GB
-dataset archives, annotation_fetch.py to pull whole annotation files out.
+transferred. The audio stats use this to read audio headers out of multi-GB
+dataset archives, the annotation stats to pull whole annotation files out.
 """
 
 import io
@@ -27,9 +27,10 @@ class HTTPFile(io.RawIOBase):
     while we download nothing else.
     """
 
-    def __init__(self, url, session):
+    def __init__(self, url, session, budget=None):
         self.session = session
         self.url = url
+        self.budget = budget  # stats.common.Budget: every read is checked and charged
         head = self._request("HEAD", allow_redirects=True)
         head.raise_for_status()
         if "Content-Length" not in head.headers:
@@ -95,6 +96,8 @@ class HTTPFile(io.RawIOBase):
         if n <= 0 or offset >= self.size:
             return b""
         end = min(offset + n, self.size) - 1
+        if self.budget:
+            self.budget.check(end - offset + 1)
         # stream=True: don't read the body until we know it's a range, so a
         # server that ignores Range can't make us download the whole file.
         r = self._request("GET", headers={"Range": f"bytes={offset}-{end}"}, stream=True)
@@ -114,6 +117,8 @@ class HTTPFile(io.RawIOBase):
         with self._lock:
             self.requests += 1
             self.bytes += len(data)
+        if self.budget:
+            self.budget.charge(len(data))
         return data
 
 
