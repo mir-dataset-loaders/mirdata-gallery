@@ -3,8 +3,10 @@
 histogram() turns a list of numbers into {"unit", "edges", "counts"}: the
 bin width comes from the Freedman-Diaconis rule, rounded to a step size
 (1, 2, 2.5, 5 times a power of ten) and widened until there are at most
-MAX_BINS bins, and the edges are multiples of that width. The edges and
-counts are plain Python numbers, so the result dumps cleanly to JSON or YAML.
+MAX_BINS bins, and the edges are multiples of that width. With log=True the
+edges are 1, 2, 5 times powers of ten instead, for values that span several
+orders of magnitude. The edges and counts are plain Python numbers, so the
+result dumps cleanly to JSON or YAML.
 
 duration_histogram() is the one used for audio durations: seconds for short
 clips, minutes once the typical track is longer than MINUTES_FROM seconds.
@@ -16,6 +18,7 @@ import numpy as np
 
 MAX_BINS = 20
 STEP_SIZES = (1, 2, 2.5, 5)  # bin widths are one of these times a power of ten
+LOG_STEP_SIZES = (1, 2, 5)  # log-spaced edges are one of these times a power of ten
 MINUTES_FROM = 120  # seconds; a dataset whose median track is longer is binned in minutes
 
 
@@ -39,20 +42,48 @@ def _number(x):
     return int(x) if x == int(x) else x
 
 
-def histogram(values, unit):
+def log_edges(lo, hi):
+    """Edges at 1, 2, 5 times powers of ten, from the one at or below lo to the one above hi.
+
+    Falls back to whole decades when that would be more than MAX_BINS bins.
+    """
+    k_lo, k_hi = math.floor(math.log10(lo)), math.floor(math.log10(hi))
+    for steps in (LOG_STEP_SIZES, (1,)):
+        candidates = sorted(s * 10.0**k for k in range(k_lo, k_hi + 2) for s in steps)
+        start = max(c for c in candidates if c <= lo)
+        end = min(c for c in candidates if c > hi)
+        edges = [c for c in candidates if start <= c <= end]
+        if len(edges) - 1 <= MAX_BINS:
+            return edges
+    return edges
+
+
+def histogram(values, unit, log=False):
     """{"unit", "edges", "counts"} of the values, or None when there are none.
 
     edges has one more entry than counts; counts[i] is the number of values
     in [edges[i], edges[i + 1]). The width is the Freedman-Diaconis estimate
     rounded to a step size; when the data has no spread (all values
     equal, or an interquartile range of zero) the Sturges rule or a single
-    bin takes over.
+    bin takes over. With log=True the edges are 1, 2, 5 times powers of ten
+    instead, for values that span several orders of magnitude (durations);
+    values that are not positive are left out.
     """
     values = np.asarray([v for v in values if v is not None], dtype=float)
     values = values[np.isfinite(values)]
+    if log:
+        values = values[values > 0]
     if not len(values):
         return None
     lo, hi = float(values.min()), float(values.max())
+    if log:
+        edges = log_edges(lo, hi)
+        counts, _ = np.histogram(values, bins=edges)
+        return {
+            "unit": unit,
+            "edges": [_number(e) for e in edges],
+            "counts": [int(c) for c in counts],
+        }
     n = len(values)
     q1, q3 = np.percentile(values, [25, 75])
     if hi == lo:
