@@ -118,7 +118,12 @@ def remote_durations(remotes, wanted, workers, limit, verbose):
         except Exception as e:  # unreachable, no range support, not a zip...
             sources.append(f"  {key:22s} {remote.filename}: {e}")
             continue
-        members = remote_zip.match_members(zf, wanted - durations.keys(), remote.destination_dir)
+        members = remote_zip.match_members(
+            zf,
+            wanted - durations.keys(),
+            remote.destination_dir,
+            getattr(remote, "unpack_directories", None),
+        )
         matched.update(members)
         if not members:
             sources.append(f"  {key:22s} {remote.filename}: no audio files from the index")

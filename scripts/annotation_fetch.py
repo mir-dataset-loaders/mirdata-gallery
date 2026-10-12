@@ -46,23 +46,38 @@ def annotation_paths(index, track_ids=None):
 
     Track and multitrack entries whose key contains "audio" are left out;
     the index's "metadata" files are always included, since many loaders
-    need them to build a track. track_ids limits the track entries to those
-    tracks (multitracks and metadata are kept whole).
+    need them to build a track. A multitrack's "tracks" entry lists its
+    track ids and is not a file. track_ids limits the track entries to those
+    tracks and the multitracks to those containing one of them.
     """
     paths = set()
-    tracks = index.get("tracks", {})
+    tracks = index.get("tracks") or {}
     for track_id in tracks if track_ids is None else track_ids:
-        for key, value in tracks.get(track_id, {}).items():
+        for key, value in (tracks.get(track_id) or {}).items():
             if "audio" not in key.lower() and _entry_path(value):
                 paths.add(_entry_path(value))
-    for mtrack in index.get("multitracks", {}).values():
+    selected = None if track_ids is None else set(track_ids)
+    for mtrack in (index.get("multitracks") or {}).values():
+        mtrack = mtrack or {}
+        members = mtrack.get("tracks")  # the multitrack's track ids, not a file entry
+        if selected is not None and isinstance(members, list) and not selected & set(members):
+            continue  # with a limit, only multitracks of the selected tracks
         for key, value in mtrack.items():
-            if "audio" not in key.lower() and _entry_path(value):
+            if key != "tracks" and "audio" not in key.lower() and _entry_path(value):
                 paths.add(_entry_path(value))
-    for value in index.get("metadata", {}).values():
+    for value in (index.get("metadata") or {}).values():
         if _entry_path(value):
             paths.add(_entry_path(value))
     return paths
+
+
+def index_notes(index):
+    """Log lines for index sections that are present but null (billboard's "metadata": null)."""
+    return [
+        f"  {'index':22s} \"{section}\" is null: no {section} files listed"
+        for section in ("tracks", "multitracks", "metadata")
+        if section in index and index[section] is None
+    ]
 
 
 def _write(data_home, path, data):
@@ -143,7 +158,9 @@ def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbos
         if name.endswith(".zip"):
             try:
                 zf, read_member, http = open_zip(remote.url, session)
-                members = remote_zip.match_members(zf, todo, remote.destination_dir)
+                members = remote_zip.match_members(
+                    zf, todo, remote.destination_dir, getattr(remote, "unpack_directories", None)
+                )
             except Exception as e:  # unreachable, no range support, not a zip...
                 sources.append(f"  {key:22s} {remote.filename}: {type(e).__name__}: {e}")
                 continue
@@ -197,12 +214,19 @@ def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbos
                 continue
             matched.add(path)
             try:
-                http = remote_zip.HTTPFile(remote.url, session)
-                if http.size > max_bytes:
-                    raise ValueError(f"{http.size / 1e6:.0f} MB, over the {max_file_mb} MB limit")
-                _write(data_home, path, http.read_at(0, http.size))
+                try:
+                    http = remote_zip.HTTPFile(remote.url, session)
+                except IOError:  # no size, no range support: stream it whole, capped
+                    data = download_whole(remote.url, session, max_file_mb)
+                    how = "no range support, downloaded whole"
+                else:
+                    if http.size > max_bytes:
+                        raise ValueError(f"{http.size / 1e6:.0f} MB, over the {max_file_mb} MB limit")
+                    data = http.read_at(0, http.size)
+                    how = "fetched"
+                _write(data_home, path, data)
                 fetched.add(path)
-                sources.append(f"  {key:22s} {remote.filename}  {http.size / 1e6:.1f} MB fetched")
+                sources.append(f"  {key:22s} {remote.filename}  {len(data) / 1e6:.1f} MB {how}")
             except Exception as e:
                 errors[path] = f"{type(e).__name__}: {e}"
                 sources.append(f"  {key:22s} {remote.filename}: {errors[path]}")

@@ -161,17 +161,25 @@ def member_bytes(http, info):
     return data
 
 
-def match_members(zf, wanted, destination_dir=None):
-    """{index path: ZipInfo} for zip members that are audio files listed in the index.
+def match_members(zf, wanted, destination_dir=None, unpack_directories=None):
+    """{index path: ZipInfo} for zip members whose path is listed in the index.
 
     destination_dir is the folder mirdata unpacks this zip into; index paths
-    include it, zip member names don't.
+    include it, zip member names don't. unpack_directories are folders inside
+    the zip (often a wrapper like "Repo-master/") whose contents mirdata moves
+    up into destination_dir after unpacking; they are stripped from member
+    names the same way.
     """
+    unpack = [d.strip("/") + "/" for d in unpack_directories or []]
     found = {}
     for info in zf.infolist():
         name = info.filename
         if info.is_dir() or "__MACOSX/" in name or os.path.basename(name).startswith("._"):
             continue  # macOS resource forks also end in .wav; they are not audio
+        for folder in unpack:
+            if name.startswith(folder):
+                name = name[len(folder) :]
+                break
         if destination_dir:
             name = f"{destination_dir}/{name}"
         parts = name.split("/")

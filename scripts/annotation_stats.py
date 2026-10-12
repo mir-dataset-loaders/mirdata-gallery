@@ -1,13 +1,14 @@
-"""Distributions of the annotations of one mirdata dataset, from a local copy.
+"""Distributions of the annotations of one mirdata dataset, from its remotes or a local copy.
 
 The dataset's Track class tells which annotation types it exposes (the same
 detection generate_cards.py uses for the card's "annotations" list). Every
-track is loaded and each annotation property (beats, leadsheet_chords, ...)
-is handed to its own Stat object for the property's type (annotation_types.py),
-which reduces it
-to a few numbers or labels; at the end each Stat turns what it
-collected into histograms (see histograms.py) and label counts, as plain
-dicts ready for JSON or the card YAML. Only the ten official mirdata
+track is loaded, and each of its annotation properties (beats,
+leadsheet_chords, ...) is loaded on its own, so a broken annotation file
+costs only that annotation and is logged under annotation_errors. Each
+property is handed to its own Stat object for the property's type
+(annotation_types.py), which reduces it to a few numbers or labels; at the
+end each Stat turns what it collected into histograms (see histograms.py)
+and label counts, as plain dicts ready for JSON or the card YAML. Only the ten official mirdata
 annotation types are covered, and only the ones the dataset has show up;
 nothing is written.
 
@@ -99,26 +100,37 @@ def dataset_stats(name, ds, limit=None, verbose=False):
     stats = {prop: STATS[ann_type]() for prop, ann_type in properties.items()}
     tracks_with = {}  # annotation type -> ids of tracks with at least one such annotation
     skipped = {}  # property -> why its values could not be used
-    errors = {}  # track_id -> error while loading
+    errors = {}  # track_id -> error while creating the track (none of its annotations read)
+    annotation_errors = {}  # property -> {track_id: error} while loading or reading it
+
+    def annotation_error(prop, track_id, e):
+        annotation_errors.setdefault(prop, {})[track_id] = f"{type(e).__name__}: {e}"
+        if verbose:
+            print(f"    {track_id} {prop}: {type(e).__name__}: {e}", file=sys.stderr)
 
     for track_id in track_ids:
         try:
             with quiet_logging():
                 track = ds.track(track_id)
-                values = {prop: getattr(track, prop) for prop in properties}
         except Exception as e:
             errors[track_id] = f"{type(e).__name__}: {e}"
             if verbose:
                 print(f"    {track_id}: {errors[track_id]}", file=sys.stderr)
             continue
         for prop, ann_type in properties.items():
-            value = values[prop]
+            # One property at a time: a broken annotation file costs only that annotation.
+            try:
+                with quiet_logging():
+                    value = getattr(track, prop)
+            except Exception as e:
+                annotation_error(prop, track_id, e)
+                continue
             if is_empty(value):
                 continue
             try:
                 used = stats[prop].add(value)
             except Exception as e:
-                skipped[prop] = f"{type(e).__name__}: {e}"
+                annotation_error(prop, track_id, e)
                 continue
             if used:
                 tracks_with.setdefault(ann_type, set()).add(track_id)
@@ -140,6 +152,10 @@ def dataset_stats(name, ds, limit=None, verbose=False):
         "annotations": annotations,
         "skipped": skipped,
         "errors": errors,
+        "annotation_errors": {
+            prop: {"n_tracks": len(by_track), "examples": dict(list(by_track.items())[:3])}
+            for prop, by_track in sorted(annotation_errors.items())
+        },
     }
 
 
@@ -155,6 +171,7 @@ def remote_stats(name, ds, data_home, limit=None, workers=4, verbose=False):
     _, missing, sources = annotation_fetch.fetch(
         ds.remotes or {}, wanted, data_home, workers=workers, verbose=verbose
     )
+    sources = annotation_fetch.index_notes(index) + sources
     stats = dataset_stats(name, ds, limit, verbose)
     return {**stats, "sources": sources, "missing_files": missing}
 
@@ -204,6 +221,10 @@ def print_stats(stats, limit, elapsed):
                 print(f"    {key:<26} {fmt(value)}")
     for prop, why in stats["skipped"].items():
         print(f"  skipped {prop}: {why}")
+    for prop, failed in stats["annotation_errors"].items():
+        print(f"  {prop} failed on {failed['n_tracks']} tracks, e.g.")
+        for track_id, error in failed["examples"].items():
+            print(f"    {track_id}: {error[:150]}")
     if stats["errors"]:
         print(f"  errors:                 {len(stats['errors'])}")
         for track_id, error in list(stats["errors"].items())[:5]:

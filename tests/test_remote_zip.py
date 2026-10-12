@@ -175,3 +175,23 @@ def test_member_bytes_rejects_bad_local_header():
     info = zipfile.ZipFile(io.BytesIO(archive)).getinfo("a.csv")
     with pytest.raises(ValueError, match="bad local file header"):
         remote_zip.member_bytes(BytesHTTP(b"\0" * len(archive)), info)
+
+
+def test_match_members_strips_unpack_directories():
+    archive = zip_bytes(
+        {
+            "Repo-master/beats/a.beats": b"1",
+            "Repo-master/other/b.beats": b"2",
+            "Data/Truth/c.bpm": b"3",
+        }
+    )
+    zf = zipfile.ZipFile(io.BytesIO(archive))
+    found = remote_zip.match_members(
+        zf,
+        {"ann/beats/a.beats", "ann/c.bpm"},
+        destination_dir="ann",
+        unpack_directories=["Repo-master", "Data/Truth/"],
+    )
+    assert set(found) == {"ann/beats/a.beats", "ann/c.bpm"}
+    # without the unpack directories the wrapper folder blocks the match
+    assert remote_zip.match_members(zf, {"ann/beats/a.beats"}, destination_dir="ann") == {}

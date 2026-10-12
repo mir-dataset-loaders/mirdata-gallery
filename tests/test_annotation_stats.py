@@ -421,7 +421,6 @@ def test_dataset_stats_end_to_end():
 
     assert stats["name"] == "fake"
     assert stats["n_tracks"] == 3
-    assert stats["n_tracks_loaded"] == 2
     assert list(stats["annotations"]) == ["beats", "chords"]
     assert stats["annotations"]["beats"]["type"] == "BeatData"
     assert stats["annotations"]["beats"]["n_tracks"] == 2
@@ -430,8 +429,11 @@ def test_dataset_stats_end_to_end():
     assert stats["annotations"]["chords"]["n_tracks"] == 1  # track b has no chords
     assert stats["tracks_with"] == {"BeatData": 2, "ChordData": 1}
     assert stats["skipped"] == {"tempo": "not a mirdata TempoData object (got str)"}
-    assert list(stats["errors"]) == ["broken"]
-    assert "annotation file missing" in stats["errors"]["broken"]
+    # the broken track loses only its beats; the track itself still loads
+    assert stats["errors"] == {}
+    assert stats["n_tracks_loaded"] == 3
+    assert stats["annotation_errors"]["beats"]["n_tracks"] == 1
+    assert "annotation file missing" in stats["annotation_errors"]["beats"]["examples"]["broken"]
 
 
 def test_two_properties_of_one_type_are_reported_separately():
@@ -470,6 +472,55 @@ def test_mirdata_warnings_are_silenced_while_loading(caplog):
     assert "after loading" in caplog.text
 
 
+def test_one_broken_annotation_keeps_the_others_and_is_logged(capsys):
+    class BadChordsTrack(FakeTrack):
+        @cached_property
+        def chords(self) -> Optional[A.ChordData]:
+            raise ValueError("keys ['f:minor'] are not valid")
+
+    ds = fake_dataset({"0": BadChordsTrack(beats=beats()), "1": BadChordsTrack(beats=beats())})
+    stats = annotation_stats.dataset_stats("fake", ds)
+    assert stats["annotations"]["beats"]["n_tracks"] == 2  # the beats survive
+    assert "chords" not in stats["annotations"]
+    assert stats["errors"] == {}
+    failed = stats["annotation_errors"]["chords"]
+    assert failed["n_tracks"] == 2
+    assert failed["examples"]["0"].startswith("ValueError: keys ['f:minor']")
+
+    annotation_stats.print_stats(stats, limit=None, elapsed=0.1)
+    out = capsys.readouterr().out
+    assert "chords failed on 2 tracks, e.g." in out
+    assert "0: ValueError: keys ['f:minor'] are not valid" in out
+
+
+def test_annotation_error_examples_are_capped():
+    class BadBeatsTrack(FakeTrack):
+        @property
+        def beats(self):
+            raise IOError("missing")
+
+    ds = fake_dataset({str(i): BadBeatsTrack() for i in range(10)})
+    failed = annotation_stats.dataset_stats("fake", ds)["annotation_errors"]["beats"]
+    assert failed["n_tracks"] == 10
+    assert len(failed["examples"]) == 3
+
+
+def test_track_that_cannot_be_created_is_a_track_error():
+    tracks = {"a": FakeTrack(beats=beats())}
+
+    def track(track_id):
+        if track_id == "gone":
+            raise KeyError("gone")
+        return tracks[track_id]
+
+    ds = fake_dataset(tracks)
+    ds.track_ids = ["a", "gone"]
+    ds.track = track
+    stats = annotation_stats.dataset_stats("fake", ds)
+    assert list(stats["errors"]) == ["gone"]
+    assert stats["n_tracks_loaded"] == 1
+
+
 def test_dataset_stats_limit_and_failing_stat(monkeypatch):
     class Boom(Beats):
         def read(self, value):
@@ -480,7 +531,9 @@ def test_dataset_stats_limit_and_failing_stat(monkeypatch):
     stats = annotation_stats.dataset_stats("fake", ds, limit=1)
     assert stats["n_tracks_loaded"] == 1
     assert stats["annotations"] == {}
-    assert stats["skipped"] == {"beats": "ValueError: cannot read this"}
+    assert stats["annotation_errors"] == {
+        "beats": {"n_tracks": 1, "examples": {"a": "ValueError: cannot read this"}}
+    }
 
 
 def test_dataset_stats_result_dumps_to_json():
@@ -602,7 +655,7 @@ def test_remote_stats_fetches_annotations_and_computes(tmp_path, monkeypatch):
     assert not os.path.exists(os.path.join(data_home, "audio"))
 
 
-def test_remote_stats_reports_missing_files_and_failing_tracks(tmp_path, monkeypatch):
+def test_remote_stats_reports_missing_files_and_failing_annotations(tmp_path, monkeypatch):
     archive = {k: v for k, v in ARCHIVE.items() if k != "ann/b.txt"}
     session = FakeRangeSession({FAKE_URL: zip_bytes(archive)})
     monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
@@ -612,7 +665,7 @@ def test_remote_stats_reports_missing_files_and_failing_tracks(tmp_path, monkeyp
 
     assert stats["missing_files"] == {"ann/b.txt": "not in any readable remote"}
     assert stats["annotations"]["beats"]["n_tracks"] == 1
-    assert list(stats["errors"]) == ["b"]
+    assert list(stats["annotation_errors"]["beats"]["examples"]) == ["b"]
 
 
 def test_remote_stats_limit_fetches_only_those_tracks(tmp_path, monkeypatch):
@@ -652,3 +705,17 @@ def test_main_remote_is_the_default(tmp_path, monkeypatch, capsys):
 def test_local_stats_without_local_copy(tmp_path):
     with pytest.raises(FileNotFoundError, match="no local copy"):
         annotation_stats.local_stats("fake", str(tmp_path / "missing"))
+
+
+def test_remote_stats_logs_a_null_index_section(tmp_path, monkeypatch):
+    session = FakeRangeSession({FAKE_URL: zip_bytes(ARCHIVE)})
+    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    data_home = str(tmp_path / "fetch" / "fake")
+    ds = remote_dataset(tmp_path, data_home)
+    index = json.loads(open(ds.index_path).read())
+    index["metadata"] = None  # as in billboard's index
+    open(ds.index_path, "w").write(json.dumps(index))
+
+    stats = annotation_stats.remote_stats("fake", ds, data_home)
+    assert any('"metadata" is null' in line for line in stats["sources"])
+    assert stats["annotations"]["beats"]["n_tracks"] == 2

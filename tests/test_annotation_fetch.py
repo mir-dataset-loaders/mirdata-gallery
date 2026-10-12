@@ -221,3 +221,67 @@ def test_no_remotes(tmp_path):
     assert fetched == set()
     assert "no remotes" in sources[0]
     assert set(errors) == wanted()
+
+
+def test_null_index_sections_are_treated_as_empty_and_noted():
+    index = {"tracks": {"a": {"beats": ["b.csv", "x"]}}, "metadata": None, "multitracks": None}
+    assert annotation_fetch.annotation_paths(index) == {"b.csv"}
+    notes = annotation_fetch.index_notes(index)
+    assert len(notes) == 2
+    assert '"metadata" is null' in notes[1] and '"multitracks" is null' in notes[0]
+    assert annotation_fetch.index_notes(INDEX) == []
+
+
+def test_wrapper_folder_is_stripped_like_mirdata_does(tmp_path, use_session):
+    # ballroom: the zip wraps everything in "BallroomAnnotations-master/", which
+    # mirdata moves up into the destination folder after unpacking.
+    use_session(FakeRangeSession({URL: zip_bytes({"Repo-master/a.beats": b"1", "Repo-master/README": b""})}))
+    remote = fake_remote("master.zip", URL, destination_dir="B_1.0/annotations/beats")
+    remote.unpack_directories = ["Repo-master"]
+    fetched, errors, _ = annotation_fetch.fetch(
+        {"beats": remote}, {"B_1.0/annotations/beats/a.beats"}, str(tmp_path)
+    )
+    assert fetched == {"B_1.0/annotations/beats/a.beats"}
+    assert (tmp_path / "B_1.0/annotations/beats/a.beats").read_bytes() == b"1"
+
+
+def test_plain_file_without_range_support_is_downloaded_whole_and_logged(tmp_path, use_session):
+    url = "https://example.test/metadata.csv"
+    use_session(PlainSession({url: FILES["metadata.csv"]}))
+    fetched, errors, sources = annotation_fetch.fetch(
+        {"meta": fake_remote("metadata.csv", url)}, {"metadata.csv"}, str(tmp_path)
+    )
+    assert fetched == {"metadata.csv"}
+    assert (tmp_path / "metadata.csv").read_bytes() == FILES["metadata.csv"]
+    assert "no range support, downloaded whole" in sources[0]
+
+
+def test_plain_file_without_range_support_over_the_limit_is_logged(tmp_path, use_session):
+    url = "https://example.test/metadata.csv"
+    use_session(PlainSession({url: b"x" * 2000}))
+    fetched, errors, sources = annotation_fetch.fetch(
+        {"meta": fake_remote("metadata.csv", url)}, {"metadata.csv"}, str(tmp_path), max_file_mb=0.001
+    )
+    assert fetched == set()
+    assert "not downloaded whole" in errors["metadata.csv"]
+    assert "not downloaded whole" in sources[0]
+
+
+def test_multitrack_member_list_is_not_a_file():
+    # jtd: a multitrack lists its tracks under "tracks"; those are ids, not paths
+    index = {
+        "tracks": {"m_piano": {"onsets": ["ann/m/piano.csv", "x"]}, "n_bass": {}},
+        "multitracks": {
+            "m": {"tracks": ["m_piano", "m_bass"], "beats": ["ann/m/beats.csv", "x"]},
+            "n": {"tracks": ["n_bass"], "beats": ["ann/n/beats.csv", "x"]},
+        },
+    }
+    assert annotation_fetch.annotation_paths(index) == {
+        "ann/m/piano.csv",
+        "ann/m/beats.csv",
+        "ann/n/beats.csv",
+    }
+    assert annotation_fetch.annotation_paths(index, ["m_piano"]) == {
+        "ann/m/piano.csv",
+        "ann/m/beats.csv",
+    }
