@@ -6,12 +6,12 @@ import os
 import sys
 from collections import Counter
 from types import SimpleNamespace
-from typing import Optional
+from typing import Dict, Optional
 
 import numpy as np
 import pytest
 from mirdata import annotations as A
-from mirdata.annotations import Annotation
+from mirdata.annotations import Annotation, MultiAnnotator
 from mirdata.core import cached_property
 
 import annotation_fetch
@@ -122,17 +122,100 @@ def test_add_rejects_anything_but_its_annotation_class(stat_class):
     assert stat.n_tracks == 0
 
 
+# ---------------------------------------------------- several per property
+
+
+def test_unpack_shapes():
+    one, two = chords(), chords(("G:maj",), ((0.0, 1.0),))
+    assert annotation_types.unpack(one) == [(None, one)]
+    assert annotation_types.unpack({"E": one, "A": two}) == [("E", one), ("A", two)]
+    assert annotation_types.unpack([one, two]) == [(None, one), (None, two)]
+    multi = MultiAnnotator(["ann1", "ann2"], [one, two], A.ChordData)
+    assert annotation_types.unpack(multi) == [("ann1", one), ("ann2", two)]
+    no_ids = MultiAnnotator(None, [one], A.ChordData)
+    assert annotation_types.unpack(no_ids) == [(None, one)]
+
+
+@pytest.mark.parametrize(
+    ("value", "empty"),
+    [
+        (None, True),
+        ("", True),
+        ("  ", True),
+        ({}, True),
+        ([], True),
+        ({"E": None}, True),
+        ("135.0", False),
+        ({"E": "x"}, False),
+    ],
+)
+def test_is_empty(value, empty):
+    assert annotation_types.is_empty(value) is empty
+
+
+def test_dict_of_annotations_is_read_whole_and_counts_the_track_once():
+    stat = Notes()
+    assert stat.add({"E": notes(), "A": notes(((0.0, 1.0),), (45.0,))}) is True
+    assert stat.n_tracks == 1
+    assert stat.n_annotations == 2
+    assert stat.notes_per_annotation == [2, 1]  # one value per annotation
+    assert stat.summary() == {"n_tracks": 1, "n_annotations": 2, "parts": {"E": 1, "A": 1}}
+
+
+def test_multi_annotator_is_read_per_annotator():
+    stat = STATS["SectionData"]()
+    sections = A.SectionData(np.array([[0.0, 10.0]]), "s", ["A"], "open")
+    other = A.SectionData(np.array([[0.0, 5.0], [5.0, 9.0]]), "s", ["A", "B"], "open")
+    assert stat.add(MultiAnnotator(["4", "6"], [sections, other], A.SectionData)) is True
+    assert stat.summary() == {"n_tracks": 1, "n_annotations": 2, "parts": {"4": 1, "6": 1}}
+    assert stat.result()["labels"] == {"A": 2, "B": 1}
+
+
+def test_list_of_annotations_has_no_parts():
+    stat = Beats()
+    assert stat.add([beats(), beats()]) is True
+    assert stat.summary() == {"n_tracks": 1, "n_annotations": 2}
+
+
+def test_container_reads_only_its_own_type():
+    stat = Chords()
+    assert stat.add({"x": chords(), "y": beats(), "z": "text"}) is True
+    assert stat.summary() == {"n_tracks": 1, "n_annotations": 1, "parts": {"x": 1}}
+    assert Chords().add({"y": beats()}) is False
+
+
+def test_plain_annotation_has_as_many_annotations_as_tracks():
+    stat = Beats()
+    stat.add(beats())
+    stat.add(beats())
+    assert stat.summary() == {"n_tracks": 2, "n_annotations": 2}
+
+
+def test_dataset_stats_entry_for_a_dict_property():
+    class StringsTrack(FakeTrack):
+        @property
+        def notes(self) -> Dict[str, A.NoteData]:
+            return {"E": notes(), "A": notes()}
+
+    ds = fake_dataset({"a": StringsTrack(), "b": StringsTrack()})
+    ds._track_class = StringsTrack
+    entry = annotation_stats.dataset_stats("fake", ds)["annotations"]["notes"]
+    assert entry["type"] == "NoteData"
+    assert (entry["n_tracks"], entry["n_annotations"]) == (2, 4)
+    assert entry["parts"] == {"E": 2, "A": 2}
+
+
 # ------------------------------------------------------------------- stats
 
 
-def test_beats_per_track_tempo_and_meter():
+def test_beats_per_annotation_tempo_and_meter():
     stat = Beats()
     assert stat.add(beats()) is True  # 4 beats at 120 bpm, 4/4
     assert stat.add(beats((0.0, 500.0, 1000.0), (1, 2, 3), unit="ms")) is True  # 3/4, in ms
     assert stat.n_tracks == 2
     assert stat.bpm == [120.0, 120.0]
     assert stat.result() == {
-        "beats_per_track": histogram([4, 3], "beats"),
+        "beats_per_annotation": histogram([4, 3], "beats"),
         "beats_per_bar": {3: 1, 4: 1},
         "tempo": histogram([120.0, 120.0], "bpm"),
     }
@@ -150,7 +233,7 @@ def test_beats_in_ticks_give_no_tempo():
     stat = Beats()
     stat.add(beats((0.0, 480.0, 960.0), (1, 2, 3), unit="ticks"))
     assert stat.bpm == []
-    assert stat.result()["beats_per_track"] == histogram([3], "beats")
+    assert stat.result()["beats_per_annotation"] == histogram([3], "beats")
     assert stat.result()["tempo"] is None
 
 
@@ -160,7 +243,7 @@ def test_chords_labels_qualities_and_lengths():
     stat.add(A.ChordData(np.array([[0.0, 2.0]]), "s", ["C"], "open"))  # bare root is major
     assert stat.n_tracks == 2
     assert stat.result() == {
-        "chords_per_track": histogram([3, 1], "chords"),
+        "chords_per_annotation": histogram([3, 1], "chords"),
         "chord_seconds": histogram([1.0, 2.0, 0.5, 2.0], "s", log=True),
         "n_unique_labels": 4,
         "labels": {"C:maj": 1, "A:min7": 1, "N": 1, "C": 1},
@@ -193,7 +276,7 @@ def test_f0_voicing_hop_and_range():
     assert stat.result() == {
         "hop_seconds": {0.01: 2},
         "voiced_fraction": histogram([0.5, 0.0], "fraction"),
-        "f0_median_per_track": histogram([330.0], "hz"),
+        "f0_median_per_annotation": histogram([330.0], "hz"),
         "f0_min": 220.0,
         "f0_max": 440.0,
     }
@@ -213,7 +296,7 @@ def test_f0_with_nothing_voiced():
     stat = F0()
     stat.add(f0((0.0, 0.0), (0.0, 0.0)))
     result = stat.result()
-    assert result["f0_median_per_track"] is None
+    assert result["f0_median_per_annotation"] is None
     assert result["f0_min"] is None
 
 
@@ -230,7 +313,7 @@ def test_notes_counts_lengths_and_pitch():
     stat = Notes()
     stat.add(notes())
     assert stat.result() == {
-        "notes_per_track": histogram([2], "notes"),
+        "notes_per_annotation": histogram([2], "notes"),
         "note_seconds": histogram([0.5, 1.5], "s", log=True),
         "pitch": histogram([60.0, 72.0], "midi"),
         "pitch_min": 60.0,
@@ -242,7 +325,7 @@ def test_notes_in_ticks_have_no_lengths():
     stat = Notes()
     stat.add(notes(((0.0, 480.0),), (60.0,), unit="ticks"))
     assert stat.result()["note_seconds"] is None
-    assert stat.result()["notes_per_track"] == histogram([1], "notes")
+    assert stat.result()["notes_per_annotation"] == histogram([1], "notes")
 
 
 def test_sections_with_and_without_labels():
@@ -250,7 +333,7 @@ def test_sections_with_and_without_labels():
     stat.add(A.SectionData(np.array([[0.0, 10.0], [10.0, 25.0]]), "s", ["intro", "verse"], "open"))
     stat.add(A.SectionData(np.array([[0.0, 5.0]]), "s"))
     assert stat.result() == {
-        "sections_per_track": histogram([2, 1], "sections"),
+        "sections_per_annotation": histogram([2, 1], "sections"),
         "section_seconds": histogram([10.0, 15.0, 5.0], "s", log=True),
         "n_unique_labels": 2,
         "labels": {"intro": 1, "verse": 1},
@@ -270,7 +353,7 @@ def test_keys_and_modes():
 def test_lyrics_lines():
     stat = STATS["LyricData"]()
     stat.add(A.LyricData(np.array([[0.0, 1.0], [1.0, 2.0]]), "s", ["hello", "world"], "words"))
-    assert stat.result() == {"lines_per_track": histogram([2], "lines")}
+    assert stat.result() == {"lines_per_annotation": histogram([2], "lines")}
 
 
 def test_events_labels():
@@ -278,7 +361,7 @@ def test_events_labels():
     stat.add(A.EventData(np.array([[0.0, 1.0], [2.0, 2.5]]), "s", ["dog", "siren"], "open"))
     stat.add(A.EventData(np.array([[0.0, 1.0]]), "s", ["dog"], "open"))
     assert stat.result() == {
-        "events_per_track": histogram([2, 1], "events"),
+        "events_per_annotation": histogram([2, 1], "events"),
         "n_unique_labels": 2,
         "labels": {"dog": 2, "siren": 1},
     }

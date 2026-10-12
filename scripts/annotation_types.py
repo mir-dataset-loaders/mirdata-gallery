@@ -7,14 +7,19 @@ name (BeatData, ChordData, ...) to its Stat class; annotation_stats.py makes
 one Stat per annotation property of a dataset and feeds it the tracks.
 
 Only instances of the Stat's own mirdata class are read: add() returns False
-for anything else (a tempo string from the metadata, a MIDI object).
+for anything else (a tempo string from the metadata, a MIDI object). A track
+property may also hold several annotations at once: a dict of them
+(guitarset's notes, one NoteData per string), a mirdata MultiAnnotator (salami's
+sections, one SectionData per annotator) or a list. Every annotation inside
+is read into the same Stat; the track is counted once, n_annotations counts
+the annotations and parts the dict keys or annotator ids they came from.
 """
 
 from collections import Counter
 
 import numpy as np
 from mirdata import annotations
-from mirdata.annotations import Annotation
+from mirdata.annotations import Annotation, MultiAnnotator
 
 from histograms import histogram
 
@@ -70,6 +75,34 @@ def chord_quality(label):
 # dataset-level distributions.
 
 
+def unpack(value):
+    """[(key, annotation)] for one track property's value.
+
+    A dict gives its items, a MultiAnnotator its (annotator, annotation)
+    pairs, a list or tuple its items with key None; anything else is a
+    single annotation with key None.
+    """
+    if isinstance(value, dict):
+        return [(str(k), v) for k, v in value.items()]
+    if isinstance(value, MultiAnnotator):
+        annotators = value.annotators or [None] * len(value.annotations or [])
+        return [
+            (None if a is None else str(a), v) for a, v in zip(annotators, value.annotations or [])
+        ]
+    if isinstance(value, (list, tuple)):
+        return [(None, v) for v in value]
+    return [(None, value)]
+
+
+def is_empty(value):
+    """True for a property value that holds no annotation: None, a blank string, an empty container."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return True
+    if isinstance(value, (dict, list, tuple, MultiAnnotator)):
+        return all(v is None for _, v in unpack(value))
+    return False
+
+
 class Stat:
     """Accumulates one annotation type over the tracks of a dataset."""
 
@@ -77,14 +110,28 @@ class Stat:
 
     def __init__(self):
         self.n_tracks = 0  # tracks whose annotation was read
+        self.n_annotations = 0  # annotations read: more than n_tracks for dicts, multiple annotators
+        self.parts = Counter()  # dict keys / annotator ids the annotations came from
 
     def add(self, value):
-        """Read one track's annotation; False when it is not a mirdata annotation object."""
-        if not isinstance(value, self.annotation):
+        """Read one track's annotation(s); False when there is no mirdata annotation of this type."""
+        found = [(k, v) for k, v in unpack(value) if isinstance(v, self.annotation)]
+        if not found:
             return False
-        self.read(value)
+        for key, annotation in found:
+            self.read(annotation)
+            if key is not None:
+                self.parts[key] += 1
+        self.n_annotations += len(found)
         self.n_tracks += 1
         return True
+
+    def summary(self):
+        """The counts that head every entry: tracks, annotations, and parts when there are any."""
+        head = {"n_tracks": self.n_tracks, "n_annotations": self.n_annotations}
+        if self.parts:
+            head["parts"] = top_counts(self.parts)
+        return head
 
     def read(self, value):
         raise NotImplementedError
@@ -110,18 +157,18 @@ class Tempo(Stat):
 
 
 class Beats(Stat):
-    """Beats per track, tempo from the beat intervals, beats per bar (meter)."""
+    """Beats per annotation, tempo from the beat intervals, beats per bar (meter)."""
 
     annotation = annotations.BeatData
 
     def __init__(self):
         super().__init__()
-        self.beats_per_track = []
-        self.bpm = []  # one value per track, reported as the dataset's tempo
+        self.beats_per_annotation = []
+        self.bpm = []  # one value per annotation, reported as the dataset's tempo
         self.beats_per_bar = Counter()  # tracks per meter
 
     def read(self, value):
-        self.beats_per_track.append(len(value.times))
+        self.beats_per_annotation.append(len(value.times))
         times = to_seconds(value.times, value.time_unit)
         if times is not None and len(times) > 1:
             self.bpm.append(60.0 / float(np.median(np.diff(times))))
@@ -133,27 +180,27 @@ class Beats(Stat):
 
     def result(self):
         return {
-            "beats_per_track": histogram(self.beats_per_track, "beats"),
+            "beats_per_annotation": histogram(self.beats_per_annotation, "beats"),
             "beats_per_bar": dict(sorted(self.beats_per_bar.items())),
             "tempo": histogram(self.bpm, "bpm"),  # tempo derived from the beats
         }
 
 
 class Chords(Stat):
-    """Chords per track, chord lengths, chord labels and their qualities."""
+    """Chords per annotation, chord lengths, chord labels and their qualities."""
 
     annotation = annotations.ChordData
 
     def __init__(self):
         super().__init__()
-        self.chords_per_track = []
+        self.chords_per_annotation = []
         self.chord_seconds = []
         self.labels = Counter()
         self.qualities = Counter()
 
     def read(self, value):
         labels = [str(label) for label in value.labels]
-        self.chords_per_track.append(len(labels))
+        self.chords_per_annotation.append(len(labels))
         self.labels.update(labels)
         self.qualities.update(chord_quality(label) for label in labels)
         lengths = interval_lengths(value)
@@ -162,7 +209,7 @@ class Chords(Stat):
 
     def result(self):
         return {
-            "chords_per_track": histogram(self.chords_per_track, "chords"),
+            "chords_per_annotation": histogram(self.chords_per_annotation, "chords"),
             "chord_seconds": histogram(self.chord_seconds, "s", log=True),
             "n_unique_labels": len(self.labels),
             "labels": top_counts(self.labels),
@@ -179,7 +226,7 @@ class F0(Stat):
         super().__init__()
         self.hops = Counter()  # tracks per hop size
         self.voiced_fraction = []
-        self.f0_median = []  # one value per track, over its voiced frames
+        self.f0_median = []  # one value per annotation, over its voiced frames
         self.f0_min = []
         self.f0_max = []
         self.units = Counter()
@@ -206,7 +253,7 @@ class F0(Stat):
         return {
             "hop_seconds": dict(self.hops.most_common()),
             "voiced_fraction": histogram(self.voiced_fraction, "fraction"),
-            "f0_median_per_track": histogram(self.f0_median, unit),
+            "f0_median_per_annotation": histogram(self.f0_median, unit),
             "f0_min": round(min(self.f0_min), 1) if self.f0_min else None,
             "f0_max": round(max(self.f0_max), 1) if self.f0_max else None,
         }
@@ -235,20 +282,20 @@ class MultiF0(Stat):
 
 
 class Notes(Stat):
-    """Notes per track, note lengths and pitch range of NoteData annotations."""
+    """Notes per annotation, note lengths and pitch range of NoteData annotations."""
 
     annotation = annotations.NoteData
 
     def __init__(self):
         super().__init__()
-        self.notes_per_track = []
+        self.notes_per_annotation = []
         self.note_seconds = []
         self.pitches = []
         self.units = Counter()
 
     def read(self, value):
         pitches = np.asarray(value.pitches, dtype=float)
-        self.notes_per_track.append(len(pitches))
+        self.notes_per_annotation.append(len(pitches))
         self.pitches.extend(pitches.tolist())
         lengths = interval_lengths(value)
         if lengths is not None:
@@ -258,7 +305,7 @@ class Notes(Stat):
     def result(self):
         unit = max(self.units, key=self.units.get) if self.units else None
         return {
-            "notes_per_track": histogram(self.notes_per_track, "notes"),
+            "notes_per_annotation": histogram(self.notes_per_annotation, "notes"),
             "note_seconds": histogram(self.note_seconds, "s", log=True),
             "pitch": histogram(self.pitches, unit),
             "pitch_min": round(min(self.pitches), 1) if self.pitches else None,
@@ -267,18 +314,18 @@ class Notes(Stat):
 
 
 class Sections(Stat):
-    """Sections per track, section lengths and section labels."""
+    """Sections per annotation, section lengths and section labels."""
 
     annotation = annotations.SectionData
 
     def __init__(self):
         super().__init__()
-        self.sections_per_track = []
+        self.sections_per_annotation = []
         self.section_seconds = []
         self.labels = Counter()
 
     def read(self, value):
-        self.sections_per_track.append(len(value.intervals))
+        self.sections_per_annotation.append(len(value.intervals))
         if value.labels is not None:
             self.labels.update(str(label) for label in value.labels)
         lengths = interval_lengths(value)
@@ -287,7 +334,7 @@ class Sections(Stat):
 
     def result(self):
         return {
-            "sections_per_track": histogram(self.sections_per_track, "sections"),
+            "sections_per_annotation": histogram(self.sections_per_annotation, "sections"),
             "section_seconds": histogram(self.section_seconds, "s", log=True),
             "n_unique_labels": len(self.labels),
             "labels": top_counts(self.labels),
@@ -314,39 +361,39 @@ class Keys(Stat):
 
 
 class Lyrics(Stat):
-    """Lyric lines per track."""
+    """Lyric lines per annotation."""
 
     annotation = annotations.LyricData
 
     def __init__(self):
         super().__init__()
-        self.lines_per_track = []
+        self.lines_per_annotation = []
 
     def read(self, value):
-        self.lines_per_track.append(len(value.lyrics))
+        self.lines_per_annotation.append(len(value.lyrics))
 
     def result(self):
-        return {"lines_per_track": histogram(self.lines_per_track, "lines")}
+        return {"lines_per_annotation": histogram(self.lines_per_annotation, "lines")}
 
 
 class Events(Stat):
-    """Events per track and event labels."""
+    """Events per annotation and event labels."""
 
     annotation = annotations.EventData
 
     def __init__(self):
         super().__init__()
-        self.events_per_track = []
+        self.events_per_annotation = []
         self.labels = Counter()
 
     def read(self, value):
         events = [str(e) for e in value.events]
-        self.events_per_track.append(len(events))
+        self.events_per_annotation.append(len(events))
         self.labels.update(events)
 
     def result(self):
         return {
-            "events_per_track": histogram(self.events_per_track, "events"),
+            "events_per_annotation": histogram(self.events_per_annotation, "events"),
             "n_unique_labels": len(self.labels),
             "labels": top_counts(self.labels),
         }

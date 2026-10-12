@@ -49,7 +49,7 @@ import time
 import mirdata
 
 import annotation_fetch
-from annotation_types import ANNOTATION_TYPES, STATS
+from annotation_types import ANNOTATION_TYPES, STATS, is_empty
 from audio_stats import load_index
 from card_fields import _annotation_class_name
 from histograms import format_histogram
@@ -80,10 +80,6 @@ def annotation_properties(ds):
 
 
 # ---------------------------------------------------------------- the stats
-
-
-def is_empty(value):
-    return value is None or (isinstance(value, str) and not value.strip())
 
 
 class quiet_logging:
@@ -132,7 +128,7 @@ def dataset_stats(name, ds, limit=None, verbose=False):
             print(f"    {track_id}: ok", file=sys.stderr)
 
     annotations = {
-        prop: {"type": properties[prop], "n_tracks": stat.n_tracks, **stat.result()}
+        prop: {"type": properties[prop], **stat.summary(), **stat.result()}
         for prop, stat in sorted(stats.items())
         if stat.n_tracks
     }
@@ -199,10 +195,13 @@ def print_stats(stats, limit, elapsed):
     if stats["tracks_with"]:
         print(f"  tracks with:            {fmt(stats['tracks_with'])}")
     for prop, result in stats["annotations"].items():
-        print(f"  {prop} ({result['type']}; {result['n_tracks']} tracks)")
+        counts = f"{result['n_tracks']} tracks"
+        if result["n_annotations"] != result["n_tracks"]:
+            counts += f", {result['n_annotations']} annotations"
+        print(f"  {prop} ({result['type']}; {counts})")
         for key, value in result.items():
-            if key not in ("type", "n_tracks"):
-                print(f"    {key:<22} {fmt(value)}")
+            if key not in ("type", "n_tracks", "n_annotations"):
+                print(f"    {key:<26} {fmt(value)}")
     for prop, why in stats["skipped"].items():
         print(f"  skipped {prop}: {why}")
     if stats["errors"]:
