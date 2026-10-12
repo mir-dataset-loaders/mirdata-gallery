@@ -1,14 +1,15 @@
-"""Tests for scripts/audio_stats.py: index handling, counting, local/remote modes, CLI."""
+"""Tests for scripts/stats/audio: index handling, counting, local/remote modes."""
 
 import json
-import sys
 import zipfile
 from types import SimpleNamespace
 
 import pytest
 
-import audio_stats
-from audio_fakes import FAKE_URL, FakeRangeSession, fake_remote, make_wav, zip_bytes
+from stats import common
+from stats.audio import dataset_stats, summary
+from stats.audio import sources as audio_sources
+from audio_fakes import FAKE_URL, FakeRangeSession, FakeResponse, fake_remote, make_wav, zip_bytes
 
 EXPECTED_SUMMARY = {
     "n_tracks": 5,
@@ -39,7 +40,7 @@ def _assert_fake_summary(stats):
 
 
 def test_track_audio_paths_collects_all_audio_fields(fake_index):
-    assert audio_stats.track_audio_paths(fake_index) == {
+    assert summary.track_audio_paths(fake_index) == {
         "track_wav": ["audio/a.wav"],
         "track_fallback": [
             "audio/missing.wav",
@@ -63,7 +64,7 @@ def test_track_audio_paths_ignores_malformed_values():
             "case": {"AuDiO": ["audio/a.wav", "checksum"]},
         }
     }
-    assert audio_stats.track_audio_paths(index) == {"case": ["audio/a.wav"]}
+    assert summary.track_audio_paths(index) == {"case": ["audio/a.wav"]}
 
 
 def test_load_index_uses_existing_file(tmp_path, monkeypatch, fake_index):
@@ -75,11 +76,11 @@ def test_load_index_uses_existing_file(tmp_path, monkeypatch, fake_index):
         raise AssertionError("existing index should not be downloaded")
 
     monkeypatch.setattr(
-        audio_stats.download_utils,
+        common.download_utils,
         "download_from_remote",
         unexpected_download,
     )
-    assert audio_stats.load_index(dataset) == fake_index
+    assert common.load_index(dataset) == fake_index
 
 
 def test_load_index_downloads_plain_index(tmp_path, monkeypatch, fake_index):
@@ -97,11 +98,11 @@ def test_load_index_downloads_plain_index(tmp_path, monkeypatch, fake_index):
         return str(index_path)
 
     monkeypatch.setattr(
-        audio_stats.download_utils,
+        common.download_utils,
         "download_from_remote",
         download,
     )
-    assert audio_stats.load_index(dataset) == fake_index
+    assert common.load_index(dataset) == fake_index
 
 
 def test_load_index_unzips_zipped_index(tmp_path, monkeypatch, fake_index):
@@ -120,7 +121,7 @@ def test_load_index_unzips_zipped_index(tmp_path, monkeypatch, fake_index):
     unzip_calls = []
 
     monkeypatch.setattr(
-        audio_stats.download_utils,
+        common.download_utils,
         "download_from_remote",
         lambda *args: str(archive_path),
     )
@@ -130,9 +131,9 @@ def test_load_index_unzips_zipped_index(tmp_path, monkeypatch, fake_index):
         with zipfile.ZipFile(path) as archive:
             archive.extractall(tmp_path)
 
-    monkeypatch.setattr(audio_stats.download_utils, "unzip", unzip)
+    monkeypatch.setattr(common.download_utils, "unzip", unzip)
 
-    assert audio_stats.load_index(dataset) == fake_index
+    assert common.load_index(dataset) == fake_index
     assert unzip_calls == [(str(archive_path), False)]
 
 
@@ -155,7 +156,7 @@ def test_summarize_uses_first_readable_file_per_track():
             "no_audio": {"beats": ["beats.csv", "x"]},
         }
     }
-    stats = audio_stats.summarize(
+    stats = summary.summarize(
         index,
         {
             "backup.wav": 2.0,
@@ -188,7 +189,7 @@ def test_summarize_counts_shared_file_once_but_each_track():
             "b": {"audio": ["shared.wav", "x"]},
         }
     }
-    stats = audio_stats.summarize(
+    stats = summary.summarize(
         index,
         {"shared.wav": 1.2},
         {"shared.wav": 44100},
@@ -203,7 +204,7 @@ def test_summarize_counts_shared_file_once_but_each_track():
 
 def test_summarize_with_nothing_read():
     index = {"tracks": {"a": {"audio": ["missing.wav", "x"]}}}
-    stats = audio_stats.summarize(
+    stats = summary.summarize(
         index,
         {},
         {},
@@ -216,7 +217,7 @@ def test_summarize_with_nothing_read():
 
 
 def test_fake_dataset_local_end_to_end(fake_dataset):
-    stats = audio_stats.dataset_stats(
+    stats = dataset_stats(
         "fake_audio_stats",
         fake_dataset.index,
         {},
@@ -228,10 +229,10 @@ def test_fake_dataset_local_end_to_end(fake_dataset):
 def test_local_durations_respects_sorted_limit(fake_dataset):
     wanted = {
         path
-        for paths in audio_stats.track_audio_paths(fake_dataset.index).values()
+        for paths in summary.track_audio_paths(fake_dataset.index).values()
         for path in paths
     }
-    durations, rates, errors, sources = audio_stats.local_durations(
+    durations, rates, errors, sources, problems = audio_sources.local_durations(
         str(fake_dataset.data_home),
         wanted,
         limit=2,
@@ -246,21 +247,13 @@ def test_local_durations_respects_sorted_limit(fake_dataset):
     assert len(sources) == 1
 
 
-def test_local_durations_reports_missing_directory(tmp_path):
-    durations, rates, errors, sources = audio_stats.local_durations(
-        str(tmp_path / "not-there"),
-        {"audio/a.wav"},
-        limit=None,
-        verbose=False,
-    )
-    assert durations == {}
-    assert rates == {}
-    assert errors == {}
-    assert "no local copy" in sources[0]
+def test_local_durations_without_local_copy_is_an_error(tmp_path):
+    with pytest.raises(FileNotFoundError, match="no local copy"):
+        audio_sources.local_durations(str(tmp_path / "not-there"), {"audio/a.wav"}, limit=None, verbose=False)
 
 
 def test_dataset_stats_without_remotes(fake_index):
-    stats = audio_stats.dataset_stats(
+    stats = dataset_stats(
         "fake_audio_stats",
         fake_index,
         {},
@@ -278,9 +271,9 @@ def test_dataset_stats_without_remotes(fake_index):
 
 def test_fake_dataset_remote_zip_end_to_end(fake_dataset, monkeypatch):
     session = FakeRangeSession({FAKE_URL: fake_dataset.archive})
-    monkeypatch.setattr(audio_stats.requests, "Session", lambda: session)
+    monkeypatch.setattr(audio_sources.requests, "Session", lambda: session)
 
-    stats = audio_stats.dataset_stats(
+    stats = dataset_stats(
         "fake_audio_stats",
         fake_dataset.index,
         {"audio": fake_remote()},
@@ -303,9 +296,9 @@ def test_remote_limit_counts_attempted_files_not_successes(monkeypatch):
             good_url: zip_bytes({"audio/01-good.wav": make_wav()}),
         }
     )
-    monkeypatch.setattr(audio_stats.requests, "Session", lambda: session)
+    monkeypatch.setattr(audio_sources.requests, "Session", lambda: session)
 
-    durations, rates, errors, sources = audio_stats.remote_durations(
+    durations, rates, errors, sources, problems = audio_sources.remote_durations(
         {
             "bad": fake_remote("bad.zip", bad_url),
             "good": fake_remote("good.zip", good_url),
@@ -324,96 +317,8 @@ def test_remote_limit_counts_attempted_files_not_successes(monkeypatch):
 
 
 # =============================================================================
-# CLI behavior
+# Helpers
 # =============================================================================
-
-
-def test_main_local_json(fake_dataset, monkeypatch, capsys):
-    dataset = SimpleNamespace(
-        index_path=str(fake_dataset.index_path),
-        remotes={},
-    )
-    monkeypatch.setattr(
-        audio_stats.mirdata,
-        "list_datasets",
-        lambda: ["fake_audio_stats"],
-    )
-    monkeypatch.setattr(
-        audio_stats.mirdata,
-        "initialize",
-        lambda name: dataset,
-    )
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "audio_stats.py",
-            "--dataset",
-            "fake_audio_stats",
-            "--local",
-            "--datasets-dir",
-            str(fake_dataset.data_home.parent),
-            "--json",
-        ],
-    )
-
-    audio_stats.main()
-    result = json.loads(capsys.readouterr().out)
-    assert result["name"] == "fake_audio_stats"
-    assert result["n_tracks"] == 5
-    assert result["n_tracks_counted"] == 3
-    assert result["total_seconds"] == 6.5
-
-
-@pytest.mark.parametrize("limit", ["0", "-1"])
-def test_main_rejects_nonpositive_limit(limit, monkeypatch):
-    """Desired behavior: zero and negative limits are invalid CLI input."""
-    monkeypatch.setattr(audio_stats.mirdata, "list_datasets", lambda: [])
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        ["audio_stats.py", "--limit", limit],
-    )
-    with pytest.raises(SystemExit) as exc:
-        audio_stats.main()
-    assert exc.value.code == 2
-
-
-def test_main_json_with_no_selected_datasets(monkeypatch, capsys):
-    """Desired behavior: an empty selection produces an empty JSON object."""
-    monkeypatch.setattr(
-        audio_stats.mirdata,
-        "list_datasets",
-        lambda: ["fake_audio_stats"],
-    )
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "audio_stats.py",
-            "--exclude",
-            "fake_audio_stats",
-            "--json",
-        ],
-    )
-
-    audio_stats.main()
-    assert json.loads(capsys.readouterr().out) == {}
-
-
-def test_main_rejects_unknown_dataset(monkeypatch):
-    monkeypatch.setattr(
-        audio_stats.mirdata,
-        "list_datasets",
-        lambda: ["fake_audio_stats"],
-    )
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        ["audio_stats.py", "--dataset", "unknown"],
-    )
-    with pytest.raises(SystemExit, match="Dataset 'unknown' not found"):
-        audio_stats.main()
 
 
 @pytest.mark.parametrize(
@@ -425,4 +330,84 @@ def test_main_rejects_unknown_dataset(monkeypatch):
     ],
 )
 def test_hms(seconds, expected):
-    assert audio_stats.hms(seconds) == expected
+    assert common.hms(seconds) == expected
+
+
+# =============================================================================
+# Remote problems and status
+# =============================================================================
+
+
+def read_remote(remotes, wanted, session, monkeypatch, budget=None, limit=None):
+    monkeypatch.setattr(audio_sources.requests, "Session", lambda: session)
+    return audio_sources.remote_durations(remotes, wanted, workers=1, limit=limit, verbose=False, budget=budget)
+
+
+def test_complete_remote_read_has_no_problems(monkeypatch):
+    session = FakeRangeSession({FAKE_URL: zip_bytes({"audio/a.wav": make_wav()})})
+    durations, rates, errors, sources, problems = read_remote(
+        {"all": fake_remote()}, {"audio/a.wav"}, session, monkeypatch
+    )
+    assert list(durations) == ["audio/a.wav"]
+    assert errors == {} and problems == []
+
+
+def test_no_remotes_is_a_problem():
+    *_, problems = audio_sources.remote_durations({}, {"audio/a.wav"}, 1, None, False)
+    assert problems == ["no remotes: the audio has to be downloaded manually"]
+
+
+def test_tar_remote_is_named_as_not_readable(monkeypatch):
+    session = FakeRangeSession({})
+    *_, problems = read_remote(
+        {"audio": fake_remote("audio.tar.gz", "https://example.test/audio.tar.gz")},
+        {"audio/a.wav", "audio/b.wav"},
+        session,
+        monkeypatch,
+    )
+    assert problems == [
+        "2 audio files not found in the readable remotes; "
+        "not readable: audio.tar.gz cannot be read remotely (not a zip)"
+    ]
+    assert session.calls == []
+
+
+def test_remote_without_access_is_named(monkeypatch):
+    class Forbidden(FakeRangeSession):
+        def request(self, method, url, timeout, **kwargs):
+            return FakeResponse(403, url=url)
+
+    *_, problems = read_remote({"all": fake_remote()}, {"audio/a.wav"}, Forbidden({}), monkeypatch)
+    assert "not readable: fake_audio.zip: HTTPError: HTTP 403" in problems[0]
+
+
+def test_budget_stops_the_remote_read(monkeypatch):
+    from stats.common import Budget
+
+    files = {f"audio/{i}.wav": make_wav() for i in range(4)}  # 16 KB each, stored uncompressed
+    session = FakeRangeSession({FAKE_URL: zip_bytes(files, compression=zipfile.ZIP_STORED)})
+    durations, rates, errors, sources, problems = read_remote(
+        {"all": fake_remote()}, set(files), session, monkeypatch, budget=Budget(max_mb=0.04)
+    )
+    assert problems and problems[0].startswith("remote limit: needs more than the 0.04 MB remote limit")
+    assert len(problems) == 1  # the limit explains the unread files; no second reason
+    assert len(durations) < 4
+    assert not any("RemoteLimit" in e for e in errors.values())  # not one error per file
+
+
+def test_unparsable_file_is_incomplete_not_needs_local(monkeypatch):
+    session = FakeRangeSession({FAKE_URL: zip_bytes({"audio/bad.wav": b"not audio"})})
+    stats = dataset_stats_remote({"audio": ["audio/bad.wav", "x"]}, session, monkeypatch)
+    assert stats["status"] == "incomplete"
+    assert stats["problems"] == []
+
+
+def test_status_needs_local_with_its_reason(monkeypatch):
+    stats = dataset_stats("fake", {"tracks": {"a": {"audio": ["audio/a.wav", "x"]}}}, {})
+    assert stats["status"] == "needs_local"
+    assert stats["problems"] == ["no remotes: the audio has to be downloaded manually"]
+
+
+def dataset_stats_remote(track, session, monkeypatch):
+    monkeypatch.setattr(audio_sources.requests, "Session", lambda: session)
+    return dataset_stats("fake", {"tracks": {"a": track}}, {"all": fake_remote()}, workers=1)

@@ -1,8 +1,8 @@
-"""Tests for scripts/histograms.py: bin width choice, edges, units."""
+"""Tests for scripts/stats/histograms.py: bin width choice, edges, units."""
 
 import pytest
 
-import histograms
+from stats import histograms
 
 
 @pytest.mark.parametrize(

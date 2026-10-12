@@ -1,8 +1,8 @@
-"""Tests for scripts/audio_headers.py: duration and sample rate from file headers."""
+"""Tests for scripts/stats/audio/headers.py: duration and sample rate from file headers."""
 
 import pytest
 
-import audio_headers
+from stats.audio import headers as audio_headers
 from audio_fakes import (
     make_flac,
     make_mp3_cbr,

@@ -1,12 +1,12 @@
-"""Tests for scripts/remote_zip.py: zip member matching and HTTP range reading."""
+"""Tests for scripts/stats/remote_zip.py: zip member matching and HTTP range reading."""
 
 import io
 import zipfile
 
 import pytest
 
-import audio_headers
-import remote_zip
+from stats import remote_zip
+from stats.audio import headers as audio_headers
 from audio_fakes import FAKE_URL, BytesHTTP, FakeRangeSession, FakeResponse, make_wav, zip_bytes
 
 
@@ -195,3 +195,16 @@ def test_match_members_strips_unpack_directories():
     assert set(found) == {"ann/beats/a.beats", "ann/c.bpm"}
     # without the unpack directories the wrapper folder blocks the match
     assert remote_zip.match_members(zf, {"ann/beats/a.beats"}, destination_dir="ann") == {}
+
+
+def test_http_file_checks_and_charges_the_budget():
+    from stats.common import Budget, RemoteLimit
+
+    budget = Budget(max_mb=0.000010)  # 10 bytes
+    session = FakeRangeSession({FAKE_URL: bytes(range(32))})
+    http = remote_zip.HTTPFile(FAKE_URL, session, budget)
+    assert http.read_at(0, 8) == bytes(range(8))
+    assert budget.bytes == 8
+    with pytest.raises(RemoteLimit):
+        http.read_at(8, 8)
+    assert len([call for call in session.calls if call[0] == "GET"]) == 1  # refused before asking
