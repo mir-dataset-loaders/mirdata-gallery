@@ -363,8 +363,8 @@ def remote_durations(remotes, wanted, workers, limit, verbose):
             sources.append(f"  {key:22s} {remote.filename}: no audio files from the index")
             continue
         items = list(members.items())
-        if limit:
-            items = items[: max(0, limit - len(durations))]
+        if limit:  # the limit counts files tried, read or failed, as in local mode
+            items = items[: max(0, limit - len(durations) - len(errors))]
 
         def read(item):
             path, info = item
