@@ -345,6 +345,7 @@ def remote_durations(remotes, wanted, workers, limit, verbose):
     session.mount("http://", adapter)
 
     durations, rates, errors, sources = {}, {}, {}, []
+    matched = set()  # every index path some remote contains, read or not
     for key, remote in remotes.items():
         if not remote.filename.lower().endswith(".zip"):
             sources.append(f"  {key:22s} {remote.filename}: not a zip, skipped")
@@ -357,6 +358,7 @@ def remote_durations(remotes, wanted, workers, limit, verbose):
             sources.append(f"  {key:22s} {remote.filename}: {e}")
             continue
         members = match_members(zf, wanted - durations.keys(), remote.destination_dir)
+        matched.update(members)
         if not members:
             sources.append(f"  {key:22s} {remote.filename}: no audio files from the index")
             continue
@@ -384,6 +386,10 @@ def remote_durations(remotes, wanted, workers, limit, verbose):
             f"{len(members)} matched, {sum(1 for _, _, e in results if not e)} read  "
             f"({http.requests} requests, {http.bytes / 1e6:.1f} MB, {time.time() - t0:.1f} s)"
         )
+    # Index files that no remote holds: report them like local mode reports a
+    # missing file, so the counts never drop silently.
+    for path in sorted(wanted - matched):
+        errors[path] = "not in any readable remote"
     return durations, rates, errors, sources
 
 
