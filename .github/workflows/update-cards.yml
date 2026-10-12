@@ -1,7 +1,9 @@
 name: Update cards
 
-# Finds mirdata datasets that have no card yet, generates their cards
-# (fields + LLM summary) and opens a pull request. Runs weekly and on demand.
+# Rebuilds every card from the latest mirdata (new datasets get a card,
+# changed loaders update theirs, summaries are redone only when the loader
+# docstring changed) and opens a pull request if anything differs.
+# Runs weekly and on demand.
 #
 # Needs one repository setting: Settings > Actions > General >
 # "Allow GitHub Actions to create and approve pull requests".
@@ -43,18 +45,21 @@ jobs:
           path: ~/.cache/huggingface
           key: qwen2.5-7b-instruct-q4_k_m
 
-      - name: Generate cards for datasets that have none
-        run: python scripts/generate_cards.py --missing
+      - name: Rebuild cards from the latest mirdata
+        run: python scripts/generate_cards.py
 
       # Does nothing when no card was added or changed.
       - name: Open a pull request
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.PR_TEST }}
-          add-paths: cards/*.yaml
-          branch: auto/new-cards
-          title: "Add cards for new mirdata datasets"
-          commit-message: "Add cards for new mirdata datasets"
+          add-paths: |
+            cards/*.yaml
+            cards/docstring_hashes.json
+          branch: auto/update-cards
+          title: "Update dataset cards from mirdata master"
+          commit-message: "Update dataset cards from mirdata master"
           body: |
-            mirdata master has datasets without a card. Generated with
-            `scripts/generate_cards.py --missing`; summaries by `scripts/llm.py`.
+            Cards rebuilt with `scripts/generate_cards.py` against the latest
+            mirdata master. New cards, changed fields and refreshed summaries
+            (only where the loader docstring changed) are included.
