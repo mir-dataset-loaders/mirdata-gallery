@@ -3,16 +3,15 @@ name: Update cards
 # Rebuilds every card from the latest mirdata (new datasets get a card,
 # changed loaders update theirs, summaries are redone only when the loader
 # docstring changed) and opens a pull request if anything differs.
-# Runs weekly and on demand.
+# Runs on demand for now (manual trigger only while the cards are being built).
 #
 # Needs one repository setting: Settings > Actions > General >
 # "Allow GitHub Actions to create and approve pull requests".
 
+# Manual only for now. When the cards are ready, restore the weekly run:
+#   schedule:
+#     - cron: "0 6 * * 1"   # every Monday, 06:00 UTC
 on:
-  push:
-    branches: [test_llm]  # temporary: run on every push to this branch for testing
-  schedule:
-    - cron: "0 6 * * 1"   # every Monday, 06:00 UTC
   workflow_dispatch:
 
 permissions:
