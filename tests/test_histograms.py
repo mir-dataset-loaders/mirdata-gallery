@@ -84,6 +84,29 @@ def test_histogram_edges_are_plain_numbers():
     assert all(str(e).count("0000") == 0 for e in hist["edges"])  # no float noise
 
 
+def test_histogram_log_edges_are_1_2_5_per_decade():
+    hist = histograms.histogram([0.001, 0.05, 2.0, 73.0], "s", log=True)
+    assert hist["edges"] == [
+        0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100
+    ]
+    assert sum(hist["counts"]) == 4
+    assert hist["counts"][0] == 1  # 0.001 sits on the first edge, which is inclusive
+    assert hist["counts"][-1] == 1  # 73 is in [50, 100)
+
+
+def test_histogram_log_drops_nonpositive_values():
+    hist = histograms.histogram([0.0, -1.0, 3.0], "s", log=True)
+    assert hist["edges"] == [2, 5]
+    assert hist["counts"] == [1]
+    assert histograms.histogram([0.0, -1.0], "s", log=True) is None
+
+
+def test_histogram_log_falls_back_to_decades_when_too_wide():
+    hist = histograms.histogram([1e-4, 1e4], "s", log=True)  # 8 decades: 24 fine bins
+    assert hist["edges"] == [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000, 100000]
+    assert len(hist["counts"]) <= histograms.MAX_BINS
+
+
 def test_duration_histogram_short_clips_in_seconds():
     hist = histograms.duration_histogram([29.9, 30.0, 30.1, 30.0, 29.8])
     assert hist["unit"] == "s"
