@@ -1,23 +1,9 @@
 name: fma_keys
 license: Creative Commons Attribution 4.0 International
-remotes:
-- metadata
-- tracks-000-019
-- tracks-020-039
-- tracks-040-049
-- tracks-050-059
-- tracks-060-069
-- tracks-070-079
-- tracks-080-089
-- tracks-090-099
-- tracks-100-109
-- tracks-110-124
 annotations:
 - KeyData
-download_info: null
-bibtex: |2
-
-      @inproceedings{
+bibtex: |-
+  @inproceedings{
           wong_fma_keys,
           title = {FMAK: A Dataset of Key and Mode Annotations for the Free Music Archive},
           author = {Wong, Stella and Hernandez, Gandalf},
@@ -25,53 +11,6 @@ bibtex: |2
           year = {2023}
       }
   }
-docstring: |2
-
-  FMA Keys Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      FMA Keys is an expert-labeled dataset for the evaluation of key detection containing
-      340 hours (5489 songs) of song-level key and mode annotations, spread across 17 genres.
-
-      This dataset has been annotated by one annotator with perfect pitch and twenty years of
-      music experience as a concert pianist. A sample of this dataset was cross-annotated
-      by two annotators with high inter-annotator agreement.
-
-      Dataset use
-
-      The annotations are available for conducting non-commercial research
-      related to audio analysis.
-
-      About the dataset
-
-      For each song, we provide annotations for:
-      - FMA track id
-      - Spotify URI (when available)
-      - Key and mode
-
-      The modes are provided both as strings and numbers:
-       "Major" <-> 1, "minor" <-> 0
-
-      Similarly, for the keys:
-      "C" <-> 0, "C#" <-> 1, etc.
-
-      We also provide easy access to the underlying audio data
-      from the FMA dataset.
-
-      We filtered the FMA dataset to a subset that exists in the Spotify API
-      through fuzzy matching the artists, titles.
-      Next, we compared song duration and discard results that are egregiously different.
-
-      About the audio
-
-      All the audio is collected in and distributed by the FMA dataset by Michael Defferrard,
-      Kirell Benzi, Pierre Vandergheynst, and Xavier Bresson.
-
-      The FMA metadata is made freely available for public use under a Creative Commons license.
-      We do not hold the copyright on the audio and distribute it under the license chosen by the artist.
-      The dataset is meant for research purposes.
 summary: FMA Keys includes 5489 songs across 17 genres, providing song-level key and
   mode annotations; the primary task is key detection. Annotations cover FMA track
   IDs, Spotify URIs, and key/mode in both string and numerical formats.

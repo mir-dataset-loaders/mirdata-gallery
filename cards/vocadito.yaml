@@ -1,34 +1,18 @@
 name: vocadito
 license: Creative Commons Attribution 4.0 International
-remotes:
-- zenodo
 annotations:
 - F0Data
 - LyricData
 - NoteData
-download_info: null
-bibtex: "\n@techreport{bittner2021vocadito,\n      title={vocadito: A dataset of solo\
-  \ vocals with $f_0$, note, and lyric annotations}, \n      author={Rachel M. Bittner\
-  \ and Katherine Pasalo and Juan José Bosch and Gabriel Meseguer-Brocal and David\
-  \ Rubinstein},\n      year={2021},\n      institution={Spotify},\n      number={2110.05580},\n\
-  \      note={https://arxiv.org/abs/2110.05580}\n}\n"
-docstring: |+
-  vocadito Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      vocadito is a dataset of 40 short excerpts of solo, monophonic singing. The excerpts are sung in 7 different languages by singers with varying of levels of training, and are recorded on a variety of devices.
-
-      Annotations are labeled by trained musicians. For each excerpt, we provide:
-
-      frame-level f0 annotations
-      2 versions of note annotations (from 2 different annotators)
-      lyrics
-      language
-
-      For more details, please visit: https://zenodo.org/record/5578807
-
+bibtex: |-
+  @techreport{bittner2021vocadito,
+        title={vocadito: A dataset of solo vocals with $f_0$, note, and lyric annotations},
+        author={Rachel M. Bittner and Katherine Pasalo and Juan José Bosch and Gabriel Meseguer-Brocal and David Rubinstein},
+        year={2021},
+        institution={Spotify},
+        number={2110.05580},
+        note={https://arxiv.org/abs/2110.05580}
+  }
 summary: vocadito includes 40 solo, monophonic singing excerpts in 7 languages; annotations
   provide frame-level f0, note annotations, lyrics, and language identification. Primary
   MIR task involves pitch and melody analysis.

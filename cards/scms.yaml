@@ -1,15 +1,11 @@
 name: scms
 license: Creative Commons Attribution Non-Commercial Share-Alike 4.0 (CC BY-NC-SA
   4.0).
-remotes:
-- scms
 annotations:
 - EventData
 - F0Data
 - KeyData
-download_info: null
-bibtex: |2
-
+bibtex: |-
   @article{Plaja-Roglans-2023,
     author = {Plaja-Roglans, Gen{'\i}s and Nuttall, Thomas and Pearson, Lara and Serra, Xavier and Miron, Marius},
     doi = {10.5334/tismir.137},
@@ -19,27 +15,6 @@ bibtex: |2
     title = {Repertoire-Specific Vocal Pitch Data Generation for Improved Melodic Analysis of Carnatic Music},
     year = {2023}
   }
-docstring: |+
-  Saraga-Carnatic-Melody-Synth loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      This dataset contains time aligned vocal melody and activations for Carnatic Music recordings, extracted
-      from the Saraga Carnatic dataset. The recordings have passed through a Carnatic-aware Analysis/Synthesis framework
-      to convert automatically extracted pitch tracks into ground-truth annotations. This dataset is not meant to be listened to,
-      but to be used as training and evaluation data for the vocal pitch extraction research of Indian Art Music.
-
-      The dataset contains a total of 2460 tracks, which generally have a length of 30 seconds, in some cases a bit less.
-      All the tracks have vocals at some point.
-
-      The files of this dataset are shared with the following license:
-      Creative Commons Attribution Non Commercial Share Alike 4.0 International
-
-      Dataset compiled by: Genís Plaja-Roglans, Thomas Nuttall, Lara Pearson, Xavier Serra, and Marius Miron.
-
-      For more information about Saraga Carnatic please refer to https://mtg.github.io/saraga/.
-
 summary: This dataset includes 2460 Carnatic Music tracks with time-aligned vocal
   melodies and synthesized pitch tracks, aimed for pitch extraction research. Annotations
   provide ground truth for vocal pitch extraction in Indian Art Music recordings.

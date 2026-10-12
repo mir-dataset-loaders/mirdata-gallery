@@ -1,0 +1,18 @@
+name: beatles
+license: Unfortunately we couldn't find the license information for the Beatles dataset.
+annotations:
+- BeatData
+- ChordData
+- KeyData
+- SectionData
+bibtex: |-
+  @inproceedings{mauch2009beatles,
+      title={OMRAS2 metadata project 2009},
+      author={Mauch, Matthias and Cannam, Chris and Davies, Matthew and Dixon, Simon and Harte,
+      Christopher and Kolozali, Sefki and Tidhar, Dan and Sandler, Mark},
+      booktitle={12th International Society for Music Information Retrieval Conference},
+      year={2009},
+      series = {ISMIR}
+  }
+summary: The Beatles Dataset includes 179 songs with beat, metric position, chord,
+  key, and segmentation annotations, supporting tasks in music segmentation and analysis.

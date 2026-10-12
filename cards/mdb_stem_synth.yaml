@@ -1,37 +1,14 @@
 name: mdb_stem_synth
 license: Attribution-NonCommercial 4.0 International
-remotes:
-- mdb_stem_synth
 annotations:
 - F0Data
-download_info: null
-bibtex: |2
-
+bibtex: |-
   @inproceedings{salamon2017analysis,
     title={An analysis/synthesis framework for automatic f0 annotation of multitrack datasets},
     author={Salamon, Justin and Bittner, Rachel M and Bonada, Jordi and Bosch, Juan J and G{'o}mez Guti{'e}rrez, Emilia and Bello, Juan Pablo},
     booktitle={International Society for Music Information Retrieval Conference},
     year={2017},
   }
-docstring: |+
-  MDB-stem-synth Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      MDB-stem-synth contains 230 solo stems (tracks)
-      from the MedleyDB dataset spanning a variety of
-      musical instruments and voices, which have been
-      resynthesized to obtain a perfect f0 annotation
-      using the analysis/synthesis method described in
-      the referenced publication of Salamon et al.
-      (ISMIR 2017).
-
-      For more details and download info,
-      please visit:
-      - https://synthdatasets.weebly.com/mdb-stem-synth.html
-      - https://zenodo.org/record/1481172
-
 summary: The MDB-stem-synth dataset includes 230 solo stems from various musical instruments
   and voices resynthesized for perfect pitch annotation, suitable for tasks like music
   transcription and analysis.

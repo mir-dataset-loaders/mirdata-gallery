@@ -1,16 +1,9 @@
 name: hainsworth
 license: Creative Commons Attribution Non Commercial Share Alike 4.0 International.
-remotes: []
 annotations:
 - BeatData
 - TempoData
-download_info: "\n    Unfortunately the Hainsworth dataset is not available for download.\n\
-  \    If you have the Hainsworth dataset, place the contents into a folder called\n\
-  \    hainsworth with the following structure:\n        > H_1.0/\n            > audio/\n\
-  \            > annotations/beats\n            > annotations/tempo\n    and copy\
-  \ the hainsworth folder to {}\n    "
-bibtex: |2
-
+bibtex: |-
   @article{article,
   author = {Macleod, Malcolm and Hainsworth, Stephen},
   year = {2004},
@@ -21,34 +14,6 @@ bibtex: |2
   journal = {EURASIP Journal on Advances in Signal Processing},
   doi = {10.1155/S1110865704408099}
   }
-docstring: |+
-  Hainsworth Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      **Dataset Overview:**
-
-      The Hainsworth Dataset [1] comprises 222 musical excerpts, each approximately 1 minute in length, categorized into six genres: rock/pop, dance, jazz, folk, classical, and choral. It was created by Stephen Hainsworth as part of his PhD thesis [1] on automatic music transcription. The dataset offers annotations for beat and downbeat locations, which were generated in a two-stage process. Initially, initial taps were recorded, and then annotations were manually corrected using a custom interface in Matlab, guided by a time-frequency representation.
-
-      Of particular significance is the inclusion of approximately 20 choral examples, which posed a significant challenge for annotation due to their unique characteristics. This dataset gained recognition within the beat tracking community for its contribution to annotating and analyzing such challenging musical signals.
-
-      In 2014, [2] conducted revisions on the beat and downbeat annotations to correct errors, leading to an enhancement in performance.
-
-      **Applications:**
-
-      The Hainsworth Dataset Loader is valuable for tasks related to beat tracking, rhythm analysis, and downbeat detection in various musical genres. Researchers and developers can utilize this dataset for algorithm development, testing, and evaluation. Additionally, it serves as a valuable resource for educational purposes, providing insights into the rhythmic structures of different musical genres.
-
-      **Acknowledgments and References:**
-
-      We would like to acknowledge Stephen Hainsworth for creating this dataset and his significant contribution to the field of automatic music transcription. Special thanks to [2] for their efforts in improving the dataset annotations.
-
-      For more detailed information about the dataset and its creation, please refer to Stephen Hainsworth's PhD thesis and the associated research papers and documentation.
-
-      [1] Hainsworth, Stephen. (PhD Thesis)
-
-      [2] Böck, Sebastian, et al. "Enhanced beat tracking with context-aware neural networks." In Proceedings of the International Conference on Digital Audio Effects (DAFX), 2010.
-
 summary: The Hainsworth Dataset includes 222 one-minute musical excerpts across six
   genres, with annotations for beat and downbeat locations. It is primarily used for
   beat tracking and downbeat detection, offering a valuable resource for researchers

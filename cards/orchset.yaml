@@ -1,11 +1,8 @@
 name: orchset
 license: Creative Commons Attribution Non Commercial Share Alike 4.0 International.
-remotes:
-- all
 annotations:
 - F0Data
 - Instrument
-download_info: null
 bibtex: |-
   @article{bosch2016evaluation,
       title={Evaluation and combination of pitch estimation methods for melody extraction in symphonic classical music},
@@ -17,18 +14,5 @@ bibtex: |-
       year={2016},
       publisher={Taylor \& Francis}
   }
-docstring: |+
-  ORCHSET Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      Orchset is intended to be used as a dataset for the development and
-      evaluation of melody extraction algorithms. This collection contains
-      64 audio excerpts focused on symphonic music with their corresponding
-      annotation of the melody.
-
-      For more details, please visit: https://zenodo.org/record/1289786#.XREpzaeZPx6
-
 summary: Orchset includes 64 symphonic music audio excerpts with annotated melodies,
   aimed at melody extraction tasks.

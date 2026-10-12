@@ -1,66 +1,19 @@
 name: compmusic_raga
 license: Creative Commons Attribution 4.0 International
-remotes:
-- features
 annotations:
 - F0Data
-- SectionData
 - KeyData
-download_info: "While annotations and metadata are freely downloadable, the audio\
-  \ of this \n    dataset has restricted access. Please access: https://zenodo.org/record/7278511\
-  \ and request \n    access to the audio, specifying your purpose. The audio will\
-  \ be shared for research purposes. \n    In such case, when access to the audio\
-  \ is granted, please organize the dataset as specified \n    in the ``directory_structure.txt``\
-  \ file found when you download the features and metadata using\n    the .download()\
-  \ method of this dataloader. \n"
-bibtex: "\n@article{gulati_2016,\n  author       = {Gulati, Sankalp and Serrà, Joan\
-  \ and Kaustuv Kani, Ganguli \n                    and Sentürk, Sertan and Serra,\
-  \ Xavier},\n  title        = {{Time-delayed melody surfaces for raga recognition}},\n\
-  \  year         = 2016,\n  pages        = 751--757,\n  journal      = {In Proceedings\
-  \ of the 17th International Society for Music Information \n                   \
-  \ Retrieval Conference (ISMIR), New York, USA},\n}\n"
-docstring: |+
-  CompMusic Raga Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      Rāga datasets from CompMusicomprise two sizable datasets, one for each music tradition,
-      Carnatic and Hindustani. These datasets comprise full length audio recordings and their
-      associated rāga labels. These two datasets can be used to develop and evaluate approaches
-      for performing automatic rāga recognition in Indian art music.
-
-      These datasets are derived from the CompMusic corpora of Indian Art Music. Therefore, the
-      dataset has been compiled at the Music Technology Group, by a group of researchers working
-      on the computational analysis of Carnatic and Hindustani music within the framework of the
-      ERC-funded CompMusic project.
-
-      Each recording is associated with a MBID. With the MBID other information can be obtained
-      using the Dunya API or pycompmusic.
-
-      The Carnatic subset comprises 124 hours of audio recordings and editorial metadata that
-      includes carefully curated and verified rāga labels. It contains 480 recordings belonging
-      to 40 rāgas with 12 recordings per rāga.
-
-      The Hindustani subset comprises 116 hours of audio recordings and editorial metadata that
-      includes carefully curated and verified rāga labels. It contains 300 recordings belonging
-      to 30 rāgas with 10 recordings per rāga.
-
-      The dataset also includes features per each file:
-      * Tonic: float indicating the recording tonic
-      * Tonic fine tuned: float indicating the manually fine-tuned recording tonic
-      * Predominant pitch: automatically-extracted predominant pitch time-series (timestamps and freq. values)
-      * Post-processed pitch: automatically-extracted and post-processed predominant pitch time-series
-      * Nyas segments: KNN-extracted segments of Nyas (start and end times provided)
-      * Tani segments: KNN-extracted segments of Tanis (start and end times provided)
-
-      The dataset includes both txt files and json files that contain information about each audio
-      recording in terms of its mbid, the path of the audio/feature files and the associated rāga
-      identifier. Each rāga is assigned a unique identifier by Dunya, which is similar to the mbid
-      in terms of purpose. A mapping of the rāga id to its transliterated name is also provided.
-
-      For more information about the dataset please refer to: https://compmusic.upf.edu/node/328
-
+- SectionData
+bibtex: |-
+  @article{gulati_2016,
+    author       = {Gulati, Sankalp and Serrà, Joan and Kaustuv Kani, Ganguli
+                      and Sentürk, Sertan and Serra, Xavier},
+    title        = {{Time-delayed melody surfaces for raga recognition}},
+    year         = 2016,
+    pages        = 751--757,
+    journal      = {In Proceedings of the 17th International Society for Music Information
+                      Retrieval Conference (ISMIR), New York, USA},
+  }
 summary: The compmusic_raga dataset includes full-length audio recordings of Carnatic
   and Hindustani music with associated rāga labels, providing tonal features and segmentations
   for rāga recognition tasks.

@@ -9,47 +9,9 @@ license: |-
       22nd International Society for Music Information Retrieval Conference (ISMIR).
   5. Queen Mary University of London shall not be held liable for any errors in the content of Filosax nor damage arising from the use of Filosax.
   6. The Filosax administrator may update these conditions of use at any time.
-remotes: []
 annotations:
 - NoteData
-download_info: |2+
-
-  To download the dataset, first go to the Zenodo pages below to request access:
-
-  (Full - 14.5GB)
-  https://zenodo.org/record/5643843#.YYL7aS2l3UI
-
-  (Lite - 558MB)
-  https://zenodo.org/record/5643734#.YYLQ-i2l3UI
-
-  Unzip the downloaded file to the folder /Users/<username>/mir_datasets/ (or wherever data_home has been assigned on initialization), and remove the version number from the folder:
-
-  (Full)
-  /Users/<username>/mir_datasets/Filosax
-
-  (Lite)
-  /Users/<username>/mir_datasets/Filosax_Lite
-
-  This data is sufficient to use the dataset in the "_sax" (sax only) mode. To download the backing data, go to the Aebersold sites:
-
-  (Full)
-  https://www.jazzbooks.com/mm5/merchant.mvc?&Screen=WISH&Store_Code=JAJAZZ&WishList_ID=1679
-
-  (Lite)
-  https://www.jazzbooks.com/mm5/merchant.mvc?&Screen=WISH&Store_Code=JAJAZZ&WishList_ID=1678
-
-  Put the files downloaded into the "/Aebersold" folder, and then run the appropriate script from inside the home folder:
-
-  (Full)
-  python Scripts/Compile_Backing.py -version full
-
-  (Lite)
-  python Scripts/Compile_Backing.py -version lite
-
-  which populates the "/Backing" folder with edited files, which match the versions that were used in the recordings.
-
-bibtex: |2
-
+bibtex: |-
   @inproceedings{
     foster_filosax_2021,
     title={Filosax: A Dataset of Annotated Jazz Saxophone Recordings},
@@ -57,43 +19,6 @@ bibtex: |2
     booktitle={International Society for Music Information Retrieval (ISMIR) Conference},
     year={2021}
   }
-docstring: |+
-  Filosax Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      The Filosax dataset was conceived, curated and compiled by Dave Foster (a PhD student on the AIM programme at QMUL) and his supervisor Simon Dixon (C4DM @ QMUL).
-      The dataset is a collection of 48 multitrack jazz recordings, where each piece has 8 corresponding audio files:
-
-      1) The original Aebersold backing track (stereo)
-      2) Bass_Drums, a mono file of a mix of bass and drums
-      3) Piano_Drums, a mono file of a mix of piano and drums
-      4) Participant 1 Sax, a mono file of solo saxophone
-      5) Participant 2 Sax, a mono file of solo saxophone
-      6) Participant 3 Sax, a mono file of solo saxophone
-      7) Participant 4 Sax, a mono file of solo saxophone
-      8) Participant 5 Sax, a mono file of solo saxophone
-
-      Each piece is ~6mins long, so each of the 8 stems contains ~5hours of audio
-
-      For each piece, there is a corresponding .jams file containing piece-level annotations:
-
-      1) Beat annotation for the start of each bar and any mid-bar chord change
-      2) Chord annotation for each bar, and mid-bar chord change
-      3) Section annotation for when the solo changes between the 3 categories:
-          a) head (melody)
-          b) written solo (interpretation of transcribed solo)
-          c) improvised solo
-
-      For each Sax recording (5 per piece), there is a corresponding .json file containing note annotations (see Note object).
-
-      The Participant folders also contain MIDI files of the transcriptions (frame level and score level) as well as a PDF and MusicXML of the typeset solo.
-
-      The dataset comes in 2 flavours: full (all 48 tracks and 5 sax players) and lite (5 tracks and 2 sax players).
-      Both flavours can be used with or without the backing tracks (which need to be purchased online).
-      Hence, when opening the dataset, use one of 4 versions: 'full', 'full_sax', 'lite', 'lite_sax'.
-
 summary: The Filosax dataset includes 48 multitrack jazz recordings with 8 audio stems
   and annotations for beats, chords, and sections. Note annotations are provided for
   each saxophone solo, supporting tasks like transcription and segmentation.

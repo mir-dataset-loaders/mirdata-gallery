@@ -1,12 +1,8 @@
 name: phenicx_anechoic
 license: Creative Commons Attribution Non Commercial Share Alike 4.0 International
-remotes:
-- all
 annotations:
 - NoteData
-download_info: null
-bibtex: |2
-
+bibtex: |-
   @article{miron2016score,
     title={Score-informed source separation for multichannel orchestral recordings},
     author={Miron, Marius and Carabias-Orti, Julio J and Bosch, Juan J and G{'o}mez, Emilia and Janer, Jordi},
@@ -25,52 +21,6 @@ bibtex: |2
     year={2008},
     publisher={S. Hirzel Verlag}
   }
-docstring: |+
-  PHENICX-Anechoic Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      This dataset includes audio and annotations useful for tasks as score-informed source separation, score following, multi-pitch estimation, transcription or instrument detection, in the context of symphonic music:
-      M. Miron, J. Carabias-Orti, J. J. Bosch, E. Gómez and J. Janer, "Score-informed source separation for multi-channel orchestral recordings", Journal of Electrical and Computer Engineering (2016))"
-
-      We do not provide the original audio files, which can be found at the web page hosted by Aalto University. However, with their permission we distribute the denoised versions for some of the anechoic orchestral recordings. The original dataset was introduced in:
-      Pätynen, J., Pulkki, V., and Lokki, T., "Anechoic recording system for symphony orchestra," Acta Acustica united with Acustica, vol. 94, nr. 6, pp. 856-865, November/December 2008.
-
-      Additionally, we provide the associated musical note onset and offset annotations, and the Roomsim configuration files used to generate the multi-microphone recordings.
-
-      The original anechoic dataset in Pätynen et al. consists of four passages of symphonic music from the Classical and Romantic periods. This work presented a set of anechoic recordings for each of the instruments, which were then synchronized between them so that they could later be combined to a mix of the orchestra. In order to keep the evaluation setup consistent between the four pieces, we selected the following instruments: violin, viola, cello, double bass, oboe, flute, clarinet, horn, trumpet and bassoon. A list of the characteristics of the four pieces can be found below:
-
-      Mozart
-      - duration: 3min 47s
-      - period: classical
-      - no. sources: 8
-      - total no. instruments: 10
-      - max. instruments/source: 2
-
-      Beethoven
-      - duration: 3min 11s
-      - period: classical
-      - no. sources: 10
-      - total no. instruments: 20
-      - max. instruments/source: 4
-
-      Beethoven
-      - duration: 2min 12s
-      - period: romantic
-      - no. sources: 10
-      - total no. instruments: 30
-      - max. instruments/source: 4
-
-      Bruckner
-      - duration: 1min 27s
-      - period: romantic
-      - no. sources: 10
-      - total no. instruments: 39
-      - max. instruments/source: 12
-
-      For more details, please visit: https://www.upf.edu/web/mtg/phenicx-anechoic
-
 summary: The PHENICX-Anechoic Dataset includes denoised anechoic recordings of symphonic
   music passages, with annotations for musical note onsets and offsets, suitable for
   tasks like score-informed source separation and multi-pitch estimation.

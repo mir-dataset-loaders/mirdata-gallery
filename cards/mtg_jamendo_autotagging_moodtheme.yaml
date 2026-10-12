@@ -1,17 +1,6 @@
 name: mtg_jamendo_autotagging_moodtheme
 license: Creative Commons Attribution NonCommercial Share Alike 4.0 International.
-remotes:
-- metadata
 annotations: []
-download_info: "\n    The audio files can be downloaded following the path described\
-  \ in https://github.com/MTG/mtg-jamendo-dataset#downloading-the-data\n    \n   \
-  \ To download audio, unpack and validate all tar archives:\n    \n    .. code-block::\
-  \ console\n\n          mkdir /path/to/download\n          python3 scripts/download/download.py\
-  \ --dataset autotagging_moodtheme --type audio /path/to/download --unpack --remove\n\
-  \    \n    Later add the files to a folder into mir_datasets called audio/ with\
-  \ the following structure:\n        > mtg_jamendo_autotagging_moodtheme/\n     \
-  \       > audios/\n                > 00/\n                ...\n                >\
-  \ 99/\n"
 bibtex: |-
   @conference {bogdanov2019mtg,
       author = "Bogdanov, Dmitry and Won, Minz and Tovstogan, Philip and Porter, Alastair and Serra, Xavier",
@@ -21,43 +10,6 @@ bibtex: |-
       address = "Long Beach, CA, United States",
       url = "http://hdl.handle.net/10230/42015"
   }
-docstring: |
-  MTG jamendo autotagging moodtheme Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      The MTG Jamendo autotagging mood/theme Dataset is a new open dataset for music auto-tagging. It
-      is built using music available at Jamendo under Creative Commons licenses and tags provided by content uploaders. The
-      dataset contains 18,486 full audio tracks with 195 tags from mood/theme. It is provided
-      five fixed data splits for a better and fair replication. For more information please visit: https://github.com/MTG/mtg-jamendo-dataset .
-
-      The moodtheme tags are:
-
-      action, adventure, advertising, ambiental, background, ballad, calm, children, christmas, commercial, cool,
-      corporate, dark, deep, documentary, drama, dramatic, dream, emotional, energetic, epic, fast, film, fun, funny,
-      game, groovy, happy, heavy, holiday, hopeful, horror, inspiring, love, meditative, melancholic, mellow, melodic,
-      motivational, movie, nature, party, positive, powerful, relaxing, retro, romantic, sad, sexy, slow, soft,
-      soundscape, space, sport, summer, trailer, travel, upbeat, uplifting.
-
-      Emotion and theme recognition is a popular task in music information retrieval that is relevant for music search and
-      recommendation systems.
-
-      This task involves the prediction of moods and themes conveyed by a music track, given the raw audio. The examples
-      of moods and themes are: happy, dark, epic, melodic, love, film, space etc. The full list is available at:
-      https://github.com/mir-dataset-loaders/mirdata/pull/505 Each track is tagged with at least one
-      tag that serves as a ground-truth.
-
-      Acknowledgments
-
-      This work was funded by the predoctoral grant MDM-2015-0502-17-2 from the Spanish Ministry of Economy and
-      Competitiveness linked to the Maria de Maeztu Units of Excellence Programme (MDM-2015-0502).
-
-      This work has received funding from the European Union's Horizon 2020 research and innovation programme under the
-      Marie Skłodowska-Curie grant agreement No. 765068 "MIP-Frontiers".
-
-      This work has received funding from the European Union's Horizon 2020 research and innovation programme under
-      grant agreement No 688382 "AudioCommons".
 summary: The dataset includes 18,486 full audio tracks from Jamendo with 195 mood/theme
   tags, suitable for emotion and theme recognition tasks in MIR, providing ground-truth
   tags for each track.

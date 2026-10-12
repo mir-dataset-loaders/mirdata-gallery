@@ -1,23 +1,7 @@
 name: dali
 license: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
-remotes:
-- metadata
 annotations:
 - NoteData
-download_info: |2
-
-      To download this dataset, visit:
-      https://zenodo.org/record/2577915 and request access.
-      Once downloaded, unzip the file DALI_v1.0.zip
-      and place the result in:
-      {}
-
-      Use the function dali_code.get_audio you can find at:
-      https://github.com/gabolsgabs/DALI for getting the audio
-      and place them in "audio" folder with the following structure:
-      > Dali
-          > audio
-          ...
 bibtex: |-
   @inproceedings{Meseguer-Brocal_2018,
       Title = {DALI: a large Dataset of synchronized Audio, LyrIcs and notes, automatically created using teacher-student
@@ -27,21 +11,6 @@ bibtex: |-
       Editor = {ISMIR}, Month = {September},
       Year = {2018}
   }
-docstring: |+
-  DALI Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      DALI contains 5358 audio files with their time-aligned vocal melody.
-      It also contains time-aligned lyrics at four levels of granularity: notes,
-      words, lines, and paragraphs.
-
-      For each song, DALI also provides additional metadata: genre, language, musician,
-      album covers, or links to video clips.
-
-      For more details, please visit: https://github.com/gabolsgabs/DALI
-
 summary: DALI includes 5358 audio files with time-aligned vocal melodies, lyrics at
   four granularities, and metadata like genre and language, for analyzing melody and
   lyrics in songs.

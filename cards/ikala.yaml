@@ -2,24 +2,11 @@ name: ikala
 license: |-
   When it was distributed, Ikala used to have a custom license.
   Visit http://mac.citi.sinica.edu.tw/ikala/ for more details.
-remotes:
-- metadata
-- notes_pyin
 annotations:
 - F0Data
 - Instrument
-- NoteData
 - LyricData
-download_info: |2
-
-      Unfortunately most of the iKala dataset is not available for download.
-      If you have the iKala dataset, place the contents into a folder called
-      iKala with the following structure:
-          > iKala/
-              > Lyrics/
-              > PitchLabel/
-              > Wavfile/
-      and copy the iKala folder to {}
+- NoteData
 bibtex: |-
   @inproceedings{chan2015vocal,
       title={Vocal activity informed singing voice separation with the iKala dataset},
@@ -30,21 +17,6 @@ bibtex: |-
       year={2015},
       organization={IEEE}
   }
-docstring: |+
-  iKala Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      The iKala dataset is comprised of 252 30-second excerpts sampled from 206 iKala
-      songs (plus 100 hidden excerpts reserved for MIREX).
-      The music accompaniment and the singing voice are recorded at the left and right
-      channels respectively and can be found under the Wavfile directory.
-      In addition, the human-labeled pitch contours and timestamped lyrics can be
-      found under PitchLabel and Lyrics respectively.
-
-      For more details, please visit: http://mac.citi.sinica.edu.tw/ikala/
-
 summary: The iKala dataset includes 30-second excerpts from 206 songs with separated
   vocal and instrumental tracks, along with labeled pitch contours and lyrics for
   252 excerpts, primarily for pitch tracking and lyric synchronization tasks.
