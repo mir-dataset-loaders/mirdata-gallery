@@ -18,7 +18,6 @@ from concurrent.futures import ThreadPoolExecutor
 from stats import remote_zip
 from stats.common import RemoteLimit, remote_problems
 
-MAX_FILE_MB = 50  # a single annotation file bigger than this is skipped (features, not labels)
 MAX_ARCHIVE_MB = 200  # a zip up to this size is downloaded whole; bigger ones are read by range
 
 
@@ -75,20 +74,17 @@ def _write(data_home, path, data):
         f.write(data)
 
 
-def download_whole(url, session, max_mb=None, budget=None):
-    """The bytes behind url, streamed; an IOError past max_mb so a big archive is never pulled.
+def download_whole(url, session, budget=None):
+    """The bytes behind url, streamed.
 
-    budget (a stats.common.Budget) is checked and charged chunk by chunk.
+    budget (a stats.common.Budget) is checked and charged chunk by chunk, so
+    the remote limit stops a download that would pass it.
     """
-    max_mb = MAX_ARCHIVE_MB if max_mb is None else max_mb
     r = session.request("GET", url, timeout=60, stream=True)
     try:
         r.raise_for_status()
-        chunks, size = [], 0
+        chunks = []
         for chunk in r.iter_content(1 << 20):
-            size += len(chunk)
-            if size > max_mb * 1e6:
-                raise IOError(f"over {max_mb} MB without range support, not downloaded whole")
             if budget:
                 budget.check(len(chunk))
                 budget.charge(len(chunk))
@@ -118,7 +114,7 @@ def open_zip(url, session, budget=None):
     return zf, zf.read, None  # ZipFile.read checks the CRC itself
 
 
-def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbose=False, budget=None):
+def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
     """Write the wanted index paths found in the remotes under data_home.
 
     Returns (fetched, errors, sources, problems): the paths now on disk, why the
@@ -132,11 +128,9 @@ def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbos
         reason = "no remotes: the annotations have to be downloaded manually"
         sources.append(f"  ({reason})")
         problems.append(reason)
-    max_bytes = max_file_mb * 1e6
     session = remote_zip.session(workers)
     matched = set(present)  # every wanted path some remote holds, fetched or not
     unreadable = []  # "remote: why" for remotes that cannot be read
-    too_big = []  # wanted files over max_file_mb
     limit_hit = None  # the RemoteLimit message, once the budget ran out
 
     for key, remote in (remotes or {}).items():
@@ -166,13 +160,7 @@ def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbos
             if not members:
                 sources.append(f"  {key:22s} {remote.filename}: no annotation files from the index")
                 continue
-            items = []
-            for path, info in members.items():
-                if info.file_size > max_bytes:
-                    errors[path] = f"{info.file_size / 1e6:.0f} MB, over the {max_file_mb} MB limit"
-                    too_big.append(path)
-                else:
-                    items.append((path, info))
+            items = list(members.items())
 
             def read(item):
                 path, info = item
@@ -222,12 +210,9 @@ def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbos
                 try:
                     http = remote_zip.HTTPFile(remote.url, session, budget)
                 except IOError:  # no size, no range support: stream it whole, capped
-                    data = download_whole(remote.url, session, max_file_mb, budget)
+                    data = download_whole(remote.url, session, budget)
                     how = "no range support, downloaded whole"
                 else:
-                    if http.size > max_bytes:
-                        too_big.append(path)
-                        raise ValueError(f"{http.size / 1e6:.0f} MB, over the {max_file_mb} MB limit")
                     data = http.read_at(0, http.size)
                     how = "fetched"
                 _write(data_home, path, data)
@@ -239,16 +224,13 @@ def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbos
             except Exception as e:
                 errors[path] = f"{type(e).__name__}: {e}"
                 sources.append(f"  {key:22s} {remote.filename}: {errors[path]}")
-                if path not in too_big:
-                    unreadable.append(f"{remote.filename}: {errors[path]}")
+                unreadable.append(f"{remote.filename}: {errors[path]}")
 
     unmatched = sorted(wanted - matched)
     for path in unmatched:
         errors[path] = "not in any readable remote"
     # Without remotes, "no remotes" above already explains the unmatched files.
     problems += remote_problems("annotation", limit_hit, unmatched if remotes else [], unreadable)
-    if too_big:
-        problems.append(f"{len(too_big)} files over the {max_file_mb} MB per-file remote limit")
     if not unmatched and not limit_hit and unreadable and wanted - fetched:
         problems.append("; ".join(unreadable))  # matched files that failed to download
     return fetched, errors, sources, problems

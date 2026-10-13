@@ -23,6 +23,17 @@ def test_budget_time_limit(monkeypatch):
         budget.check()
 
 
+def test_time_only_view_ignores_bytes_but_keeps_the_time_limit(monkeypatch):
+    budget = Budget(max_mb=1, max_minutes=1)
+    audio = budget.time_only()
+    audio.check(10**12)  # bytes are not checked
+    audio.charge(10**12)  # nor charged
+    assert budget.bytes == 0
+    monkeypatch.setattr(common.time, "monotonic", lambda: budget.start + 61)
+    with pytest.raises(RemoteLimit):
+        audio.check()
+
+
 def test_budget_without_limits_never_stops():
     budget = Budget()
     budget.charge(10**12)

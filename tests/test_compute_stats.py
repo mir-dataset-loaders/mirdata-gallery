@@ -228,7 +228,7 @@ def test_status_is_in_the_json(tmp_path, fake_mirdata, capsys):
     assert result["fake"]["audio"]["problems"] == []
 
 
-def test_max_mb_makes_both_parts_need_local(fake_mirdata, capsys, monkeypatch):
+def test_max_mb_limits_the_annotations_not_the_audio_headers(fake_mirdata, capsys, monkeypatch):
     compute_stats.main(["--dataset", "fake", "--max-mb", "1"])
     out = capsys.readouterr().out
     assert out.count("status:                 ok") == 2  # the fake zip is tiny: within 1 MB
@@ -237,10 +237,25 @@ def test_max_mb_makes_both_parts_need_local(fake_mirdata, capsys, monkeypatch):
     monkeypatch.setattr(stats_dataset, "Budget", lambda max_mb, max_minutes: real_budget(1e-6, max_minutes))
     compute_stats.main(["--dataset", "fake"])
     out = capsys.readouterr().out
-    assert out.count("status:                 needs_local") == 2
+    assert out.count("status:                 needs_local") == 1
     assert "Run these locally (python scripts/compute_stats.py --local --dataset <name>):" in out
-    assert "fake                         audio        remote limit:" in out
     assert "fake                         annotations  remote limit:" in out
+    assert "fake                         audio        remote limit:" not in out
+
+
+def test_one_budget_per_dataset(fake_mirdata, capsys, monkeypatch):
+    made = []
+    real_budget = stats_dataset.Budget
+
+    def counting_budget(max_mb, max_minutes):
+        made.append(real_budget(max_mb, max_minutes))
+        return made[-1]
+
+    monkeypatch.setattr(stats_dataset, "Budget", counting_budget)
+    compute_stats.main(["--dataset", "fake"])
+    capsys.readouterr()
+    assert len(made) == 1  # shared by audio and annotations
+    assert made[0].bytes > 0  # charged by the annotation download
 
 
 def test_local_runs_have_no_budget(tmp_path, fake_mirdata, capsys, monkeypatch):

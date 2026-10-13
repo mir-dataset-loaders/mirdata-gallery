@@ -8,9 +8,15 @@ import time
 
 from mirdata import download_utils
 
-DEFAULT_DATASETS_DIR = os.path.join(os.path.expanduser("~"), "mir_datasets")  # mirdata's default
-MAX_REMOTE_MB = 500  # default budget per dataset and part: data read from the remotes
-MAX_REMOTE_MINUTES = 10  # default budget per dataset and part: time spent reading remotes
+DEFAULT_DATASETS_DIR = os.path.join(
+    os.path.expanduser("~"), "mir_datasets"
+)  # mirdata's default
+MAX_REMOTE_MB = (
+    2000  # default budget per dataset: annotation data downloaded from the remotes
+)
+MAX_REMOTE_MINUTES = (
+    10  # default budget per dataset: time spent reading remotes, both parts
+)
 PARTS = ("audio", "annotations")
 
 
@@ -35,8 +41,13 @@ class Budget:
         self._lock = threading.Lock()
 
     def check(self, more_bytes=0):
-        if self.max_minutes is not None and time.monotonic() - self.start > self.max_minutes * 60:
-            raise RemoteLimit(f"took longer than the {self.max_minutes} min remote limit")
+        if (
+            self.max_minutes is not None
+            and time.monotonic() - self.start > self.max_minutes * 60
+        ):
+            raise RemoteLimit(
+                f"took longer than the {self.max_minutes} min remote limit"
+            )
         if self.max_mb is not None and self.bytes + more_bytes > self.max_mb * 1e6:
             raise RemoteLimit(
                 f"needs more than the {self.max_mb} MB remote limit "
@@ -46,6 +57,26 @@ class Budget:
     def charge(self, n_bytes):
         with self._lock:
             self.bytes += n_bytes
+
+    def time_only(self):
+        """A view of this budget that checks the time but neither checks nor charges bytes.
+
+        For the audio part: it reads only file headers, so its bytes do not count.
+        """
+        return TimeOnly(self)
+
+
+class TimeOnly:
+    """A Budget that only checks the time of the budget it wraps (see Budget.time_only)."""
+
+    def __init__(self, budget):
+        self.budget = budget
+
+    def check(self, more_bytes=0):
+        self.budget.check()
+
+    def charge(self, n_bytes):
+        pass
 
 
 def remote_problems(kind, limit_hit, unmatched, unreadable):
@@ -113,7 +144,9 @@ def print_to_do(results, command):
         for part in PARTS:
             stats = result.get(part)
             if stats and stats.get("status") in groups:
-                why = (stats.get("problems") or [stats.get("error") or "see its errors"])[0]
+                why = (
+                    stats.get("problems") or [stats.get("error") or "see its errors"]
+                )[0]
                 groups[stats["status"]].append((name, part, why))
     titles = {
         "needs_local": f"Run these locally ({command}):",
@@ -143,13 +176,13 @@ def add_stats_arguments(parser):
         "--max-mb",
         type=positive_int,
         default=MAX_REMOTE_MB,
-        help=f"remote limit per dataset and part, in MB read (default {MAX_REMOTE_MB})",
+        help=f"remote limit per dataset, in MB of annotation files downloaded (default {MAX_REMOTE_MB})",
     )
     parser.add_argument(
         "--max-minutes",
         type=positive_int,
         default=MAX_REMOTE_MINUTES,
-        help=f"remote limit per dataset and part, in minutes (default {MAX_REMOTE_MINUTES})",
+        help=f"remote limit per dataset, in minutes for both parts (default {MAX_REMOTE_MINUTES})",
     )
 
 

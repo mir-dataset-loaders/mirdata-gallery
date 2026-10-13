@@ -135,15 +135,14 @@ def test_zip_without_range_support_is_downloaded_whole(tmp_path, use_session):
     assert (tmp_path / "metadata.csv").read_bytes() == FILES["metadata.csv"]
 
 
-def test_zip_without_range_support_over_the_cap_is_not_downloaded(tmp_path, use_session, monkeypatch):
-    monkeypatch.setattr(remote_files, "MAX_ARCHIVE_MB", 1e-6)
+def test_big_zip_without_range_support_is_downloaded_whole(tmp_path, use_session, monkeypatch):
+    monkeypatch.setattr(remote_files, "MAX_ARCHIVE_MB", 1e-6)  # only the budget limits it
     use_session(PlainSession({URL: zip_bytes(FILES)}))
     fetched, errors, sources, problems = remote_files.fetch(
         {"all": fake_remote("all.zip", URL)}, wanted(), str(tmp_path)
     )
-    assert fetched == set()
-    assert "not downloaded whole" in sources[0]
-    assert set(errors) == wanted()  # every wanted file is accounted for
+    assert fetched == wanted()
+    assert problems == []
 
 
 def test_destination_dir_is_part_of_the_index_path(tmp_path, use_session):
@@ -155,16 +154,6 @@ def test_destination_dir_is_part_of_the_index_path(tmp_path, use_session):
         str(tmp_path),
     )
     assert fetched == {"annotations/beats/a.csv"}
-
-
-def test_file_over_the_size_limit_is_skipped(tmp_path, use_session):
-    use_session(FakeRangeSession({URL: zip_bytes(FILES)}))
-    fetched, errors, _, problems = remote_files.fetch(
-        {"all": fake_remote("all.zip", URL)}, wanted(), str(tmp_path), max_file_mb=1e-5
-    )
-    big = {p for p in wanted() if len(FILES[p]) > 10}
-    assert big and fetched == wanted() - big
-    assert all("over the" in errors[p] for p in big)
 
 
 def test_plain_file_remote_listed_in_the_index_is_fetched(tmp_path, use_session):
@@ -257,15 +246,16 @@ def test_plain_file_without_range_support_is_downloaded_whole_and_logged(tmp_pat
     assert "no range support, downloaded whole" in sources[0]
 
 
-def test_plain_file_without_range_support_over_the_limit_is_logged(tmp_path, use_session):
+def test_plain_file_without_range_support_is_limited_only_by_the_budget(tmp_path, use_session):
+    from stats.common import Budget
+
     url = "https://example.test/metadata.csv"
     use_session(PlainSession({url: b"x" * 2000}))
     fetched, errors, sources, problems = remote_files.fetch(
-        {"meta": fake_remote("metadata.csv", url)}, {"metadata.csv"}, str(tmp_path), max_file_mb=0.001
+        {"meta": fake_remote("metadata.csv", url)}, {"metadata.csv"}, str(tmp_path), budget=Budget(max_mb=0.001)
     )
     assert fetched == set()
-    assert "not downloaded whole" in errors["metadata.csv"]
-    assert "not downloaded whole" in sources[0]
+    assert problems[0].startswith("remote limit:")
 
 
 def test_multitrack_member_list_is_not_a_file():
@@ -311,14 +301,6 @@ def test_tar_remote_is_a_problem_naming_it(tmp_path, use_session):
         "5 annotation files not found in the readable remotes; "
         "not readable: ann.tar.gz cannot be read remotely (not a zip)"
     ]
-
-
-def test_file_over_the_per_file_limit_is_a_problem(tmp_path, use_session):
-    use_session(FakeRangeSession({URL: zip_bytes(FILES)}))
-    *_, problems = remote_files.fetch(
-        {"all": fake_remote("all.zip", URL)}, wanted(), str(tmp_path), max_file_mb=1e-5
-    )
-    assert any("over the 1e-05 MB per-file remote limit" in p for p in problems)
 
 
 def test_budget_refuses_a_whole_download_before_it_starts(tmp_path, use_session):

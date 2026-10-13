@@ -104,11 +104,13 @@ python scripts/compute_stats.py --max-mb 2000 --max-minutes 30           # large
 
 Reasons for `needs_local`: no remotes (manual download or restricted data),
 no access (HTTP 403 or 404), archives that cannot be read remotely
-(tar.gz), a file over 50 MB, the remote limit reached, or files that are in
+(tar.gz), the remote limit reached, or files that are in
 no readable remote.
 
-Remote limits apply per dataset and per part: `--max-mb` (default 500) and
-`--max-minutes` (default 10). Local runs have no limits.
+A remote run has one budget per dataset, shared by both parts: `--max-mb`
+(default 4000) counts only the annotation files downloaded, since the audio
+part reads headers only, and `--max-minutes` (default 10) counts the time of
+both parts. Local runs have no limits.
 
 ## What each file holds, and why it is needed
 
@@ -146,8 +148,10 @@ compute exactly the same thing.
 - `compute`: checks the local copy exists (local mode), initializes the
   dataset once with the folder its files are read from (local) or fetched
   into (remote), loads its index once for both parts, then runs each part in
-  its own try, so a failing part does not stop the other. Each remote part
-  gets a fresh `Budget`; local parts have none.
+  its own try, so a failing part does not stop the other. A remote run gets
+  one `Budget` for both parts (the audio part sees it through
+  `Budget.time_only`, so its header reads do not count toward the MB limit);
+  local runs have none.
 - `audio_part`, `annotations_part`: call `stats.audio` and
   `stats.annotations` in local or remote mode.
 
@@ -263,7 +267,7 @@ remote mode possible: a 4 GB audio zip costs a few megabytes.
     selected tracks.
   - `fetch`: gets those files. Zips up to 200 MB are downloaded whole, bigger
     ones are read by range, plain files are downloaded whole. It reports
-    problems: tar.gz archives, files over 50 MB, the limit reached.
+    problems: tar.gz archives, the limit reached.
   - `open_zip`, `download_whole`: the download paths, with a fallback for
     servers without range support, such as GitHub's generated archives.
   - `index_notes`: logs index sections that are empty, such as Billboard's
