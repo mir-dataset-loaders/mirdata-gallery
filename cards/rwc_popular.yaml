@@ -48,6 +48,98 @@ bibtex: |-
   year = {2026},
   doi = {10.5334/tismir.326}
   }
-summary: The RWC Popular Dataset includes 100 songs—20 English-lyric and 80 Japanese-lyric
-  popular music pieces from the 1980s and 1990s. Annotations provide metadata for
-  music information retrieval tasks.
+summary: The dataset includes 100 popular songs, 20 with English lyrics and 80 with
+  Japanese lyrics, from the 1980s and 1990s. Annotations provide information for music
+  information retrieval tasks focusing on genre, tempo, and key.
+stats:
+  computed:
+    mode: local
+    index: c7f5f85376881588
+    date: '2026-10-13'
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 100
+    n_tracks_with_audio: 100
+    n_tracks_counted: 100
+    total_seconds: 24216.4
+    duration_histogram:
+      unit: min
+      edges: [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5]
+      counts: [1, 2, 22, 26, 25, 16, 5, 2, 1]
+    sample_rate: 44100
+    sample_rates:
+      44100: 100
+    n_audio_files: 100
+    n_audio_files_counted: 100
+    all_files_seconds: 24216.4
+    n_errors: 0
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 100
+    n_tracks_loaded: 100
+    tracks_with:
+      BeatData: 100
+      ChordData: 100
+      F0Data: 100
+    annotations:
+      beats:
+        type: BeatData
+        n_tracks: 100
+        n_annotations: 100
+        beats_per_bar:
+          4: 95
+          5: 1
+          6: 3
+          8: 1
+        tempo:
+          unit: bpm
+          edges: [60, 80, 100, 120, 140, 160, 180, 200, 220, 240]
+          counts: [13, 23, 16, 37, 3, 4, 2, 1, 1]
+      chords:
+        type: ChordData
+        n_tracks: 100
+        n_annotations: 100
+        labels:
+          G:maj: 834
+          C:maj: 692
+          F:maj: 657
+          D:maj: 560
+          A:maj: 489
+          A:min: 377
+          Eb:maj: 373
+          Bb:maj: 322
+          A:min7: 313
+          E:min7: 300
+          (other): 8550
+        qualities:
+          maj: 6180
+          min7: 2004
+          min: 1953
+          '7': 907
+          maj7: 827
+          sus4: 372
+          maj6: 359
+          N: 263
+          dim: 144
+          sus2: 100
+          (other): 358
+      melody:
+        type: F0Data
+        n_tracks: 100
+        n_annotations: 100
+        voiced_fraction:
+          unit: fraction
+          edges: [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+          counts: [4, 7, 18, 22, 21, 10, 14, 3, 1]
+        f0_median_per_annotation:
+          unit: hz
+          edges: [150, 200, 250, 300, 350, 400, 450]
+          counts: [3, 18, 27, 27, 14, 11]
+    skipped:
+      midi: not a mirdata NoteData object (got PrettyMIDI)
+      tempo: not a mirdata TempoData object (got str)
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
