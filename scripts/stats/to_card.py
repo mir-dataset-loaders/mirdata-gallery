@@ -58,8 +58,8 @@ def _number_keys(counts, kind=int):
     return {kind(k): v for k, v in counts.items()}
 
 
-# Annotation fields whose keys are numbers (meter, hop size), not labels.
-NUMBER_KEYED = {"beats_per_bar": int, "hop_seconds": float}
+# Annotation fields whose keys are numbers (meter), not labels.
+NUMBER_KEYED = {"beats_per_bar": int}
 
 
 def _error_part(part):
