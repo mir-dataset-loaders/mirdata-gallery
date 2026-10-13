@@ -18,8 +18,9 @@ Rule keywords:
  sorted       list: elements must be in sorted order
  choices      the value (str) or every element (list) must be one of these
  stats        dict: the structure of the "stats" field (see STATS_* below):
-              a "computed" block, parts with a valid status, and every
-              histogram {unit, edges, counts} well formed
+              a "computed" block, parts with a valid status, every
+              histogram {unit, edges, counts} well formed, and the fields
+              of each annotation type (STATS_ANNOTATION_FIELDS)
 
 Two rules apply to every card and are not per-field:
  - `name` must equal the file name without .yaml
@@ -62,6 +63,28 @@ AUDIO_AVAILABILITY = [
 STATS_PARTS = ["audio", "annotations"]
 STATS_STATUSES = ["ok", "incomplete", "needs_local", "error"]
 STATS_MODES = ["remote", "local"]
+
+# What each entry under stats.annotations.annotations holds (one entry per
+# track property, see scripts/stats/annotations/types.py). Every entry has
+# STATS_ANNOTATION_COMMON, plus "parts" ({key: count}) when a track holds
+# several annotations (dict keys or annotators), plus the fields of its type.
+# Field kinds:
+#   histogram  {unit, edges, counts}, or null when there were no values
+#   counts     {label: count}, the 10 most common, the rest under "(other)";
+#              beats_per_bar has every meter, keyed by number
+STATS_ANNOTATION_COMMON = ["type", "n_tracks", "n_annotations"]
+STATS_ANNOTATION_FIELDS = {
+    "BeatData": {"tempo": "histogram", "beats_per_bar": "counts"},
+    "ChordData": {"labels": "counts", "qualities": "counts"},
+    "EventData": {"labels": "counts"},
+    "F0Data": {"f0_median_per_annotation": "histogram", "voiced_fraction": "histogram"},
+    "KeyData": {"keys": "counts", "modes": "counts"},
+    "LyricData": {},
+    "MultiF0Data": {"max_polyphony": "histogram"},
+    "NoteData": {"pitch": "histogram"},
+    "SectionData": {"labels": "counts", "section_seconds": "histogram"},
+    "TempoData": {"tempo": "histogram"},
+}
 
 SCHEMA = {
     "name": {

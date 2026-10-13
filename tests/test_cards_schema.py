@@ -10,7 +10,14 @@ from types import NoneType
 import pytest
 import yaml
 
-from card_schema import SCHEMA, STATS_MODES, STATS_PARTS, STATS_STATUSES
+from card_schema import (
+    SCHEMA,
+    STATS_ANNOTATION_COMMON,
+    STATS_ANNOTATION_FIELDS,
+    STATS_MODES,
+    STATS_PARTS,
+    STATS_STATUSES,
+)
 
 CARDS_DIR = os.path.join(os.path.dirname(__file__), "..", "cards")
 CARD_FILES = sorted(f for f in os.listdir(CARDS_DIR) if f.endswith(".yaml"))
@@ -145,6 +152,44 @@ def _check_stats(stats):
         elif status == "needs_local" and not value["problems"]:
             yield f"{part}.problems: needs_local must say why"
         yield from _check_histograms(value, part)
+        if part == "annotations":
+            yield from _check_annotation_entries(value.get("annotations") or {})
+
+
+def _check_annotation_entries(entries):
+    """Each entry under stats.annotations.annotations: its type's fields, nothing else."""
+    for prop, entry in entries.items():
+        where = f"annotations.annotations.{prop}"
+        if not isinstance(entry, dict):
+            yield f"{where}: expected dict, got {type(entry).__name__}"
+            continue
+        fields = STATS_ANNOTATION_FIELDS.get(entry.get("type"))
+        if fields is None:
+            yield f"{where}.type: must be one of {sorted(STATS_ANNOTATION_FIELDS)}, got {entry.get('type')!r}"
+            continue
+        missing = [k for k in [*STATS_ANNOTATION_COMMON, *fields] if k not in entry]
+        if missing:
+            yield f"{where}: missing keys: {', '.join(missing)}"
+        allowed = [*STATS_ANNOTATION_COMMON, "parts", *fields]
+        extra = [k for k in entry if k not in allowed]
+        if extra:
+            yield f"{where}: unknown keys: {', '.join(map(str, extra))}"
+        for key in ["n_tracks", "n_annotations"]:
+            if key in entry and (not isinstance(entry[key], int) or entry[key] < 0):
+                yield f"{where}.{key}: must be a non-negative integer"
+        for key, kind in fields.items():
+            value = entry.get(key)
+            if key not in entry:
+                continue
+            if kind == "histogram" and value is not None and (
+                not isinstance(value, dict) or set(value) != {"unit", "edges", "counts"}
+            ):
+                yield f"{where}.{key}: must be a histogram {{unit, edges, counts}} or null"
+            if kind == "counts" and (
+                not isinstance(value, dict)
+                or not all(isinstance(c, int) and c >= 0 for c in value.values())
+            ):
+                yield f"{where}.{key}: must be {{label: count}} with non-negative integer counts"
 
 
 def _check_histograms(value, where):
@@ -202,6 +247,11 @@ def _stats_errors(stats):
     return list(_check_field(stats, SCHEMA["stats"]))
 
 
+def BEATS(stats):
+    """The beats entry of a stats dict, for the cases below."""
+    return stats["annotations"]["annotations"]["beats"]
+
+
 VALID_STATS = {
     "computed": {"mode": "remote", "index": "cb3998bcae39d9c1", "date": "2026-10-12"},
     "audio": {
@@ -212,7 +262,15 @@ VALID_STATS = {
     "annotations": {
         "status": "needs_local",
         "problems": ["no remotes: the annotations have to be downloaded manually"],
-        "annotations": {"beats": {"tempo": {"unit": "bpm", "edges": [60, 80], "counts": [3]}}},
+        "annotations": {
+            "beats": {
+                "type": "BeatData",
+                "n_tracks": 3,
+                "n_annotations": 3,
+                "beats_per_bar": {4: 3},
+                "tempo": {"unit": "bpm", "edges": [60, 80], "counts": [3]},
+            }
+        },
     },
 }
 
@@ -223,6 +281,14 @@ def test_valid_stats_and_null_pass():
     assert _stats_errors({"computed": VALID_STATS["computed"], "error": "ImportError: x"}) == []
     error_part = {"computed": VALID_STATS["computed"], "audio": {"status": "error", "error": "RuntimeError: x"}}
     assert _stats_errors(error_part) == []
+
+
+def test_annotation_entries_may_have_parts_and_null_histograms():
+    import copy
+
+    stats = copy.deepcopy(VALID_STATS)
+    BEATS(stats).update(parts={"annotator_1": 3}, tempo=None)
+    assert _stats_errors(stats) == []
 
 
 @pytest.mark.parametrize(
@@ -240,6 +306,13 @@ def test_valid_stats_and_null_pass():
         (lambda s: s["audio"]["duration_histogram"].update(edges=[3, 2, 1]), "edges must rise"),
         (lambda s: s["audio"]["duration_histogram"].update(counts=[1, -2]), "non-negative integers"),
         (lambda s: (s.pop("audio"), s.pop("annotations")), "needs at least one of"),
+        (lambda s: BEATS(s).update(type="Beats"), "beats.type: must be one of"),
+        (lambda s: BEATS(s).pop("beats_per_bar"), "beats: missing keys: beats_per_bar"),
+        (lambda s: BEATS(s).pop("n_tracks"), "beats: missing keys: n_tracks"),
+        (lambda s: BEATS(s).update(beats_per_annotation={}), "beats: unknown keys: beats_per_annotation"),
+        (lambda s: BEATS(s).update(n_tracks=-1), "beats.n_tracks: must be a non-negative integer"),
+        (lambda s: BEATS(s).update(tempo=[60, 80]), "beats.tempo: must be a histogram"),
+        (lambda s: BEATS(s).update(beats_per_bar={4: "three"}), "beats.beats_per_bar: must be {label: count}"),
     ],
 )
 def test_invalid_stats_are_reported(change, message):
