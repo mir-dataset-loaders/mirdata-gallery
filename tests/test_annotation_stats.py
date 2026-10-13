@@ -1,4 +1,4 @@
-"""Tests for scripts/stats/annotations: Stat classes, discovery, results, remote and local modes."""
+"""Tests for scripts/stats/annotations: Stat classes, properties, results, remote and local modes."""
 
 import json
 import logging
@@ -14,11 +14,12 @@ from mirdata.annotations import Annotation, MultiAnnotator
 from mirdata.core import cached_property
 
 from stats import annotations
-from stats.annotations import discovery
-from stats.annotations import fetch as annotation_fetch
+from stats import remote_zip
+from stats.annotations import properties
 from stats.annotations import types as annotation_types
 from audio_fakes import FAKE_URL, FakeRangeSession, fake_remote, zip_bytes
 from stats.annotations.types import STATS, Beats, Chords, F0, Keys, Notes, Tempo
+from stats.common import load_index
 from stats.histograms import histogram
 
 
@@ -53,7 +54,7 @@ def tempo(tempos=(120.0, 128.0)):
 
 
 class FakeTrack:
-    """A Track class with the kinds of properties the discovery has to sort out."""
+    """A Track class with the kinds of properties annotation_properties has to sort out."""
 
     def __init__(self, beats=None, chords=None, tempo=None, chords_alt=None):
         self._beats, self._chords, self._tempo = beats, chords, tempo
@@ -393,12 +394,12 @@ def test_interval_lengths_units():
     assert annotation_types.interval_lengths(chords()).tolist() == [1.0, 2.0, 0.5]
 
 
-# --------------------------------------------------------------- discovery
+# -------------------------------------------------------------- properties
 
 
 def test_annotation_properties_keeps_only_official_types():
     ds = SimpleNamespace(_track_class=FakeTrack)
-    assert discovery.annotation_properties(ds) == {
+    assert properties.annotation_properties(ds) == {
         "beats": "BeatData",
         "chords": "ChordData",
         "other_chords": "ChordData",
@@ -583,11 +584,11 @@ ARCHIVE = {
 
 def test_remote_stats_fetches_annotations_and_computes(tmp_path, monkeypatch):
     session = FakeRangeSession({FAKE_URL: zip_bytes(ARCHIVE)})
-    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    monkeypatch.setattr(remote_zip.requests, "Session", lambda: session)
     data_home = str(tmp_path / "fetch" / "fake")
     ds = remote_dataset(tmp_path, data_home)
 
-    stats = annotations.remote_stats("fake", ds, data_home)
+    stats = annotations.remote_stats("fake", ds, data_home, load_index(ds))
 
     assert stats["annotations"]["beats"]["tempo"] == histogram([120.0, 60.0], "bpm")
     assert stats["n_tracks_loaded"] == 2
@@ -600,10 +601,11 @@ def test_remote_stats_fetches_annotations_and_computes(tmp_path, monkeypatch):
 def test_remote_stats_reports_missing_files_and_failing_annotations(tmp_path, monkeypatch):
     archive = {k: v for k, v in ARCHIVE.items() if k != "ann/b.txt"}
     session = FakeRangeSession({FAKE_URL: zip_bytes(archive)})
-    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    monkeypatch.setattr(remote_zip.requests, "Session", lambda: session)
     data_home = str(tmp_path / "fetch" / "fake")
 
-    stats = annotations.remote_stats("fake", remote_dataset(tmp_path, data_home), data_home)
+    ds = remote_dataset(tmp_path, data_home)
+    stats = annotations.remote_stats("fake", ds, data_home, load_index(ds))
 
     assert stats["missing_files"] == {"ann/b.txt": "not in any readable remote"}
     assert stats["annotations"]["beats"]["n_tracks"] == 1
@@ -612,48 +614,44 @@ def test_remote_stats_reports_missing_files_and_failing_annotations(tmp_path, mo
 
 def test_remote_stats_limit_fetches_only_those_tracks(tmp_path, monkeypatch):
     session = FakeRangeSession({FAKE_URL: zip_bytes(ARCHIVE)})
-    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    monkeypatch.setattr(remote_zip.requests, "Session", lambda: session)
     data_home = str(tmp_path / "fetch" / "fake")
 
-    stats = annotations.remote_stats("fake", remote_dataset(tmp_path, data_home), data_home, limit=1)
+    ds = remote_dataset(tmp_path, data_home)
+    stats = annotations.remote_stats("fake", ds, data_home, load_index(ds), limit=1)
 
     assert os.path.exists(os.path.join(data_home, "ann/a.txt"))
     assert not os.path.exists(os.path.join(data_home, "ann/b.txt"))
     assert stats["n_tracks_loaded"] == 1
 
 
-def test_local_stats_without_local_copy(tmp_path):
-    with pytest.raises(FileNotFoundError, match="no local copy"):
-        annotations.local_stats("fake", str(tmp_path / "missing"))
-
-
 def test_remote_stats_logs_a_null_index_section(tmp_path, monkeypatch):
     session = FakeRangeSession({FAKE_URL: zip_bytes(ARCHIVE)})
-    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    monkeypatch.setattr(remote_zip.requests, "Session", lambda: session)
     data_home = str(tmp_path / "fetch" / "fake")
     ds = remote_dataset(tmp_path, data_home)
     index = json.loads(open(ds.index_path).read())
     index["metadata"] = None  # as in billboard's index
     open(ds.index_path, "w").write(json.dumps(index))
 
-    stats = annotations.remote_stats("fake", ds, data_home)
+    stats = annotations.remote_stats("fake", ds, data_home, load_index(ds))
     assert any('"metadata" is null' in line for line in stats["sources"])
     assert stats["annotations"]["beats"]["n_tracks"] == 2
 
 
 def test_remote_stats_status_ok_and_needs_local(tmp_path, monkeypatch):
     session = FakeRangeSession({FAKE_URL: zip_bytes(ARCHIVE)})
-    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    monkeypatch.setattr(remote_zip.requests, "Session", lambda: session)
     data_home = str(tmp_path / "fetch" / "fake")
     ds = remote_dataset(tmp_path, data_home)
-    stats = annotations.remote_stats("fake", ds, data_home)
+    stats = annotations.remote_stats("fake", ds, data_home, load_index(ds))
     assert (stats["status"], stats["problems"]) == ("ok", [])
 
     ds.remotes = {}
     other_home = str(tmp_path / "fetch2" / "fake")
     ds = remote_dataset(tmp_path, other_home)
     ds.remotes = {}
-    stats = annotations.remote_stats("fake", ds, other_home)
+    stats = annotations.remote_stats("fake", ds, other_home, load_index(ds))
     assert stats["status"] == "needs_local"
     assert stats["problems"] == ["no remotes: the annotations have to be downloaded manually"]
 
@@ -665,11 +663,11 @@ def test_loader_failure_is_incomplete_not_needs_local(tmp_path, monkeypatch):
             raise ValueError("keys ['f:minor'] are not valid")
 
     session = FakeRangeSession({FAKE_URL: zip_bytes(ARCHIVE)})
-    monkeypatch.setattr(annotation_fetch.requests, "Session", lambda: session)
+    monkeypatch.setattr(remote_zip.requests, "Session", lambda: session)
     data_home = str(tmp_path / "fetch" / "fake")
     ds = remote_dataset(tmp_path, data_home)
     ds._track_class = Broken
     ds.track = lambda track_id: Broken(data_home, f"ann/{track_id}.txt")
-    stats = annotations.remote_stats("fake", ds, data_home)
+    stats = annotations.remote_stats("fake", ds, data_home, load_index(ds))
     assert stats["status"] == "incomplete"
     assert stats["problems"] == []

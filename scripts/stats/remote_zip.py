@@ -19,6 +19,19 @@ import zlib
 import requests
 
 
+# Archives that are not zips: they have no table of contents to read by range.
+ARCHIVE_EXTENSIONS = (".tar.gz", ".tgz", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar")
+
+
+def session(workers):
+    """A requests session with a connection pool sized for `workers` parallel reads."""
+    s = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(pool_connections=workers, pool_maxsize=workers)
+    s.mount("https://", adapter)
+    s.mount("http://", adapter)
+    return s
+
+
 class HTTPFile(io.RawIOBase):
     """A read-only, seekable file whose bytes live behind a URL.
 

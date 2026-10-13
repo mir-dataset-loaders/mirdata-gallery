@@ -1,43 +1,20 @@
-"""Distributions of the annotations of one mirdata dataset, from its remotes or a local copy.
+"""Annotation stats of one dataset: histograms and label counts per annotation property.
 
-The dataset's Track class tells which annotation types it exposes (the same
-detection generate_cards.py uses for the card's "annotations" list). Every
-track is loaded, and each of its annotation properties (beats,
-leadsheet_chords, ...) is loaded on its own, so a broken annotation file
-costs only that annotation and is logged under annotation_errors. Each
-property is handed to its own Stat object for the property's type
-(stats/annotations/types.py), which reduces it to a few numbers or labels; at the
-end each Stat turns what it collected into histograms (see stats/histograms.py)
-and label counts, as plain dicts ready for JSON or the card YAML. Only the ten official mirdata
-annotation types are covered, and only the ones the dataset has show up;
-nothing is written.
-
-Only values that are instances of those classes are read; a property that
-returns something else (a tempo string from the metadata, a MIDI object) is
-reported as skipped. Results are keyed by property name, so a dataset with
-two chord annotations gets two ChordData entries; "tracks_with" counts, per
-type, the tracks that have at least one annotation of that type. Each beat
-entry carries the tempo derived from it (60 / median inter-beat interval per
-track); a TempoData property is an entry of its own.
-
-mirdata's own log warnings (e.g. guitarset's note on solo chords) are
-silenced while tracks are loaded.
-
-Remote mode: fetch.py pulls the annotation and metadata files the index
-lists out of the dataset's remotes into a folder laid out like a local copy;
-local mode reads a local copy. discovery.py finds the annotation properties.
+Only the ten official mirdata annotation types are read: properties.py finds
+them, types.py has one Stat class per type. Each property of each track is
+loaded on its own, so a broken file costs only that annotation. In remote
+mode the files are first fetched into a folder (remote_files.py); in local
+mode a local copy is read.
 """
 
 import logging
-import os
 import sys
 
-import mirdata
 
-from stats.annotations import fetch
-from stats.annotations.discovery import annotation_properties
+from stats.annotations import remote_files
+from stats.annotations.properties import annotation_properties
 from stats.annotations.types import STATS, is_empty
-from stats.common import load_index, part_status
+from stats.common import part_status
 
 
 class quiet_logging:
@@ -116,18 +93,18 @@ def dataset_stats(name, ds, limit=None, verbose=False):
     }
 
 
-def remote_stats(name, ds, data_home, limit=None, workers=4, verbose=False, budget=None):
+def remote_stats(name, ds, data_home, index, limit=None, workers=4, verbose=False, budget=None):
     """Fetch the dataset's annotation files from its remotes into data_home, then dataset_stats.
 
-    ds must be initialized with that data_home; budget is a stats.common.Budget
-    for the remote reads. The result carries "status" (ok, incomplete or
+    ds must be initialized with that data_home; index is its index dict
+    (stats.common.load_index); budget is a stats.common.Budget for the remote
+    reads. The result carries "status" (ok, incomplete or
     needs_local), "problems" (why a local run is needed), "sources" (one line
     per remote) and "missing_files" ({path: why it was not fetched}).
     """
-    index = load_index(ds)
     track_ids = ds.track_ids[:limit] if limit else None
-    wanted = fetch.annotation_paths(index, track_ids)
-    _, missing, sources, problems = fetch.fetch(
+    wanted = remote_files.annotation_paths(index, track_ids)
+    _, missing, sources, problems = remote_files.fetch(
         ds.remotes or {}, wanted, data_home, workers=workers, verbose=verbose, budget=budget
     )
     stats = dataset_stats(name, ds, limit, verbose)
@@ -136,16 +113,16 @@ def remote_stats(name, ds, data_home, limit=None, workers=4, verbose=False, budg
         **stats,
         "status": part_status(problems, incomplete),
         "problems": problems,
-        "sources": fetch.index_notes(index) + sources,
+        "sources": remote_files.index_notes(index) + sources,
         "missing_files": missing,
     }
 
 
-def local_stats(name, data_home, limit=None, verbose=False):
-    """dataset_stats on a local copy of the dataset in data_home."""
-    if not os.path.isdir(data_home):
-        raise FileNotFoundError(f"no local copy at {data_home}")
-    ds = mirdata.initialize(name, data_home=data_home)
+def local_stats(name, ds, data_home, limit=None, verbose=False):
+    """dataset_stats on a local copy of the dataset; ds is initialized with that data_home.
+
+    stats.dataset.compute checks that the local copy exists.
+    """
     stats = dataset_stats(name, ds, limit, verbose)
     incomplete = bool(stats["errors"] or stats["annotation_errors"])
     return {

@@ -1,18 +1,9 @@
 """One Stat class per official mirdata annotation type.
 
-Each Stat reads the annotation objects of one track property, track by
-track (add / read), and at the end turns what it collected into histograms
-(see stats/histograms.py) and label counts (result). STATS maps each mirdata type
-name (BeatData, ChordData, ...) to its Stat class; stats/annotations/__init__.py
-makes one Stat per annotation property of a dataset and feeds it the tracks.
-
-Only instances of the Stat's own mirdata class are read: add() returns False
-for anything else (a tempo string from the metadata, a MIDI object). A track
-property may also hold several annotations at once: a dict of them
-(guitarset's notes, one NoteData per string), a mirdata MultiAnnotator (salami's
-sections, one SectionData per annotator) or a list. Every annotation inside
-is read into the same Stat; the track is counted once, n_annotations counts
-the annotations and parts the dict keys or annotator ids they came from.
+A Stat reads one property's annotations track by track (add, read) and
+turns them into histograms and label counts at the end (result). A property
+can hold several annotations at once (a dict, a MultiAnnotator or a list):
+each one is read, and the track is counted once.
 """
 
 from collections import Counter

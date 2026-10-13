@@ -6,11 +6,10 @@ import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
-import requests
 
 from stats import remote_zip
 from stats.audio import headers
-from stats.common import RemoteLimit
+from stats.common import RemoteLimit, remote_problems
 
 
 def record(results, durations, rates, errors, verbose):
@@ -25,27 +24,17 @@ def record(results, durations, rates, errors, verbose):
             print(f"    {path:60s} {line}")
 
 
-ARCHIVE_EXTENSIONS = (".tar.gz", ".tgz", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar")
-
-
 def remote_durations(remotes, wanted, workers, limit, verbose, budget=None):
-    """Durations read over range requests from the dataset's zip remotes.
+    """Durations read by range requests from the dataset's zip remotes.
 
-    remotes: {key: RemoteFileMetadata}, as in a loader's REMOTES dict.
-    budget: a stats.common.Budget limiting what the remotes may cost.
     Returns (durations, rates, errors, sources, problems). problems are the
-    reasons a local run is needed: no remotes, remotes that cannot be read
-    (no access, tar.gz, ...), the budget running out, audio files that are in
-    no readable remote. A file that is read but fails to parse is an error,
-    not a problem: a local copy would fail the same way.
+    reasons to run locally (no remotes, unreadable remotes, the budget); a file
+    that fails to parse is an error instead, as it would fail locally too.
     """
     if not remotes:
         reason = "no remotes: the audio has to be downloaded manually"
         return {}, {}, {}, [f"  ({reason})"], [reason]
-    session = requests.Session()
-    adapter = requests.adapters.HTTPAdapter(pool_connections=workers, pool_maxsize=workers)
-    session.mount("https://", adapter)
-    session.mount("http://", adapter)
+    session = remote_zip.session(workers)
 
     durations, rates, errors, sources = {}, {}, {}, []
     unreadable = []  # "remote: why" for remotes that could hold audio but cannot be read
@@ -55,7 +44,7 @@ def remote_durations(remotes, wanted, workers, limit, verbose, budget=None):
         name = remote.filename.lower()
         if not name.endswith(".zip"):
             sources.append(f"  {key:22s} {remote.filename}: not a zip, skipped")
-            if name.endswith(ARCHIVE_EXTENSIONS):
+            if name.endswith(remote_zip.ARCHIVE_EXTENSIONS):
                 unreadable.append(f"{remote.filename} cannot be read remotely (not a zip)")
             continue
         if limit_hit:
@@ -113,17 +102,12 @@ def remote_durations(remotes, wanted, workers, limit, verbose, budget=None):
             f"({http.requests} requests, {http.bytes / 1e6:.1f} MB, {time.time() - t0:.1f} s)"
         )
 
-    problems = []
-    if limit_hit:
-        problems.append(f"remote limit: {limit_hit}")
     # Index files that no remote holds: report them like local mode reports a
     # missing file, so the counts never drop silently.
     unmatched = sorted(wanted - matched)
     for path in unmatched:
         errors[path] = "not in any readable remote"
-    if unmatched and not limit_hit:  # after the limit, unread remotes explain them
-        why = f"; not readable: {'; '.join(unreadable)}" if unreadable else ""
-        problems.append(f"{len(unmatched)} audio files not found in the readable remotes{why}")
+    problems = remote_problems("audio", limit_hit, unmatched, unreadable)
     return durations, rates, errors, sources, problems
 
 
@@ -131,10 +115,9 @@ def local_durations(data_home, wanted, limit, verbose):
     """Durations read from the audio files of a local copy of the dataset.
 
     Returns (durations, rates, errors, sources, problems); problems is always
-    empty, a local run having nowhere else to go.
+    empty, a local run having nowhere else to go. (stats.dataset.compute
+    checks that the local copy exists.)
     """
-    if not os.path.isdir(data_home):
-        raise FileNotFoundError(f"no local copy at {data_home}")
     t0 = time.time()
     paths = sorted(wanted)
     if limit:

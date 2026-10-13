@@ -1,16 +1,26 @@
 # Stats scripts: structure
 
-The stats code has one command at the top, `scripts/compute_stats.py`, and a
-`stats` package under it. The command reads the arguments and prints; the
-package does the work and returns plain dicts. Nothing is written to disk
-except, in remote mode, the fetched annotation files in a temporary folder.
+The stats code is a `stats` package used by two commands. The package does
+the work and returns plain dicts; the commands read the arguments and print.
+
+- `scripts/generate_cards.py` puts the stats into each card's `stats` field
+  (see "Stats in the cards" below).
+- `scripts/compute_stats.py` is for looking at the stats: it prints
+  everything, including the logs and per-file errors a card leaves out, and
+  never writes a card.
+
+Apart from the cards, nothing is written to disk except, in remote mode, the
+fetched annotation files in a temporary folder.
 
 ```
 scripts/
-  compute_stats.py          # the command: arguments, loop over datasets, printing
+  generate_cards.py         # the cards, including their stats field
+  compute_stats.py          # inspection: prints the full stats, writes nothing
   stats/
     __init__.py
     common.py               # shared: budget, status, index loading, dataset selection
+    dataset.py              # both parts for one dataset (used by both commands)
+    to_card.py              # a result -> the card's "stats" field; keep or replace
     histograms.py           # numbers -> {unit, edges, counts}
     remote_zip.py           # reading parts of a zip on a server (HTTP range requests)
     audio/
@@ -20,9 +30,31 @@ scripts/
       summary.py            # per-file results -> dataset numbers
     annotations/
       __init__.py           # dataset_stats, remote_stats, local_stats
-      discovery.py          # which track properties are official mirdata annotations
+      properties.py         # which track properties are official mirdata annotations
       types.py              # one Stat class per annotation type
-      fetch.py              # getting the annotation files out of the remotes
+      remote_files.py       # getting the annotation files out of the remotes
+```
+
+## Stats in the cards
+
+`generate_cards.py` builds every card with `build_card`, whose last field is
+`stats`. Like the summary, the stats are only recomputed when needed:
+
+- the card has no stats yet, or the dataset's index changed (the card stores
+  the index fingerprint), or `--force-stats` or `--local` is given;
+- otherwise the card keeps its stats, and nothing is computed.
+
+When both old and new stats exist for the same index, the more complete ones
+win (ok, then incomplete, then needs_local, then error, judged by each
+card's worst part). So a local `ok` is never replaced by a later remote
+`needs_local`. The run ends with the datasets whose stats need a local run.
+
+```
+python scripts/generate_cards.py --dataset rwc_popular          # stats from the remotes
+python scripts/generate_cards.py --dataset tonas --local        # stats from ~/mir_datasets/tonas
+python scripts/generate_cards.py --no-stats                     # keep every card's stats as is
+python scripts/generate_cards.py --force-stats                  # recompute every dataset's stats
+python scripts/generate_cards.py --max-mb 2000 --max-minutes 30 # larger remote limits
 ```
 
 ## How one run flows
@@ -37,7 +69,7 @@ scripts/
      audio file, from the remote zips or from your disk, and adds up
      durations and sample rates.
    - **Annotations**: in remote mode, `stats.annotations.remote_stats` first
-     copies the annotation files into a temporary folder (`fetch.py`). Then
+     copies the annotation files into a temporary folder (`remote_files.py`). Then
      mirdata's own loaders read every track, and one `Stat` object per
      annotation property turns them into histograms.
 3. Each part returns a dict with a `status`: `ok`, `incomplete` or
@@ -82,18 +114,42 @@ Remote limits apply per dataset and per part: `--max-mb` (default 500) and
 
 ### `scripts/compute_stats.py`
 
-The only command. Keeping all printing and argument handling here means the
-package can later be called from `generate_cards.py` without printing
-anything.
+The inspection command. It prints the full result of each part and never
+writes a card.
 
 - `parse_args`, `main`: the flags and the loop over datasets.
-- `compute`: one dataset. Each part runs in its own try, so a failing part
-  does not stop the other.
-- `audio_part`, `annotations_part`: call the package in local or remote mode.
-  `budget` gives each part a fresh remote limit.
+- `compute`: one dataset, through `stats/dataset.py`, printing each part as
+  it finishes.
 - `print_audio`, `print_annotations`, `print_part`, `fmt`: the terminal output.
-- `print_table`, `print_to_do`: the summary table and the closing list of
-  what to rerun locally.
+- `print_table`: the summary table after several datasets. The closing list
+  of what to rerun locally is `print_to_do` in `stats/common.py`, shared with
+  `generate_cards.py`.
+
+### `scripts/generate_cards.py` (the stats part)
+
+- `build_card`: every card field, `stats` last.
+- `card_stats`: decides the stats of one card: keep the old ones, or compute
+  (`stats/dataset.py`), convert (`stats/to_card.py`) and keep the more complete.
+- `generate`: prints each card's stats status and ends with the list of
+  datasets to complete with `--local` (`print_to_do`, shared with
+  `compute_stats.py`).
+
+The stats flags (`--local`, `--datasets-dir`, `--max-mb`, `--max-minutes`)
+and the `--dataset` check are the same functions in both commands
+(`add_stats_arguments`, `select_datasets` in `stats/common.py`).
+
+### `stats/dataset.py`
+
+The one place that runs both parts for a dataset, so the two commands
+compute exactly the same thing.
+
+- `compute`: checks the local copy exists (local mode), initializes the
+  dataset once with the folder its files are read from (local) or fetched
+  into (remote), loads its index once for both parts, then runs each part in
+  its own try, so a failing part does not stop the other. Each remote part
+  gets a fresh `Budget`; local parts have none.
+- `audio_part`, `annotations_part`: call `stats.audio` and
+  `stats.annotations` in local or remote mode.
 
 ### `stats/common.py`
 
@@ -105,8 +161,35 @@ What both parts share.
   `needs_local`.
 - `load_index`: gets a dataset's index file, never the whole dataset. Some
   mirdata loaders download gigabytes when their own download is called.
+- `remote_problems`: the closing problems of a remote read (the limit, or
+  the files no readable remote held), worded the same for audio and
+  annotations.
+- `print_to_do`: the closing list of datasets to rerun locally, incomplete
+  or failed; used by both commands.
+- `add_stats_arguments`: the stats flags both commands share.
 - `select_datasets`, `positive_int`, `hms`: the `--dataset` and `--exclude`
   choice, argument checking, and time formatting.
+
+### `stats/to_card.py`
+
+Turns a `compute_stats` result into the card's `stats` field. A card keeps
+what the gallery shows or needs to decide on: the numbers, the histograms,
+each part's status and problems, and counts of errors instead of the error
+lists. Log lines and per-file details stay out.
+
+- `card_stats`: the whole field, with a `computed` block saying how
+  (`remote` or `local`), from which index (its fingerprint) and when.
+- `audio_card`, `annotations_card`: what each part keeps.
+- `index_fingerprint`: the index's published MD5 checksum, read from
+  mirdata without downloading the index. It changes exactly when mirdata's
+  index for the dataset changes, which tells a later run whether the stats
+  are still current.
+- `needs_compute`, `choose`, `rank`: the keep-or-replace rules above.
+- `status_line`: the short status shown by `generate_cards.py`.
+
+The field's structure is checked by `tests/card_schema.py` (the `stats`
+rule). In the YAML, lists of numbers are written on one line
+(`cards_io.py`), so a histogram takes three lines.
 
 ### `stats/histograms.py`
 
@@ -136,6 +219,8 @@ remote mode possible: a 4 GB audio zip costs a few megabytes.
   annotations need).
 - `match_members`: matches zip entries to index paths, handling the
   destination folder and the wrapper folders mirdata strips when unpacking.
+- `session`, `ARCHIVE_EXTENSIONS`: the HTTP session and the list of
+  non-zip archives, shared by the audio and annotation remote readers.
 
 ### `stats/audio/`
 
@@ -156,7 +241,7 @@ remote mode possible: a 4 GB audio zip costs a few megabytes.
 
 ### `stats/annotations/`
 
-- **`discovery.py`**: `annotation_properties` looks at a dataset's Track
+- **`properties.py`**: `annotation_properties` looks at a dataset's Track
   class and keeps the properties of the 10 official mirdata annotation types,
   with the same detection as the card's `annotations` field.
 - **`types.py`**: what to measure for each annotation type.
@@ -171,7 +256,7 @@ remote mode possible: a 4 GB audio zip costs a few megabytes.
     list.
   - Helpers: `unpack`, `is_empty`, `chord_quality`, `interval_lengths`,
     `to_seconds`, `top_counts`.
-- **`fetch.py`**: remote mode for annotations. mirdata's loaders only read
+- **`remote_files.py`**: remote mode for annotations. mirdata's loaders only read
   files on disk, so the files have to be put there first.
   - `annotation_paths`: every non-audio file the index lists, plus metadata.
     It skips multitrack member lists, and with `--limit` keeps only the
@@ -194,7 +279,7 @@ remote mode possible: a 4 GB audio zip costs a few megabytes.
 ## Tests
 
 The tests in `tests/` mirror the modules, one file per module, for example
-`test_histograms.py`, `test_annotation_fetch.py` and `test_compute_stats.py`.
+`test_histograms.py`, `test_remote_files.py` and `test_compute_stats.py`.
 They use fake servers and fake datasets, so nothing touches the network.
 Checks against real data (rwc_popular, guitarset, salami and others) were
 done by hand during development.

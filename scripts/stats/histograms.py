@@ -1,15 +1,8 @@
-"""Histograms with bin widths chosen from the data, in a form that fits in a card.
+"""Histograms as {"unit", "edges", "counts"}, with bin widths chosen from the data.
 
-histogram() turns a list of numbers into {"unit", "edges", "counts"}: the
-bin width comes from the Freedman-Diaconis rule, rounded to a step size
-(1, 2, 2.5, 5 times a power of ten) and widened until there are at most
-MAX_BINS bins, and the edges are multiples of that width. With log=True the
-edges are 1, 2, 5 times powers of ten instead, for values that span several
-orders of magnitude. The edges and counts are plain Python numbers, so the
-result dumps cleanly to JSON or YAML.
-
-duration_histogram() is the one used for audio durations: seconds for short
-clips, minutes once the typical track is longer than MINUTES_FROM seconds.
+The width is the Freedman-Diaconis estimate rounded to 1, 2, 2.5 or 5 times
+a power of ten, with at most MAX_BINS bins; log=True gives log-spaced edges.
+Durations are binned in seconds, or in minutes when the median track is long.
 """
 
 import math
@@ -61,13 +54,10 @@ def log_edges(lo, hi):
 def histogram(values, unit, log=False):
     """{"unit", "edges", "counts"} of the values, or None when there are none.
 
-    edges has one more entry than counts; counts[i] is the number of values
-    in [edges[i], edges[i + 1]). The width is the Freedman-Diaconis estimate
-    rounded to a step size; when the data has no spread (all values
-    equal, or an interquartile range of zero) the Sturges rule or a single
-    bin takes over. With log=True the edges are 1, 2, 5 times powers of ten
-    instead, for values that span several orders of magnitude (durations);
-    values that are not positive are left out.
+    counts[i] is the number of values in [edges[i], edges[i + 1]). Data without
+    spread falls back to the Sturges rule or a single bin. With log=True the
+    edges are 1, 2, 5 times powers of ten, and values that are not positive are
+    left out.
     """
     values = np.asarray([v for v in values if v is not None], dtype=float)
     values = values[np.isfinite(values)]

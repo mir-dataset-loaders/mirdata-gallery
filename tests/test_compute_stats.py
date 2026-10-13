@@ -11,6 +11,7 @@ import requests
 from mirdata import annotations as A
 
 import compute_stats
+from stats import dataset as stats_dataset
 from audio_fakes import FAKE_URL, FakeRangeSession, fake_remote, make_wav, zip_bytes
 from stats.histograms import histogram
 
@@ -127,17 +128,15 @@ def test_a_failing_part_does_not_stop_the_other(tmp_path, fake_mirdata, capsys, 
     def broken(*args, **kwargs):
         raise RuntimeError("audio exploded")
 
-    monkeypatch.setattr(compute_stats.audio, "dataset_stats", broken)
+    monkeypatch.setattr(stats_dataset.audio, "dataset_stats", broken)
     result = run_json(capsys, "--dataset", "fake", "--local", "--datasets-dir", local_copy(tmp_path))
     assert result["fake"]["audio"] == {"status": "error", "error": "RuntimeError: audio exploded"}
     assert result["fake"]["annotations"]["annotations"]["beats"]["n_tracks"] == 2
 
 
-def test_missing_local_copy_is_an_error_in_both_parts(tmp_path, fake_mirdata, capsys):
+def test_missing_local_copy_is_checked_once_for_the_dataset(tmp_path, fake_mirdata, capsys):
     result = run_json(capsys, "--dataset", "fake", "--local", "--datasets-dir", str(tmp_path / "none"))
-    for part in ("audio", "annotations"):
-        assert result["fake"][part]["status"] == "error"
-        assert "no local copy" in result["fake"][part]["error"]
+    assert result["fake"] == {"name": "fake", "error": f"no local copy at {tmp_path / 'none' / 'fake'}"}
 
 
 def test_loader_that_cannot_be_initialized(fake_mirdata, capsys, monkeypatch):
@@ -193,7 +192,7 @@ def test_printed_table_after_several_datasets(tmp_path, fake_mirdata, capsys, mo
     compute_stats.main(["--local", "--datasets-dir", local_copy(tmp_path)])
     table = capsys.readouterr().out.split("\ndataset")[1]
     assert "fake" in table and "8000" in table and "0h 00m 03s" in table
-    assert "other" in table and "ImportError" in table
+    assert "other" in table and "no local copy" in table  # checked before initializing
 
 
 def test_print_annotations_shows_skips_and_errors(capsys):
@@ -229,19 +228,14 @@ def test_status_is_in_the_json(tmp_path, fake_mirdata, capsys):
     assert result["fake"]["audio"]["problems"] == []
 
 
-def test_max_mb_makes_both_parts_need_local(fake_mirdata, capsys):
+def test_max_mb_makes_both_parts_need_local(fake_mirdata, capsys, monkeypatch):
     compute_stats.main(["--dataset", "fake", "--max-mb", "1"])
     out = capsys.readouterr().out
     assert out.count("status:                 ok") == 2  # the fake zip is tiny: within 1 MB
 
-    def tiny_budget(args):
-        return compute_stats.Budget(max_mb=1e-6)
-
-    compute_stats.budget, original = tiny_budget, compute_stats.budget
-    try:
-        compute_stats.main(["--dataset", "fake"])
-    finally:
-        compute_stats.budget = original
+    real_budget = stats_dataset.Budget
+    monkeypatch.setattr(stats_dataset, "Budget", lambda max_mb, max_minutes: real_budget(1e-6, max_minutes))
+    compute_stats.main(["--dataset", "fake"])
     out = capsys.readouterr().out
     assert out.count("status:                 needs_local") == 2
     assert "Run these locally (python scripts/compute_stats.py --local --dataset <name>):" in out
@@ -250,10 +244,10 @@ def test_max_mb_makes_both_parts_need_local(fake_mirdata, capsys):
 
 
 def test_local_runs_have_no_budget(tmp_path, fake_mirdata, capsys, monkeypatch):
-    def no_budget(args):
+    def no_budget(*args):
         raise AssertionError("local mode must not make a budget")
 
-    monkeypatch.setattr(compute_stats, "budget", no_budget)
+    monkeypatch.setattr(stats_dataset, "Budget", no_budget)
     result = run_json(capsys, "--dataset", "fake", "--local", "--datasets-dir", local_copy(tmp_path))
     assert result["fake"]["audio"]["status"] == "ok"
 
@@ -266,16 +260,16 @@ def test_summary_groups_needs_local_incomplete_and_failed(capsys):
         "d": {"name": "d", "error": "ImportError: y"},
         "e": {"name": "e", "audio": {"status": "error", "error": "RuntimeError: z"}},
     }
-    compute_stats.print_to_do(results)
+    compute_stats.print_to_do(results, "python scripts/compute_stats.py --local --dataset <name>")
     out = capsys.readouterr().out
-    assert "Run these locally" in out and "b                            audio        no remotes: x" in out
+    assert "Run these locally (python scripts/compute_stats.py --local --dataset <name>):" in out and "b                            audio        no remotes: x" in out
     assert "Incomplete" in out and "c                            annotations  see its errors" in out
     assert "Failed:" in out and "ImportError: y" in out and "RuntimeError: z" in out
     assert "\n  a " not in out
 
 
 def test_nothing_to_do_prints_nothing(capsys):
-    compute_stats.print_to_do({"a": {"name": "a", "audio": {"status": "ok", "problems": []}}})
+    compute_stats.print_to_do({"a": {"name": "a", "audio": {"status": "ok", "problems": []}}}, "cmd")
     assert capsys.readouterr().out == ""
 
 
@@ -284,3 +278,28 @@ def test_limits_must_be_positive(flag, fake_mirdata):
     with pytest.raises(SystemExit) as exc:
         compute_stats.main([flag, "0"])
     assert exc.value.code == 2
+
+
+def test_index_is_loaded_once_for_both_parts(tmp_path, fake_mirdata, capsys, monkeypatch):
+    calls = []
+    real = stats_dataset.load_index
+
+    def counting(ds):
+        calls.append(ds)
+        return real(ds)
+
+    monkeypatch.setattr(stats_dataset, "load_index", counting)
+    result = run_json(capsys, "--dataset", "fake")  # remote: both parts need the index
+    assert result["fake"]["audio"]["status"] == "ok"
+    assert result["fake"]["annotations"]["status"] == "ok"
+    assert len(calls) == 1
+
+
+def test_index_error_reaches_both_parts(fake_mirdata, capsys, monkeypatch):
+    def broken(ds):
+        raise OSError("index 404")
+
+    monkeypatch.setattr(stats_dataset, "load_index", broken)
+    result = run_json(capsys, "--dataset", "fake")
+    assert result["fake"]["audio"] == {"status": "error", "error": "OSError: index 404"}
+    assert result["fake"]["annotations"] == {"status": "error", "error": "OSError: index 404"}

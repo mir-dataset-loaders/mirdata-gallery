@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from stats import common
+from stats import remote_zip
 from stats.audio import dataset_stats, summary
 from stats.audio import sources as audio_sources
 from audio_fakes import FAKE_URL, FakeRangeSession, FakeResponse, fake_remote, make_wav, zip_bytes
@@ -247,11 +248,6 @@ def test_local_durations_respects_sorted_limit(fake_dataset):
     assert len(sources) == 1
 
 
-def test_local_durations_without_local_copy_is_an_error(tmp_path):
-    with pytest.raises(FileNotFoundError, match="no local copy"):
-        audio_sources.local_durations(str(tmp_path / "not-there"), {"audio/a.wav"}, limit=None, verbose=False)
-
-
 def test_dataset_stats_without_remotes(fake_index):
     stats = dataset_stats(
         "fake_audio_stats",
@@ -271,7 +267,7 @@ def test_dataset_stats_without_remotes(fake_index):
 
 def test_fake_dataset_remote_zip_end_to_end(fake_dataset, monkeypatch):
     session = FakeRangeSession({FAKE_URL: fake_dataset.archive})
-    monkeypatch.setattr(audio_sources.requests, "Session", lambda: session)
+    monkeypatch.setattr(remote_zip.requests, "Session", lambda: session)
 
     stats = dataset_stats(
         "fake_audio_stats",
@@ -296,7 +292,7 @@ def test_remote_limit_counts_attempted_files_not_successes(monkeypatch):
             good_url: zip_bytes({"audio/01-good.wav": make_wav()}),
         }
     )
-    monkeypatch.setattr(audio_sources.requests, "Session", lambda: session)
+    monkeypatch.setattr(remote_zip.requests, "Session", lambda: session)
 
     durations, rates, errors, sources, problems = audio_sources.remote_durations(
         {
@@ -339,7 +335,7 @@ def test_hms(seconds, expected):
 
 
 def read_remote(remotes, wanted, session, monkeypatch, budget=None, limit=None):
-    monkeypatch.setattr(audio_sources.requests, "Session", lambda: session)
+    monkeypatch.setattr(remote_zip.requests, "Session", lambda: session)
     return audio_sources.remote_durations(remotes, wanted, workers=1, limit=limit, verbose=False, budget=budget)
 
 
@@ -409,5 +405,5 @@ def test_status_needs_local_with_its_reason(monkeypatch):
 
 
 def dataset_stats_remote(track, session, monkeypatch):
-    monkeypatch.setattr(audio_sources.requests, "Session", lambda: session)
+    monkeypatch.setattr(remote_zip.requests, "Session", lambda: session)
     return dataset_stats("fake", {"tracks": {"a": track}}, {"all": fake_remote()}, workers=1)

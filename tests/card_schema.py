@@ -17,6 +17,9 @@ Rule keywords:
  unique       list: no duplicate elements
  sorted       list: elements must be in sorted order
  choices      the value (str) or every element (list) must be one of these
+ stats        dict: the structure of the "stats" field (see STATS_* below):
+              a "computed" block, parts with a valid status, and every
+              histogram {unit, edges, counts} well formed
 
 Two rules apply to every card and are not per-field:
  - `name` must equal the file name without .yaml
@@ -55,6 +58,11 @@ AUDIO_AVAILABILITY = [
     "❌ Not available",
 ]
 
+# The "stats" field (written by scripts/generate_cards.py, see scripts/stats/to_card.py).
+STATS_PARTS = ["audio", "annotations"]
+STATS_STATUSES = ["ok", "incomplete", "needs_local", "error"]
+STATS_MODES = ["remote", "local"]
+
 SCHEMA = {
     "name": {
         "type": str,
@@ -86,5 +94,10 @@ SCHEMA = {
     "summary": {
         "type": (str, NoneType),
         "min_length": 1,
+    },
+    # Audio and annotation statistics; null until computed
+    "stats": {
+        "type": (dict, NoneType),
+        "stats": True,
     },
 }

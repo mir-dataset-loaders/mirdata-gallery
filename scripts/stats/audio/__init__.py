@@ -1,15 +1,8 @@
-"""Track count and total audio duration of one mirdata dataset, without downloading it.
+"""Audio stats of one dataset: track count, durations and sample rates.
 
-n_tracks is the number of entries in the dataset index. The duration is read
-from the audio file headers: the dataset's zip archives are opened straight
-from their URL with HTTP range requests (the server sends only the bytes we
-ask for), so we fetch the zip's table of contents plus the first 64 KB of each
-audio file and never write anything to disk. With a
-data_home the same headers are read from a local copy instead.
-
-The range reading lives in stats/remote_zip.py, the header parsers in
-stats/audio/headers.py, the reading of local or remote files in
-stats/audio/sources.py and the numbers in stats/audio/summary.py.
+Durations come from the audio file headers only (headers.py), read by range
+from the zip remotes or from a local copy (sources.py), then added up
+(summary.py). No audio is decoded or downloaded whole.
 """
 
 from stats.audio.sources import local_durations, remote_durations

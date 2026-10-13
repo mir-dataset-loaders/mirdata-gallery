@@ -10,7 +10,7 @@ from types import NoneType
 import pytest
 import yaml
 
-from card_schema import SCHEMA
+from card_schema import SCHEMA, STATS_MODES, STATS_PARTS, STATS_STATUSES
 
 CARDS_DIR = os.path.join(os.path.dirname(__file__), "..", "cards")
 CARD_FILES = sorted(f for f in os.listdir(CARDS_DIR) if f.endswith(".yaml"))
@@ -98,6 +98,72 @@ def _check_field(value, rules):
         if unknown:
             yield f"unknown value(s) {unknown}; allowed: {rules['choices']}"
 
+    if rules.get("stats") and isinstance(value, dict):
+        yield from _check_stats(value)
+
+
+def _check_stats(stats):
+    """The structure of the "stats" field; see STATS_* in card_schema.py."""
+    extra = [k for k in stats if k not in ["computed", "error", *STATS_PARTS]]
+    if extra:
+        yield f"unknown keys: {', '.join(map(str, extra))}"
+
+    computed = stats.get("computed")
+    if not isinstance(computed, dict):
+        yield "computed: missing (needs mode, index, date)"
+    else:
+        if computed.get("mode") not in STATS_MODES:
+            yield f"computed.mode: must be one of {STATS_MODES}, got {computed.get('mode')!r}"
+        if not isinstance(computed.get("index"), str) or not computed.get("index"):
+            yield "computed.index: must be the index fingerprint (a string)"
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(computed.get("date", ""))):
+            yield f"computed.date: must be YYYY-MM-DD, got {computed.get('date')!r}"
+
+    if "error" in stats:
+        if not isinstance(stats["error"], str):
+            yield "error: must be a string"
+    elif not any(part in stats for part in STATS_PARTS):
+        yield f"needs at least one of {STATS_PARTS} (or an error)"
+
+    for part in STATS_PARTS:
+        if part not in stats:
+            continue
+        value = stats[part]
+        if not isinstance(value, dict):
+            yield f"{part}: expected dict, got {type(value).__name__}"
+            continue
+        status = value.get("status")
+        if status not in STATS_STATUSES:
+            yield f"{part}.status: must be one of {STATS_STATUSES}, got {status!r}"
+        if status == "error":
+            if not isinstance(value.get("error"), str):
+                yield f"{part}.error: an error part needs its message"
+        elif not isinstance(value.get("problems"), list) or not all(
+            isinstance(p, str) for p in value["problems"]
+        ):
+            yield f"{part}.problems: must be a list of strings"
+        elif status == "needs_local" and not value["problems"]:
+            yield f"{part}.problems: needs_local must say why"
+        yield from _check_histograms(value, part)
+
+
+def _check_histograms(value, where):
+    """Every {unit, edges, counts} under value: one more edge than counts, rising edges."""
+    if isinstance(value, dict):
+        if set(value) == {"unit", "edges", "counts"}:
+            edges, counts = value["edges"], value["counts"]
+            if not isinstance(edges, list) or not isinstance(counts, list):
+                yield f"{where}: edges and counts must be lists"
+            elif len(edges) != len(counts) + 1:
+                yield f"{where}: {len(edges)} edges for {len(counts)} counts (needs one more edge)"
+            elif any(b <= a for a, b in zip(edges, edges[1:])):
+                yield f"{where}: edges must rise"
+            elif any(not isinstance(c, int) or c < 0 for c in counts):
+                yield f"{where}: counts must be non-negative integers"
+            return
+        for key, item in value.items():
+            yield from _check_histograms(item, f"{where}.{key}")
+
 
 def _type_names(allowed):
     types = allowed if isinstance(allowed, tuple) else (allowed,)
@@ -125,3 +191,70 @@ def test_validator_reports_every_problem():
     assert any(e.startswith("unknown keys") for e in errors)
     assert "name: expected str, got int" in errors
     assert "annotations: expected list, got str" in errors
+
+
+# =============================================================================
+# The stats field
+# =============================================================================
+
+
+def _stats_errors(stats):
+    return list(_check_field(stats, SCHEMA["stats"]))
+
+
+VALID_STATS = {
+    "computed": {"mode": "remote", "index": "cb3998bcae39d9c1", "date": "2026-10-12"},
+    "audio": {
+        "status": "ok",
+        "problems": [],
+        "duration_histogram": {"unit": "min", "edges": [2, 2.5, 3], "counts": [1, 2]},
+    },
+    "annotations": {
+        "status": "needs_local",
+        "problems": ["no remotes: the annotations have to be downloaded manually"],
+        "annotations": {"beats": {"tempo": {"unit": "bpm", "edges": [60, 80], "counts": [3]}}},
+    },
+}
+
+
+def test_valid_stats_and_null_pass():
+    assert _stats_errors(VALID_STATS) == []
+    assert _stats_errors(None) == []
+    assert _stats_errors({"computed": VALID_STATS["computed"], "error": "ImportError: x"}) == []
+    error_part = {"computed": VALID_STATS["computed"], "audio": {"status": "error", "error": "RuntimeError: x"}}
+    assert _stats_errors(error_part) == []
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda s: s.pop("computed"), "computed: missing"),
+        (lambda s: s["computed"].update(mode="cloud"), "computed.mode"),
+        (lambda s: s["computed"].update(date="12/10/2026"), "computed.date"),
+        (lambda s: s["computed"].update(index=""), "computed.index"),
+        (lambda s: s.update(extra=1), "unknown keys: extra"),
+        (lambda s: s["audio"].update(status="fine"), "audio.status"),
+        (lambda s: s["audio"].pop("problems"), "audio.problems: must be a list"),
+        (lambda s: s["annotations"].update(problems=[]), "needs_local must say why"),
+        (lambda s: s["audio"]["duration_histogram"].update(counts=[1]), "3 edges for 1 counts"),
+        (lambda s: s["audio"]["duration_histogram"].update(edges=[3, 2, 1]), "edges must rise"),
+        (lambda s: s["audio"]["duration_histogram"].update(counts=[1, -2]), "non-negative integers"),
+        (lambda s: (s.pop("audio"), s.pop("annotations")), "needs at least one of"),
+    ],
+)
+def test_invalid_stats_are_reported(change, message):
+    import copy
+
+    stats = copy.deepcopy(VALID_STATS)
+    change(stats)
+    errors = _stats_errors(stats)
+    assert any(message in e for e in errors), errors
+
+
+def test_real_stats_from_card_py_pass_the_schema():
+    """The stats field card.py writes (here for a small fake result) is valid as is."""
+    from stats.to_card import card_stats
+    from test_to_card import ANNOTATIONS, AUDIO
+
+    stats = card_stats({"name": "fake", "audio": AUDIO, "annotations": ANNOTATIONS}, "local", "abc", "2026-10-12")
+    assert _stats_errors(stats) == []

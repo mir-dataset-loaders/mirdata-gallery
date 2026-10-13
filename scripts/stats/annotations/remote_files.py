@@ -1,21 +1,10 @@
-"""Fetch only the annotation and metadata files of a dataset from its remotes.
+"""Fetch a dataset's annotation and metadata files from its remotes, without the audio.
 
-The annotation stats run mirdata's own loaders, which read files from disk.
-In remote mode this module puts exactly the files those loaders need into a
-folder laid out like a local copy (data_home), without downloading the
-audio: the dataset index lists every file by its path relative to data_home,
-and every non-audio file is wanted. A zip remote up to MAX_ARCHIVE_MB is
-downloaded whole into memory in one request (faster than hundreds of range
-requests, which servers like Zenodo rate-limit); a bigger one, typically
-audio and annotations bundled together, is read with HTTP range requests
-(see stats/remote_zip.py), so only the wanted files are transferred. A small zip
-whose server cannot answer range requests (GitHub's generated archives, a
-common home for annotations) is downloaded whole too. A remote that is a
-plain file listed in the index is fetched whole. Other archives (tar.gz,
-...) cannot be read by range and are reported and skipped, as in
-the audio stats.
-
-Files already in data_home are kept, so a fetch folder can be reused.
+mirdata's loaders read files from disk, so the files the index lists are
+written into a folder laid out like a local copy. Zips up to MAX_ARCHIVE_MB,
+and servers without range support, are downloaded whole; bigger zips are
+read by range (remote_zip.py). tar.gz and similar archives are reported and
+skipped.
 """
 
 import io
@@ -25,14 +14,12 @@ import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
-import requests
 
 from stats import remote_zip
-from stats.common import RemoteLimit
+from stats.common import RemoteLimit, remote_problems
 
 MAX_FILE_MB = 50  # a single annotation file bigger than this is skipped (features, not labels)
 MAX_ARCHIVE_MB = 200  # a zip up to this size is downloaded whole; bigger ones are read by range
-ARCHIVE_EXTENSIONS = (".tar.gz", ".tgz", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar")
 
 
 def _entry_path(value):
@@ -88,14 +75,6 @@ def _write(data_home, path, data):
         f.write(data)
 
 
-def _session(workers):
-    session = requests.Session()
-    adapter = requests.adapters.HTTPAdapter(pool_connections=workers, pool_maxsize=workers)
-    session.mount("https://", adapter)
-    session.mount("http://", adapter)
-    return session
-
-
 def download_whole(url, session, max_mb=None, budget=None):
     """The bytes behind url, streamed; an IOError past max_mb so a big archive is never pulled.
 
@@ -142,13 +121,8 @@ def open_zip(url, session, budget=None):
 def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbose=False, budget=None):
     """Write the wanted index paths found in the remotes under data_home.
 
-    remotes: {key: RemoteFileMetadata}, as in a loader's REMOTES dict.
-    budget: a stats.common.Budget limiting what the remotes may cost.
-    Returns (fetched, errors, sources, problems): the set of paths now on
-    disk, {path: why it is missing}, one summary line per remote, and the
-    reasons a local run is needed (no remotes, remotes that cannot be read,
-    files over max_file_mb, the budget running out, wanted files in no
-    readable remote).
+    Returns (fetched, errors, sources, problems): the paths now on disk, why the
+    others are missing, one log line per remote, and the reasons to run locally.
     """
     present = {p for p in wanted if os.path.isfile(os.path.join(data_home, p))}
     fetched, errors, sources, problems = set(present), {}, [], []
@@ -159,7 +133,7 @@ def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbos
         sources.append(f"  ({reason})")
         problems.append(reason)
     max_bytes = max_file_mb * 1e6
-    session = _session(workers)
+    session = remote_zip.session(workers)
     matched = set(present)  # every wanted path some remote holds, fetched or not
     unreadable = []  # "remote: why" for remotes that cannot be read
     too_big = []  # wanted files over max_file_mb
@@ -235,7 +209,7 @@ def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbos
                 f"  {key:22s} {remote.filename}  {size}  {len(members)} matched, {n_ok} fetched  "
                 f"({how}, {time.time() - t0:.1f} s)"
             )
-        elif name.endswith(ARCHIVE_EXTENSIONS):
+        elif name.endswith(remote_zip.ARCHIVE_EXTENSIONS):
             sources.append(f"  {key:22s} {remote.filename}: not a zip, skipped")
             unreadable.append(f"{remote.filename} cannot be read remotely (not a zip)")
         else:  # a plain file: fetched whole if the index lists it
@@ -268,16 +242,13 @@ def fetch(remotes, wanted, data_home, workers=4, max_file_mb=MAX_FILE_MB, verbos
                 if path not in too_big:
                     unreadable.append(f"{remote.filename}: {errors[path]}")
 
-    if limit_hit:
-        problems.append(f"remote limit: {limit_hit}")
-    if too_big:
-        problems.append(f"{len(too_big)} files over the {max_file_mb} MB per-file remote limit")
     unmatched = sorted(wanted - matched)
     for path in unmatched:
         errors[path] = "not in any readable remote"
-    if unmatched and remotes and not limit_hit:  # else "no remotes" or the limit explains them
-        why = f"; not readable: {'; '.join(unreadable)}" if unreadable else ""
-        problems.append(f"{len(unmatched)} annotation files not found in the readable remotes{why}")
-    elif unreadable and wanted - fetched:
-        problems.append("; ".join(unreadable))
+    # Without remotes, "no remotes" above already explains the unmatched files.
+    problems += remote_problems("annotation", limit_hit, unmatched if remotes else [], unreadable)
+    if too_big:
+        problems.append(f"{len(too_big)} files over the {max_file_mb} MB per-file remote limit")
+    if not unmatched and not limit_hit and unreadable and wanted - fetched:
+        problems.append("; ".join(unreadable))  # matched files that failed to download
     return fetched, errors, sources, problems

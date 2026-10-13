@@ -11,6 +11,7 @@ from mirdata import download_utils
 DEFAULT_DATASETS_DIR = os.path.join(os.path.expanduser("~"), "mir_datasets")  # mirdata's default
 MAX_REMOTE_MB = 500  # default budget per dataset and part: data read from the remotes
 MAX_REMOTE_MINUTES = 10  # default budget per dataset and part: time spent reading remotes
+PARTS = ("audio", "annotations")
 
 
 class RemoteLimit(Exception):
@@ -47,6 +48,22 @@ class Budget:
             self.bytes += n_bytes
 
 
+def remote_problems(kind, limit_hit, unmatched, unreadable):
+    """The closing problems of a remote read: the limit, or the files no readable remote held.
+
+    kind: "audio" or "annotation"; limit_hit: the RemoteLimit message or None;
+    unmatched: wanted files found in no remote; unreadable: "remote: why" for
+    remotes that could not be read. After the limit the unread remotes explain
+    the unmatched files, so only the limit is reported.
+    """
+    if limit_hit:
+        return [f"remote limit: {limit_hit}"]
+    if unmatched:
+        why = f"; not readable: {'; '.join(unreadable)}" if unreadable else ""
+        return [f"{len(unmatched)} {kind} files not found in the readable remotes{why}"]
+    return []
+
+
 def part_status(problems, incomplete):
     """ok, incomplete (some files failed; a local run would not help) or needs_local."""
     if problems:
@@ -77,6 +94,63 @@ def select_datasets(all_names, dataset=None, exclude=""):
         names = [dataset]
     excluded = {n.strip() for n in exclude.split(",") if n.strip()}
     return [n for n in names if n not in excluded]
+
+
+def print_to_do(results, command):
+    """List the datasets whose parts need a local run, and those left incomplete or failing.
+
+    results: {name: {"error"?, "audio"?, "annotations"?}}, each part with a
+    "status" and "problems" (or "error"): a compute result or a card's stats
+    field, which have the same shape. command: how to rerun one dataset
+    locally, shown in the heading.
+    """
+    groups = {"needs_local": [], "incomplete": [], "error": []}
+    for name, result in results.items():
+        if not result:
+            continue
+        if result.get("error"):
+            groups["error"].append((name, "", result["error"]))
+        for part in PARTS:
+            stats = result.get(part)
+            if stats and stats.get("status") in groups:
+                why = (stats.get("problems") or [stats.get("error") or "see its errors"])[0]
+                groups[stats["status"]].append((name, part, why))
+    titles = {
+        "needs_local": f"Run these locally ({command}):",
+        "incomplete": "Incomplete (some files could not be read; a local run would not help):",
+        "error": "Failed:",
+    }
+    for status, rows in groups.items():
+        if rows:
+            print(f"\n{titles[status]}")
+            for name, part, why in rows:
+                print(f"  {name:28s} {part:12s} {why[:110]}")
+
+
+def add_stats_arguments(parser):
+    """The stats flags shared by compute_stats.py and generate_cards.py."""
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        help="compute the stats from local copies of the datasets, not the remotes",
+    )
+    parser.add_argument(
+        "--datasets-dir",
+        default=DEFAULT_DATASETS_DIR,
+        help="with --local: folder with one sub-folder per dataset (default: ~/mir_datasets)",
+    )
+    parser.add_argument(
+        "--max-mb",
+        type=positive_int,
+        default=MAX_REMOTE_MB,
+        help=f"remote limit per dataset and part, in MB read (default {MAX_REMOTE_MB})",
+    )
+    parser.add_argument(
+        "--max-minutes",
+        type=positive_int,
+        default=MAX_REMOTE_MINUTES,
+        help=f"remote limit per dataset and part, in minutes (default {MAX_REMOTE_MINUTES})",
+    )
 
 
 def positive_int(text):
