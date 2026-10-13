@@ -12,7 +12,7 @@ from fake_dataset import DATA_HOME
 from stats import dataset
 
 
-def test_fake_dataset_is_a_valid_mirdata_dataset(fake_mirdata):
+def test_fake_dataset_loads_in_mirdata(fake_mirdata):
     ds = mirdata.initialize("fake_dataset", data_home=DATA_HOME)
     assert ds.track_ids == ["track1", "track2", "track3"]
     missing, invalid = ds.validate(verbose=False)
@@ -21,7 +21,7 @@ def test_fake_dataset_is_a_valid_mirdata_dataset(fake_mirdata):
     assert ds.track("track3").chords is None
 
 
-def test_audio(fake_mirdata):
+def test_audio_stats_are_correct(fake_mirdata):
     audio = dataset.compute("fake_dataset", DATA_HOME, local=True)["audio"]
     assert audio["status"] == "ok"
     assert audio["problems"] == []
@@ -35,7 +35,7 @@ def test_audio(fake_mirdata):
     assert sum(audio["duration_histogram"]["counts"]) == 3
 
 
-def test_annotations(fake_mirdata):
+def test_annotation_stats_are_correct(fake_mirdata):
     result = dataset.compute("fake_dataset", DATA_HOME, local=True)["annotations"]
     assert result["status"] == "ok"
     assert result["problems"] == []
@@ -77,7 +77,7 @@ def test_annotation_types_match_the_dataset(fake_mirdata):
     assert sorted(result["tracks_with"]) == dataset_types
 
 
-def test_a_crashing_part_does_not_stop_the_other(fake_mirdata, monkeypatch):
+def test_error_only_for_the_part_that_crashes(fake_mirdata, monkeypatch):
     """A loader bug that breaks the annotations part: that part is an error, the audio is still computed."""
 
     def broken(self):
@@ -91,6 +91,6 @@ def test_a_crashing_part_does_not_stop_the_other(fake_mirdata, monkeypatch):
     assert result["audio"]["total_seconds"] == 7.0
 
 
-def test_missing_local_copy_is_an_error(fake_mirdata, tmp_path):
+def test_error_when_local_copy_is_missing(fake_mirdata, tmp_path):
     result = dataset.compute("fake_dataset", str(tmp_path / "nowhere"), local=True)
     assert set(result) == {"name", "error"}

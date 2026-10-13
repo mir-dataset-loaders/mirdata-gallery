@@ -19,7 +19,7 @@ ANNOTATION_FILES = [
 ]
 
 
-def test_fetched_files_are_deleted_after_the_run(fake_remotes, tmp_path, monkeypatch, capsys):
+def test_fetched_files_deleted_after_the_run(fake_remotes, tmp_path, monkeypatch, capsys):
     temp = tmp_path / "temp"  # the system's temporary folder, for this test
     temp.mkdir()
     monkeypatch.setattr(tempfile, "tempdir", str(temp))
@@ -29,7 +29,7 @@ def test_fetched_files_are_deleted_after_the_run(fake_remotes, tmp_path, monkeyp
     assert files_under(temp) == []  # ...and nothing is left of them
 
 
-def test_fetch_dir_keeps_the_fetched_files(fake_remotes, tmp_path):
+def test_fetched_files_kept_with_fetch_dir(fake_remotes, tmp_path):
     kept = tmp_path / "kept"
     compute_stats.main(["--dataset", "fake_dataset", "--fetch-dir", str(kept)])
     assert files_under(kept / "fake_dataset") == ANNOTATION_FILES

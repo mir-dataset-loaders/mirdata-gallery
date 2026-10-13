@@ -56,7 +56,7 @@ def change_index(tmp_path, monkeypatch):
     monkeypatch.setattr(fake_dataset.INDEXES["1.0"], "indexes_dir", str(folder))
 
 
-def test_new_card(run):
+def test_new_card_has_fields_and_stats(run):
     card = run()
     assert card["name"] == "fake_dataset"
     assert card["license"] == fake_dataset.LICENSE_INFO
@@ -74,14 +74,14 @@ def test_new_card_passes_the_schema(run):
     assert validate_card(run(), "fake_dataset.yaml") == []
 
 
-def test_same_index_keeps_the_stats_without_computing(run, fake_remotes):
+def test_stats_kept_when_index_is_unchanged(run, fake_remotes):
     first = run()
     second = run()
     assert fake_remotes.requests == []
     assert second["stats"] == first["stats"]
 
 
-def test_new_index_recomputes(run, fake_remotes, tmp_path, monkeypatch):
+def test_stats_recomputed_when_index_changes(run, fake_remotes, tmp_path, monkeypatch):
     first = run()
     change_index(tmp_path, monkeypatch)
     second = run()
@@ -90,13 +90,13 @@ def test_new_index_recomputes(run, fake_remotes, tmp_path, monkeypatch):
     assert second["stats"]["audio"]["status"] == "ok"
 
 
-def test_force_stats_recomputes(run, fake_remotes):
+def test_stats_recomputed_with_force_stats(run, fake_remotes):
     run()
     run("--force-stats")
     assert fake_remotes.requests != []
 
 
-def test_no_stats_keeps_the_stats(run, fake_remotes, tmp_path, monkeypatch):
+def test_stats_kept_with_no_stats(run, fake_remotes, tmp_path, monkeypatch):
     first = run()
     change_index(tmp_path, monkeypatch)  # a normal run would recompute now
     second = run("--no-stats")
@@ -104,7 +104,7 @@ def test_no_stats_keeps_the_stats(run, fake_remotes, tmp_path, monkeypatch):
     assert second["stats"] == first["stats"]
 
 
-def test_worse_result_does_not_replace_better_stats(run, fake_remotes):
+def test_better_stats_kept_when_new_ones_are_worse(run, fake_remotes):
     first = run("--local", "--datasets-dir", LOCAL_DIR)
     assert first["stats"]["computed"]["mode"] == "local"
     fake_remotes.failures["audio.zip"] = "404"
@@ -113,7 +113,7 @@ def test_worse_result_does_not_replace_better_stats(run, fake_remotes):
     assert second["stats"] == first["stats"]  # ...but the local ok was kept
 
 
-def test_local_run_replaces_remote_needs_local(run, fake_remotes):
+def test_needs_local_replaced_by_local_run(run, fake_remotes):
     fake_remotes.failures["audio.zip"] = "404"
     first = run()
     assert first["stats"]["audio"]["status"] == "needs_local"
@@ -123,13 +123,13 @@ def test_local_run_replaces_remote_needs_local(run, fake_remotes):
     assert second["stats"]["annotations"]["status"] == "ok"
 
 
-def test_local_run_without_a_local_copy_keeps_the_stats(run, tmp_path):
+def test_stats_kept_when_local_copy_is_missing(run, tmp_path):
     first = run()
     second = run("--local", "--datasets-dir", str(tmp_path / "empty"))
     assert second["stats"] == first["stats"]
 
 
-def test_needs_local_is_listed_at_the_end(run, fake_remotes):
+def test_needs_local_dataset_listed_at_the_end(run, fake_remotes):
     fake_remotes.failures["audio.zip"] = "404"
     run()
     to_do = run.out[run.out.index("Run these locally") :]
@@ -137,7 +137,7 @@ def test_needs_local_is_listed_at_the_end(run, fake_remotes):
     assert "audio" in to_do
 
 
-def test_fetched_files_are_deleted_after_the_run(run, tmp_path, monkeypatch):
+def test_fetched_files_deleted_after_the_run(run, tmp_path, monkeypatch):
     temp = tmp_path / "temp"  # the system's temporary folder, for this test
     temp.mkdir()
     monkeypatch.setattr(tempfile, "tempdir", str(temp))
