@@ -1,50 +1,75 @@
-"""Shared fixtures: a fake mirdata-style dataset on disk and as a zip."""
+"""Shared fixtures: the fake dataset of fake_dataset.py, registered in mirdata, and its remotes."""
 
-import json
-from pathlib import Path
-from types import SimpleNamespace
+import io
+import os
+import sys
+import zipfile
 
+import mirdata
 import pytest
+from mirdata.download_utils import RemoteFileMetadata
 
-from audio_fakes import make_flac, make_mp3_cbr, make_wav, zip_bytes
-
-RESOURCES = Path(__file__).parent / "resources" / "audio_stats"
-
-
-@pytest.fixture
-def fake_index():
-    with open(RESOURCES / "fake_index.json", encoding="utf-8") as file:
-        return json.load(file)
+import fake_dataset
+from fake_server import FakeServer
 
 
 @pytest.fixture
-def fake_dataset(tmp_path, fake_index):
-    data_home = tmp_path / "mir_datasets" / "fake_audio_stats"
-    audio_files = {
-        "audio/a.wav": make_wav(1.0, 8000),
-        "audio/b.flac": make_flac(2.5, 16000),
-        "audio/c.mp3": make_mp3_cbr(3.0),
-        "audio/d.wav": make_wav(4.0, 8000),
-        "audio/bad.wav": b"this is not a WAV file",
-    }
+def fake_mirdata(monkeypatch):
+    """mirdata with fake_dataset in its list of datasets, as if it were one of its loaders."""
+    monkeypatch.setitem(sys.modules, "mirdata.datasets.fake_dataset", fake_dataset)
+    monkeypatch.setattr(mirdata, "DATASETS", [*mirdata.DATASETS, "fake_dataset"])
 
-    for relative_path, data in audio_files.items():
-        path = data_home / relative_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(data)
 
-    index_path = tmp_path / "fake_index.json"
-    index_path.write_text(json.dumps(fake_index), encoding="utf-8")
+def dataset_files(folder):
+    """{index path: bytes} of the fake dataset's files under folder ("audio" or "annotations")."""
+    files = {}
+    for root, _, names in os.walk(os.path.join(fake_dataset.DATA_HOME, folder)):
+        for name in sorted(names):
+            path = os.path.join(root, name)
+            with open(path, "rb") as f:
+                files[os.path.relpath(path, fake_dataset.DATA_HOME)] = f.read()
+    return files
 
-    archive = zip_bytes(audio_files, prefix="bundle/")
-    archive_path = tmp_path / "fake_audio.zip"
-    archive_path.write_bytes(archive)
 
-    return SimpleNamespace(
-        index=fake_index,
-        index_path=index_path,
-        data_home=data_home,
-        audio_files=audio_files,
-        archive=archive,
-        archive_path=archive_path,
+def files_under(folder):
+    """Sorted paths, relative to folder, of every file below it."""
+    return sorted(
+        os.path.relpath(os.path.join(root, name), folder)
+        for root, _, names in os.walk(folder)
+        for name in names
     )
+
+
+def zip_bytes(files, compression=zipfile.ZIP_DEFLATED):
+    """A zip of {member name: bytes}."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression) as zf:
+        for name, data in files.items():
+            zf.writestr(name, data)
+    return buffer.getvalue()
+
+
+@pytest.fixture
+def server():
+    """A FakeServer running for the test."""
+    s = FakeServer()
+    s.start()
+    yield s
+    s.stop()
+
+
+@pytest.fixture
+def fake_remotes(fake_mirdata, server, monkeypatch):
+    """fake_dataset with two remotes on the local server, audio.zip and annotations.zip.
+
+    The remotes are fake_dataset.REMOTES["audio"] and ["annotations"]; a test
+    may change them, or the served files in server.files, before computing.
+    """
+    server.files["audio.zip"] = zip_bytes(dataset_files("audio"), zipfile.ZIP_STORED)  # audio barely compresses
+    server.files["annotations.zip"] = zip_bytes(dataset_files("annotations"))
+    remotes = {
+        key: RemoteFileMetadata(filename=f"{key}.zip", url=server.url(f"{key}.zip"), checksum="")
+        for key in ("audio", "annotations")
+    }
+    monkeypatch.setattr(fake_dataset, "REMOTES", remotes)
+    return server

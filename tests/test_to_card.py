@@ -32,7 +32,13 @@ ANNOTATIONS = {
     "tracks_with": {"BeatData": 2},
     "annotations": {
         "beats": {"type": "BeatData", "n_tracks": 2, "n_annotations": 2, "beats_per_bar": {"4": 2}, "tempo": HIST},
-        "melody": {"type": "F0Data", "n_tracks": 2, "n_annotations": 2, "hop_seconds": {"0.01": 2}},
+        "melody": {
+            "type": "F0Data",
+            "n_tracks": 2,
+            "n_annotations": 2,
+            "f0_median_per_annotation": HIST,
+            "voiced_fraction": None,
+        },
     },
     "skipped": {"tempo": "not a mirdata TempoData object (got str)"},
     "errors": {},
@@ -56,7 +62,7 @@ def test_card_stats_keeps_numbers_and_drops_logs():
     assert ann["n_track_errors"] == 0
     assert ann["annotation_errors"] == {"chords": 1}
     assert ann["annotations"]["beats"]["beats_per_bar"] == {4: 2}
-    assert ann["annotations"]["melody"]["hop_seconds"] == {0.01: 2}
+    assert ann["annotations"]["melody"] == ANNOTATIONS["annotations"]["melody"]  # copied as is
     assert ann["skipped"] == ANNOTATIONS["skipped"]
 
 
