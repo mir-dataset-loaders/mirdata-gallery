@@ -1,11 +1,8 @@
 name: orchset
 license: Creative Commons Attribution Non Commercial Share Alike 4.0 International.
-remotes:
-- all
 annotations:
 - F0Data
 - Instrument
-download_info: null
 bibtex: |-
   @article{bosch2016evaluation,
       title={Evaluation and combination of pitch estimation methods for melody extraction in symphonic classical music},
@@ -17,18 +14,40 @@ bibtex: |-
       year={2016},
       publisher={Taylor \& Francis}
   }
-docstring: |+
-  ORCHSET Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      Orchset is intended to be used as a dataset for the development and
-      evaluation of melody extraction algorithms. This collection contains
-      64 audio excerpts focused on symphonic music with their corresponding
-      annotation of the melody.
-
-      For more details, please visit: https://zenodo.org/record/1289786#.XREpzaeZPx6
-
-summary: Orchset includes 64 symphonic music audio excerpts with annotated melodies,
-  aimed at melody extraction tasks.
+summary: The Orchset dataset includes 64 audio excerpts of symphonic music with annotations
+  for melody extraction.
+stats:
+  computed:
+    mode: remote
+    index: c2b1b0441d14be73b16c915d57005857
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 64
+    n_audio_files: 128
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 64
+    n_tracks_loaded: 64
+    tracks_with:
+      F0Data: 64
+    annotations:
+      melody:
+        type: F0Data
+        n_tracks: 64
+        n_annotations: 64
+        voiced_fraction:
+          unit: fraction
+          edges: [0.65, 0.675, 0.7, 0.725, 0.75, 0.775, 0.8, 0.825, 0.85, 0.875, 0.9,
+            0.925, 0.95, 0.975, 1]
+          counts: [1, 0, 2, 0, 1, 2, 0, 3, 0, 6, 3, 8, 14, 24]
+        f0_median_per_annotation:
+          unit: hz
+          edges: [200, 400, 600, 800, 1000, 1200, 1400]
+          counts: [11, 25, 15, 10, 2, 1]
+    skipped:
+      alternating_melody: not a mirdata F0Data object (got bool)
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
