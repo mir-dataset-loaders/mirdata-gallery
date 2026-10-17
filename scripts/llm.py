@@ -5,7 +5,7 @@ is never stored in the card. The model is Qwen2.5-7B-Instruct as a 4-bit GGUF
 file, run with llama.cpp on the CPU, so no GPU is needed.
 
 `summary(ds)` takes an initialized dataset like the functions in
-card_fields.py; generate_cards.py calls it for each card. The model is loaded
+card_builder.py; generate_cards.py calls it for each card. The model is loaded
 on the first call and reused.
 
 Usage (standalone, to fill or redo summaries in existing cards):
@@ -25,12 +25,11 @@ import argparse
 import glob
 import importlib
 import os
-import textwrap
 import time
 
 import mirdata
 
-import cards_io
+import card_utils
 
 SYSTEM_PROMPT = (
     "You are an expert in Music Information Retrieval (MIR). "
@@ -51,10 +50,7 @@ CONTEXT_TOKENS = 4096  # longest loader docstring is ~1500 tokens; this leaves r
 def loader_docstring(name):
     """The module docstring of mirdata's loader for `name`, tidied, or None."""
     doc = importlib.import_module(f"mirdata.datasets.{name}").__doc__
-    if not doc:
-        return None
-    lines = [line.rstrip() for line in doc.splitlines()]
-    return textwrap.dedent("\n".join(lines)).strip() or None
+    return card_utils.clean_text(doc) or None
 
 
 def summary(ds):
@@ -167,8 +163,8 @@ def main():
     todo = []
     skipped = 0
     for name in names:
-        path = cards_io.card_path(args.cards_dir, name)
-        card = cards_io.read_card(path)
+        path = card_utils.card_path(args.cards_dir, name)
+        card = card_utils.read_card(path)
         if card is None:
             raise SystemExit(f"Card not found: {path}")
         if name not in known:
@@ -209,7 +205,7 @@ def main():
             continue
 
         card["summary"] = new
-        cards_io.write_card(path, card)
+        card_utils.write_card(path, card)
         written += 1
 
     if args.dry_run:
