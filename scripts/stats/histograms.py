@@ -24,7 +24,9 @@ def step_width(raw):
 
 def next_step_width(width):
     """The step size just above a step size: 1 -> 2 -> 2.5 -> 5 -> 10."""
-    return min(c for c in (step_width(width * f) for f in (1.5, 2, 2.5, 3)) if c > width)
+    return min(
+        c for c in (step_width(width * f) for f in (1.5, 2, 2.5, 3)) if c > width
+    )
 
 
 def _number(x):
@@ -100,5 +102,6 @@ def format_histogram(hist):
         return "-"
     edges, unit = hist["edges"], hist["unit"]
     return ", ".join(
-        f"{edges[i]}-{edges[i + 1]} {unit}: {count}" for i, count in enumerate(hist["counts"])
+        f"{edges[i]}-{edges[i + 1]} {unit}: {count}"
+        for i, count in enumerate(hist["counts"])
     )

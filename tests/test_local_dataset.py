@@ -6,10 +6,10 @@ Every expected number comes from the table in fake_dataset.py.
 import mirdata
 from mirdata import annotations
 
-import card_fields
+import card_builder
 import fake_dataset
 from fake_dataset import DATA_HOME
-from stats import dataset
+from stats import compute
 
 
 def test_fake_dataset_loads_in_mirdata(fake_mirdata):
@@ -22,19 +22,19 @@ def test_fake_dataset_loads_in_mirdata(fake_mirdata):
 
 
 def test_audio_stats_are_counted_from_the_index(fake_mirdata):
-    audio = dataset.compute("fake_dataset", DATA_HOME, local=True)["audio"]
+    audio = compute("fake_dataset", DATA_HOME, local=True)["audio"]
     assert audio == {"status": "ok", "problems": [], "n_tracks": 3, "n_audio_files": 3}
 
 
 def test_limit_does_not_change_the_audio_counts(fake_mirdata):
     """--limit cuts the annotation tracks; the audio counts always cover the whole index."""
-    result = dataset.compute("fake_dataset", DATA_HOME, local=True, limit=1)
+    result = compute("fake_dataset", DATA_HOME, local=True, limit=1)
     assert result["audio"] == {"status": "ok", "problems": [], "n_tracks": 3, "n_audio_files": 3}
     assert result["annotations"]["n_tracks_loaded"] == 1
 
 
 def test_annotation_stats_are_correct(fake_mirdata):
-    result = dataset.compute("fake_dataset", DATA_HOME, local=True)["annotations"]
+    result = compute("fake_dataset", DATA_HOME, local=True)["annotations"]
     assert result["status"] == "ok"
     assert result["problems"] == []
     assert result["errors"] == {}
@@ -68,9 +68,9 @@ def test_annotation_stats_are_correct(fake_mirdata):
 def test_annotation_types_match_the_dataset(fake_mirdata):
     """The card and the stats have exactly the dataset's annotation types: none missing, none extra."""
     ds = mirdata.initialize("fake_dataset", data_home=DATA_HOME)
-    result = dataset.compute("fake_dataset", DATA_HOME, local=True)["annotations"]
+    result = compute("fake_dataset", DATA_HOME, local=True)["annotations"]
     dataset_types = ["BeatData", "ChordData"]  # beats, chords (fake_dataset.py)
-    assert card_fields.annotations(ds) == dataset_types
+    assert card_builder.annotations(ds) == dataset_types
     assert sorted(entry["type"] for entry in result["annotations"].values()) == dataset_types
     assert sorted(result["tracks_with"]) == dataset_types
 
@@ -82,12 +82,12 @@ def test_error_only_for_the_part_that_crashes(fake_mirdata, monkeypatch):
         raise RuntimeError("loader bug")
 
     monkeypatch.setattr(fake_dataset.Dataset, "track_ids", property(broken))
-    result = dataset.compute("fake_dataset", DATA_HOME, local=True)
+    result = compute("fake_dataset", DATA_HOME, local=True)
     assert result["annotations"]["status"] == "error"
     assert "loader bug" in result["annotations"]["error"]
     assert result["audio"] == {"status": "ok", "problems": [], "n_tracks": 3, "n_audio_files": 3}
 
 
 def test_error_when_local_copy_is_missing(fake_mirdata, tmp_path):
-    result = dataset.compute("fake_dataset", str(tmp_path / "nowhere"), local=True)
+    result = compute("fake_dataset", str(tmp_path / "nowhere"), local=True)
     assert set(result) == {"name", "error"}

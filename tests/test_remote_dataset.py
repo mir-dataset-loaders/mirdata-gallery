@@ -6,8 +6,7 @@ A remote run must give exactly the numbers of a local run.
 
 from conftest import files_under
 from fake_dataset import DATA_HOME
-from stats import dataset
-from stats.annotations import remote_files
+from stats import compute
 
 
 def without_sources(part):
@@ -16,8 +15,8 @@ def without_sources(part):
 
 
 def test_remote_stats_equal_local_stats(fake_remotes, tmp_path):
-    remote = dataset.compute("fake_dataset", str(tmp_path))
-    local = dataset.compute("fake_dataset", DATA_HOME, local=True)
+    remote = compute("fake_dataset", str(tmp_path))
+    local = compute("fake_dataset", DATA_HOME, local=True)
     for part in ("audio", "annotations"):
         assert remote[part]["status"] == "ok"
         assert without_sources(remote[part]) == without_sources(local[part])
@@ -25,21 +24,21 @@ def test_remote_stats_equal_local_stats(fake_remotes, tmp_path):
 
 def test_audio_part_sends_no_request(fake_remotes, tmp_path):
     """The audio part counts the index: the server is never asked for audio.zip or anything else."""
-    audio = dataset.compute("fake_dataset", str(tmp_path), parts=["audio"])["audio"]
+    audio = compute("fake_dataset", str(tmp_path), parts=["audio"])["audio"]
     assert audio == {"status": "ok", "problems": [], "n_tracks": 3, "n_audio_files": 3}
     assert fake_remotes.requests == []
 
 
 def test_small_zip_is_downloaded_whole(fake_remotes, tmp_path):
     """A zip up to 200 MB comes in one piece: fewer requests than the 5 files it holds."""
-    dataset.compute("fake_dataset", str(tmp_path), parts=["annotations"])
+    compute("fake_dataset", str(tmp_path), parts=["annotations"])
     assert len(fake_remotes.gets("annotations.zip")) < 5
 
 
 def test_big_zip_is_read_by_range(fake_remotes, tmp_path, monkeypatch):
-    monkeypatch.setattr(remote_files, "MAX_ARCHIVE_MB", 0)  # every zip counts as big
-    remote = dataset.compute("fake_dataset", str(tmp_path), parts=["annotations"])
-    local = dataset.compute("fake_dataset", DATA_HOME, local=True, parts=["annotations"])
+    monkeypatch.setattr("stats.remote.MAX_ARCHIVE_MB", 0)  # every zip counts as big
+    remote = compute("fake_dataset", str(tmp_path), parts=["annotations"])
+    local = compute("fake_dataset", DATA_HOME, local=True, parts=["annotations"])
     assert remote["annotations"]["status"] == "ok"
     assert without_sources(remote["annotations"]) == without_sources(local["annotations"])
     assert len(fake_remotes.gets("annotations.zip")) > 1
@@ -51,7 +50,7 @@ def test_only_annotation_files_are_saved(fake_remotes, tmp_path):
 
     compute() leaves them there; the commands delete the folder after the run (test_compute_stats.py).
     """
-    dataset.compute("fake_dataset", str(tmp_path))
+    compute("fake_dataset", str(tmp_path))
     assert files_under(tmp_path) == [
         "annotations/beats/track1.txt",
         "annotations/beats/track2.txt",

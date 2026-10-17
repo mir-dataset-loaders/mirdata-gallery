@@ -59,13 +59,13 @@ AUDIO_AVAILABILITY = [
     "❌ Not available",
 ]
 
-# The "stats" field (written by scripts/generate_cards.py, see scripts/stats/to_card.py).
+# The "stats" field (written by scripts/generate_cards.py, see scripts/stats/card.py).
 STATS_PARTS = ["audio", "annotations"]
 STATS_STATUSES = ["ok", "incomplete", "needs_local", "error"]
 STATS_MODES = ["remote", "local"]
 
 # What each entry under stats.annotations.annotations holds (one entry per
-# track property, see scripts/stats/annotations/types.py). Every entry has
+# track property, see scripts/stats/annotation_types.py). Every entry has
 # STATS_ANNOTATION_COMMON, plus "parts" ({key: count}) when a track holds
 # several annotations (dict keys or annotators), plus the fields of its type.
 # Field kinds:

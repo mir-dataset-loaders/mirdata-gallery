@@ -1,15 +1,16 @@
-"""One function per card field.
+"""What goes into a card: one function per field, and build_card to put them together.
 
-Each function takes an initialized mirdata Dataset (from ``mirdata.initialize``)
+Each field function takes an initialized mirdata Dataset (from ``mirdata.initialize``)
 and returns the value to store in the card. Function names match the card
-fields on purpose, so ``generate_cards.py`` reads like the card itself.
+fields on purpose, so build_card reads like the card itself.
 """
 
-import textwrap
 import typing
 
 import mirdata
 from mirdata.annotations import Annotation
+
+from card_utils import clean_text
 
 # FIXME: NEEDS FIX
 
@@ -38,54 +39,57 @@ FALLBACK_MAP = {
 }
 
 
+def build_card(ds, summary=None, stats=None):
+    """The card dict for one initialized dataset; keys in card order.
+
+    summary and stats are the card's summary and stats fields, from
+    generate_cards.update_summary() and update_stats() (new, kept from the
+    old card, or None).
+    """
+    return {
+        "name": ds.name,
+        "license": license(ds),
+        "annotations": annotations(ds),
+        "bibtex": bibtex(ds),
+        "summary": summary,
+        "stats": stats,
+    }
+
+
 def license(ds):
-    return _clean(getattr(ds, "_license_info", "Not specified"))
-
-
-def remotes(ds):
-    return list(ds.remotes.keys()) if ds.remotes else []
-
-
-def download_info(ds):
-    return getattr(ds, "_download_info", None)
+    return clean_text(getattr(ds, "_license_info", "Not specified"))
 
 
 def bibtex(ds):
-    return _clean(getattr(ds, "bibtex", None))
+    return clean_text(getattr(ds, "bibtex", None))
 
 
 def annotations(ds):
     """Sorted list of annotation types the dataset's Track class exposes."""
-    found = set()
-    track_class = getattr(ds, "_track_class", None)
-    if track_class:
-        for attr in dir(track_class):
-            if attr.startswith("_"):
-                continue
-            item = getattr(track_class, attr, None)
-            if isinstance(item, (property, mirdata.core.cached_property)):
-                ann_cls = _annotation_class_name(attr, item)
-                if ann_cls:
-                    found.add(ann_cls)
-
+    found = set(annotation_properties(ds).values())
     # Dedicated genre datasets (gtzan_genre, acousticbrainz_genre, ...)
     if ds.name.endswith("_genre"):
         found.add("Genre")
-
     return sorted(found)
 
 
-def _clean(text):
-    """Tidy a multi-line string from mirdata so it stores cleanly in YAML.
+def annotation_properties(ds):
+    """{property name: annotation type} for every annotation property of the dataset's Track class.
 
-    Drops trailing spaces on every line (PyYAML refuses the readable `|`
-    block style otherwise), removes common indentation, and strips blank
-    lines around the text. Non-strings (None) pass through unchanged.
+    The card's annotations field lists the types; the stats read the
+    properties of the official mirdata types.
     """
-    if not isinstance(text, str):
-        return text
-    lines = [line.rstrip() for line in text.splitlines()]
-    return textwrap.dedent("\n".join(lines)).strip()
+    found = {}
+    track_class = getattr(ds, "_track_class", None)
+    for attr in dir(track_class):
+        if attr.startswith("_"):
+            continue
+        item = getattr(track_class, attr, None)
+        if isinstance(item, (property, mirdata.core.cached_property)):
+            ann_cls = _annotation_class_name(attr, item)
+            if ann_cls:
+                found[attr] = ann_cls
+    return found
 
 
 def _annotation_class_name(attr_name, item):

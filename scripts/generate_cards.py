@@ -25,32 +25,15 @@ import tempfile
 
 import mirdata
 
-import card_fields
-import cards_io
-import hashes
+import card_builder
+import card_utils
 import llm
-from stats import to_card
-from stats import dataset as stats_dataset
-from stats.common import add_stats_arguments, print_to_do, select_datasets
+import stats
+import stats.card
+import stats.utils
 
 
-def build_card(ds, summarize=True, stats=None):
-    """The card dict for one initialized dataset; keys in card order.
-
-    stats is the card's stats field, decided by card_stats() (computed,
-    kept from the old card, or None).
-    """
-    return {
-        "name": ds.name,
-        "license": card_fields.license(ds),
-        "annotations": card_fields.annotations(ds),
-        "bibtex": card_fields.bibtex(ds),
-        "summary": llm.summary(ds) if summarize else None,
-        "stats": stats,
-    }
-
-
-def card_stats(ds, old, options):
+def update_stats(ds, old, options):
     """(stats field, "new" or "kept" or "none") for one dataset.
 
     options: None to keep the old stats as they are (--no-stats), else a dict
@@ -58,13 +41,20 @@ def card_stats(ds, old, options):
     """
     if options is None:
         return old, "kept" if old else "none"
-    if options["local"] and not os.path.isdir(os.path.join(options["datasets_dir"], ds.name)):
+    if options["local"] and not os.path.isdir(
+        os.path.join(options["datasets_dir"], ds.name)
+    ):
         return old, "kept (no local copy)" if old else "none (no local copy)"
-    checksum = to_card.index_checksum(ds)
-    if not to_card.needs_compute(old, checksum, options["force"], options["local"]):
-        return old, "kept"
+    checksum = stats.card.index_checksum(ds)
+    if not (options["force"] or options["local"]) and stats.card.is_current(
+        old, checksum
+    ):
+        return (
+            old,
+            "kept",
+        )  # computed from this same index, and no flag asks for a rerun
     root = options["datasets_dir"] if options["local"] else options["fetch_root"]
-    result = stats_dataset.compute(
+    result = stats.compute(
         ds.name,
         os.path.join(root, ds.name),
         local=options["local"],
@@ -72,9 +62,27 @@ def card_stats(ds, old, options):
         max_minutes=options["max_minutes"],
     )
     mode = "local" if options["local"] else "remote"
-    new = to_card.card_stats(result, mode, checksum)
-    chosen = to_card.choose(old, new, checksum)
+    new = stats.card.result_to_card_stats(result, mode, checksum)
+    chosen = stats.card.choose(old, new, checksum)
     return chosen, "new" if chosen is new else "kept (more complete than the new run)"
+
+
+def update_summary(ds, old, stored_hash, summarize=True, force=False):
+    """(summary, docstring hash, "new" or "kept" or "none") for one card.
+
+    The LLM runs only when summaries are on and the loader has a docstring
+    that is new or changed (or with force, or when the card has no summary
+    yet); otherwise the old summary is kept. old is the old card's summary,
+    stored_hash the hash recorded for it. The hash is None when the loader
+    has no docstring.
+    """
+    docstring = llm.loader_docstring(ds.name)
+    current = card_utils.docstring_hash(docstring) if docstring else None
+    if summarize and docstring and (force or current != stored_hash or not old):
+        return llm.summary(ds), current, "new"
+    if docstring or not summarize:
+        return old, stored_hash, "kept"
+    return None, None, "none"  # the loader has no docstring (any more)
 
 
 def generate(names, output_dir, summarize=True, force=False, stats_options=None):
@@ -83,10 +91,10 @@ def generate(names, output_dir, summarize=True, force=False, stats_options=None)
     The LLM runs only for datasets whose docstring hash is new or changed
     (or for all of them with force=True). With summarize=False it never runs
     and each card keeps the summary it already has (or gets null).
-    stats_options: see card_stats(); None keeps every card's stats as they are.
+    stats_options: see update_stats(); None keeps every card's stats as they are.
     """
     os.makedirs(output_dir, exist_ok=True)
-    stored = hashes.read(output_dir)
+    stored = card_utils.read_hashes(output_dir)
     updated = dict(stored)
     written = []
     skipped = {}
@@ -94,17 +102,18 @@ def generate(names, output_dir, summarize=True, force=False, stats_options=None)
 
     print(f"Scanning {len(names)} dataset(s) in mirdata...")
     for name in names:
-        path = cards_io.card_path(output_dir, name)
-        old = cards_io.read_card(path) or {}
+        path = card_utils.card_path(output_dir, name)
+        old = card_utils.read_card(path) or {}
         try:
             ds = mirdata.initialize(name)
-            docstring = llm.loader_docstring(name)
-            current = hashes.of(docstring) if docstring else None
-            redo = summarize and bool(docstring) and (
-                force or current != stored.get(name) or not old.get("summary")
+            # Stats first: if they fail, the LLM has not been run for nothing.
+            stats_field, stats_status = update_stats(
+                ds, old.get("stats"), stats_options
             )
-            stats, stats_status = card_stats(ds, old.get("stats"), stats_options)
-            card = build_card(ds, summarize=redo, stats=stats)
+            summary, summary_hash, summary_status = update_summary(
+                ds, old.get("summary"), stored.get(name), summarize, force
+            )
+            card = card_builder.build_card(ds, summary=summary, stats=stats_field)
         except ModuleNotFoundError as e:
             missing = str(e).replace("No module named ", "").strip("'")
             skipped[name] = f"missing library: {missing}"
@@ -115,28 +124,25 @@ def generate(names, output_dir, summarize=True, force=False, stats_options=None)
             print(f"  [ERROR] {name:30s} | {e}")
             continue
 
-        if redo:
-            updated[name] = current
-            status = "new"
-        elif docstring or not summarize:
-            card["summary"] = old.get("summary")
-            status = "kept"
-        else:  # loader has no docstring (any more): no summary, no hash
+        if summary_hash:
+            updated[name] = summary_hash
+        else:  # loader has no docstring: no hash to remember
             updated.pop(name, None)
-            status = "none"
 
-        cards_io.write_card(path, card)
+        card_utils.write_card(path, card)
         written.append(name)
         print(
             f"  [OK]    {name:30s} | annotations: {len(card['annotations'])}"
-            f" | summary: {status} | stats: {stats_status}, {to_card.status_line(stats)}"
+            f" | summary: {summary_status} | stats: {stats_status}, {stats.card.status_line(stats_field)}"
         )
-        card_stats_by_name[name] = stats
+        card_stats_by_name[name] = stats_field
 
     if updated != stored:
-        hashes.write(output_dir, updated)
+        card_utils.write_hashes(output_dir, updated)
     print(f"\nDone. Written: {len(written)}, skipped: {len(skipped)}")
-    print_to_do(card_stats_by_name, "python scripts/generate_cards.py --local --dataset <name>")
+    stats.utils.print_to_do(
+        card_stats_by_name, "python scripts/generate_cards.py --local --dataset <name>"
+    )
     return written, skipped
 
 
@@ -146,10 +152,10 @@ def init_hashes(names, output_dir):
     Run once before the first workflow run so existing summaries count as
     up to date; otherwise the LLM would redo all of them.
     """
-    updated = hashes.read(output_dir)
+    updated = card_utils.read_hashes(output_dir)
     count = 0
     for name in names:
-        card = cards_io.read_card(cards_io.card_path(output_dir, name)) or {}
+        card = card_utils.read_card(card_utils.card_path(output_dir, name)) or {}
         if not card.get("summary"):
             continue
         try:
@@ -158,10 +164,10 @@ def init_hashes(names, output_dir):
             print(f"  [SKIP]  {name:30s} | needs: {e.name}")
             continue
         if docstring:
-            updated[name] = hashes.of(docstring)
+            updated[name] = card_utils.docstring_hash(docstring)
             count += 1
-    hashes.write(output_dir, updated)
-    print(f"Recorded {count} hash(es) in {hashes.path(output_dir)}")
+    card_utils.write_hashes(output_dir, updated)
+    print(f"Recorded {count} hash(es) in {card_utils.hashes_path(output_dir)}")
 
 
 def main():
@@ -201,7 +207,7 @@ def main():
         action="store_true",
         help="Recompute the stats even if the dataset index is unchanged",
     )
-    add_stats_arguments(parser)
+    stats.utils.add_stats_arguments(parser)
     parser.add_argument(
         "--init-hashes",
         action="store_true",
@@ -209,10 +215,10 @@ def main():
     )
     args = parser.parse_args()
 
-    names = select_datasets(mirdata.list_datasets(), args.dataset)
+    names = stats.utils.select_datasets(mirdata.list_datasets(), args.dataset)
     if args.missing and not args.dataset:
         names = [
-            n for n in names if not os.path.exists(cards_io.card_path(args.output, n))
+            n for n in names if not os.path.exists(card_utils.card_path(args.output, n))
         ]
         if not names:
             print("Every mirdata dataset already has a card.")
@@ -224,14 +230,18 @@ def main():
         return
 
     with tempfile.TemporaryDirectory(prefix="generate_cards_") as fetch_root:
-        stats_options = None if args.no_stats else {
-            "local": args.local,
-            "datasets_dir": args.datasets_dir,
-            "fetch_root": fetch_root,
-            "max_mb": args.max_mb,
-            "max_minutes": args.max_minutes,
-            "force": args.force_stats,
-        }
+        stats_options = (
+            None
+            if args.no_stats
+            else {
+                "local": args.local,
+                "datasets_dir": args.datasets_dir,
+                "fetch_root": fetch_root,
+                "max_mb": args.max_mb,
+                "max_minutes": args.max_minutes,
+                "force": args.force_stats,
+            }
+        )
         generate(
             names,
             args.output,

@@ -78,7 +78,8 @@ def unpack(value):
     if isinstance(value, MultiAnnotator):
         annotators = value.annotators or [None] * len(value.annotations or [])
         return [
-            (None if a is None else str(a), v) for a, v in zip(annotators, value.annotations or [])
+            (None if a is None else str(a), v)
+            for a, v in zip(annotators, value.annotations or [])
         ]
     if isinstance(value, (list, tuple)):
         return [(None, v) for v in value]
@@ -101,7 +102,9 @@ class Stat:
 
     def __init__(self):
         self.n_tracks = 0  # tracks whose annotation was read
-        self.n_annotations = 0  # annotations read: more than n_tracks for dicts, multiple annotators
+        self.n_annotations = (
+            0  # annotations read: more than n_tracks for dicts, multiple annotators
+        )
         self.parts = Counter()  # dict keys / annotator ids the annotations came from
 
     def add(self, value):
@@ -144,7 +147,9 @@ class Tempo(Stat):
         self.bpm.extend(float(t) for t in value.tempos)
 
     def result(self):
-        return {"tempo": histogram(self.bpm, "bpm")}  # same name as the tempo derived from beats
+        return {
+            "tempo": histogram(self.bpm, "bpm")
+        }  # same name as the tempo derived from beats
 
 
 class Beats(Stat):
@@ -214,7 +219,9 @@ class F0(Stat):
         else:
             voicing = frequencies > 0
         voiced = frequencies[(voicing > 0) & (frequencies > 0)]
-        self.voiced_fraction.append(len(voiced) / len(frequencies) if len(frequencies) else 0.0)
+        self.voiced_fraction.append(
+            len(voiced) / len(frequencies) if len(frequencies) else 0.0
+        )
         if len(voiced):
             self.f0_median.append(float(np.median(voiced)))
         self.units[value.frequency_unit] += 1

@@ -17,20 +17,14 @@ scripts/
   generate_cards.py         # the cards, including their stats field
   compute_stats.py          # inspection: prints the full stats, writes nothing
   stats/
-    __init__.py
-    common.py               # shared: budget, status, index loading, dataset selection
-    dataset.py              # both parts for one dataset (used by both commands)
-    to_card.py              # a result -> the card's "stats" field; keep or replace
+    __init__.py             # compute(): both parts for one dataset (used by both commands)
+    audio.py                # the audio part: track and file counts from the index
+    annotations.py          # the annotations part: load each track, tally each property
+    annotation_types.py     # one Stat class per annotation type
+    remote.py               # reading the remotes: zips by range, annotation files, budget
+    card.py                 # a result -> the card's "stats" field; keep or replace
     histograms.py           # numbers -> {unit, edges, counts}
-    remote_zip.py           # reading parts of a zip on a server (HTTP range requests)
-    audio/
-      __init__.py           # dataset_stats: counts from the index, status ok
-      summary.py            # which index entries are audio -> track and file counts
-    annotations/
-      __init__.py           # dataset_stats, remote_stats, local_stats
-      properties.py         # which track properties are official mirdata annotations
-      types.py              # one Stat class per annotation type
-      remote_files.py       # getting the annotation files out of the remotes
+    utils.py                # what the two commands share: flags, dataset choice, to-do list
 ```
 
 ## Stats in the cards
@@ -60,14 +54,14 @@ python scripts/generate_cards.py --max-mb 2000 --max-minutes 30 # larger remote 
 `python scripts/compute_stats.py --dataset rwc_popular`
 
 1. `compute_stats.py` reads the arguments and picks the datasets
-   (`select_datasets` in `common.py`).
+   (`select_datasets` in `stats/utils.py`).
 2. For each dataset it calls `mirdata.initialize`, then runs two independent
    parts:
    - **Audio**: `stats.audio.dataset_stats` counts the tracks and audio files
      in the index. No audio file is read, remote or local; durations and
      sample rates will come from mirdata's index once it carries them.
    - **Annotations**: in remote mode, `stats.annotations.remote_stats` first
-     copies the annotation files into a temporary folder (`remote_files.py`). Then
+     copies the annotation files into a temporary folder (`stats/remote.py`). Then
      mirdata's own loaders read every track, and one `Stat` object per
      annotation property turns them into histograms.
 3. Each part returns a dict with a `status`: `ok`, `incomplete` or
@@ -121,27 +115,27 @@ The inspection command. It prints the full result of each part and never
 writes a card.
 
 - `parse_args`, `main`: the flags and the loop over datasets.
-- `compute`: one dataset, through `stats/dataset.py`, printing each part as
+- `compute`: one dataset, through `stats.compute`, printing each part as
   it finishes.
 - `print_audio`, `print_annotations`, `print_part`, `fmt`: the terminal output.
 - `print_table`: the summary table after several datasets. The closing list
-  of what to rerun locally is `print_to_do` in `stats/common.py`, shared with
+  of what to rerun locally is `print_to_do` in `stats/utils.py`, shared with
   `generate_cards.py`.
 
 ### `scripts/generate_cards.py` (the stats part)
 
 - `build_card`: every card field, `stats` last.
-- `card_stats`: decides the stats of one card: keep the old ones, or compute
-  (`stats/dataset.py`), convert (`stats/to_card.py`) and keep the more complete.
+- `update_stats`: the updated stats of one card: keep the old ones, or compute
+  (`stats.compute`), convert (`stats/card.py`) and keep the more complete.
 - `generate`: prints each card's stats status and ends with the list of
   datasets to complete with `--local` (`print_to_do`, shared with
   `compute_stats.py`).
 
 The stats flags (`--local`, `--datasets-dir`, `--max-mb`, `--max-minutes`)
 and the `--dataset` check are the same functions in both commands
-(`add_stats_arguments`, `select_datasets` in `stats/common.py`).
+(`add_stats_arguments`, `select_datasets` in `stats/utils.py`).
 
-### `stats/dataset.py`
+### `stats/__init__.py`
 
 The one place that runs both parts for a dataset, so the two commands
 compute exactly the same thing.
@@ -149,50 +143,103 @@ compute exactly the same thing.
 - `compute`: checks the local copy exists (local mode), initializes the
   dataset once with the folder its files are read from (local) or fetched
   into (remote), loads its index once for both parts, then runs each part in
-  its own try, so a failing part does not stop the other. A remote run gets
+  its own try, so a failing part does not stop the other. The audio part
+  is the same in both modes and whatever `--limit`; the annotations part reads
+  the local copy or fetches from the remotes. A remote run gets
   one `Budget`, spent by the annotations part; local runs have none.
-- `audio_part`: calls `stats.audio`, the same in both modes and whatever
-  `--limit`.
-- `annotations_part`: calls `stats.annotations` in local or remote mode.
+- `load_index`: gets a dataset's index file, never the whole dataset. Some
+  mirdata loaders download gigabytes when their own download is called.
+- `PARTS`: the two parts, `audio` and `annotations`.
 
-### `stats/common.py`
+### `stats/audio.py`
 
-What both parts share.
+- `track_audio_paths`: which index entries are audio (keys containing
+  "audio").
+- `summarize`: counts the tracks and the distinct audio files they list.
+- `dataset_stats`: adds the status (always `ok`) to those counts.
+
+### `stats/annotations.py`
+
+Runs the annotation part.
+
+- `dataset_stats` reads the properties of the 10 official mirdata annotation
+  types, found by `card_builder.annotation_properties`, the same detection as
+  the card's `annotations` field.
+- `dataset_stats`: loads each track, then each property separately, so one
+  broken file only costs that annotation. It feeds each property's `Stat`
+  and collects `tracks_with`, `skipped` and `annotation_errors`.
+- `remote_stats`: fetch, then `dataset_stats`, then the status.
+- `index_notes`: logs index sections that are empty, such as Billboard's
+  metadata.
+- `local_stats`: the same on a local copy.
+- `part_status`: turns problems and failures into `ok`, `incomplete` or
+  `needs_local`.
+- `quiet_logging`: silences mirdata's per-track warnings while loading.
+
+### `stats/annotation_types.py`
+
+What to measure for each annotation type.
+
+- `Stat`: the base class. `add` unpacks dicts, MultiAnnotators and lists,
+  refuses anything that is not the right mirdata class, and counts tracks
+  and annotations.
+- One subclass per type: `Beats`, `Chords`, `F0`, `MultiF0`, `Notes`,
+  `Sections`, `Keys`, `Lyrics`, `Events`, `Tempo`. Each has `read` (collect
+  one annotation) and `result` (histograms and label counts). `Beats` also
+  derives the tempo.
+- `STATS`: maps each type name to its class, checked against mirdata's own
+  list.
+- Helpers: `unpack`, `is_empty`, `chord_quality`, `interval_lengths`,
+  `to_seconds`, `top_counts`.
+
+### `stats/remote.py`
+
+Reads a dataset's remotes. Reading parts of a zip on a server without
+downloading it is what makes remote mode possible: a 4 GB audio zip costs a
+few megabytes. mirdata's loaders only read files on disk, so the annotation
+files are put there first.
 
 - `Budget` and `RemoteLimit`: the megabyte and minute limits. Every remote
   read checks them first, so a big download is refused before it starts.
-- `part_status`: turns problems and failures into `ok`, `incomplete` or
-  `needs_local`.
-- `load_index`: gets a dataset's index file, never the whole dataset. Some
-  mirdata loaders download gigabytes when their own download is called.
-- `remote_problems`: the closing problems of a remote read (the limit, or
-  the files no readable remote held).
-- `print_to_do`: the closing list of datasets to rerun locally, incomplete
-  or failed; used by both commands.
-- `add_stats_arguments`: the stats flags both commands share.
-- `select_datasets`, `positive_int`, `hms`: the `--dataset` and `--exclude`
-  choice, argument checking, and time formatting.
+- `HTTPFile`: makes a URL behave like a file. Each read becomes one HTTP
+  range request, retried when the server rate-limits, and charged to the
+  budget.
+- `member_bytes`: one whole file inside the zip, CRC-checked.
+- `match_members`: matches zip entries to index paths, handling the
+  destination folder and the wrapper folders mirdata strips when unpacking.
+- `http_session`, `ARCHIVE_EXTENSIONS`: the HTTP session and the list of
+  non-zip archives.
+- `annotation_paths`: every non-audio file the index lists, plus metadata.
+  It skips multitrack member lists, and with `--limit` keeps only the
+  selected tracks.
+- `fetch`: gets those files. Each zip's file list is read first; a zip that
+  holds annotation files is downloaded whole up to 200 MB and read by range
+  when bigger, and plain files are downloaded whole. It reports problems:
+  tar.gz archives, the limit reached.
+- `open_zip`, `whole_zip`, `download_whole`: the download paths, with a
+  fallback for servers without range support, such as GitHub's generated
+  archives.
 
-### `stats/to_card.py`
+### `stats/card.py`
 
 Turns a `compute_stats` result into the card's `stats` field. A card keeps
 what the gallery shows or needs to decide on: the numbers, the histograms,
 each part's status and problems, and counts of errors instead of the error
 lists. Log lines and per-file details stay out.
 
-- `card_stats`: the whole field, with a `computed` block saying how
+- `result_to_card_stats`: the whole field, with a `computed` block saying how
   (`remote` or `local`), and from which index (its checksum).
-- `audio_card`, `annotations_card`: what each part keeps.
+- `audio_to_card`, `annotations_to_card`: what each part keeps.
 - `index_checksum`: the index's published MD5 checksum, read from
   mirdata without downloading the index. It changes exactly when mirdata's
   index for the dataset changes, which tells a later run whether the stats
   are still current.
-- `needs_compute`, `choose`, `rank`: the keep-or-replace rules above.
+- `is_current`, `choose`, `rank`: the keep-or-replace rules above.
 - `status_line`: the short status shown by `generate_cards.py`.
 
 The field's structure is checked by `tests/card_schema.py` (the `stats`
 rule). In the YAML, lists of numbers are written on one line
-(`cards_io.py`), so a histogram takes three lines.
+(`card_utils.py`), so a histogram takes three lines.
 
 ### `stats/histograms.py`
 
@@ -206,64 +253,15 @@ module means every histogram on every card follows the same rules.
 - `step_width`, `next_step_width`, `log_edges`: choose those widths and edges.
 - `format_histogram`: the one-line terminal version.
 
-### `stats/remote_zip.py`
+### `stats/utils.py`
 
-Reads parts of a zip on a server without downloading it. This is what makes
-remote mode possible: a 4 GB audio zip costs a few megabytes.
+What the two commands share.
 
-- `HTTPFile`: makes a URL behave like a file. Each read becomes one HTTP
-  range request, retried when the server rate-limits, and charged to the
-  budget.
-- `member_bytes`: one whole file inside the zip, CRC-checked.
-- `match_members`: matches zip entries to index paths, handling the
-  destination folder and the wrapper folders mirdata strips when unpacking.
-- `session`, `ARCHIVE_EXTENSIONS`: the HTTP session and the list of
-  non-zip archives, used by the annotation remote reader.
-
-### `stats/audio/`
-
-- **`summary.py`**: `track_audio_paths` finds which index entries are audio
-  (keys containing "audio"); `summarize` counts the tracks and the distinct
-  audio files they list.
-- **`__init__.py`**: `dataset_stats` adds the status (always `ok`) to those
-  counts.
-
-### `stats/annotations/`
-
-- **`properties.py`**: `annotation_properties` looks at a dataset's Track
-  class and keeps the properties of the 10 official mirdata annotation types,
-  with the same detection as the card's `annotations` field.
-- **`types.py`**: what to measure for each annotation type.
-  - `Stat`: the base class. `add` unpacks dicts, MultiAnnotators and lists,
-    refuses anything that is not the right mirdata class, and counts tracks
-    and annotations.
-  - One subclass per type: `Beats`, `Chords`, `F0`, `MultiF0`, `Notes`,
-    `Sections`, `Keys`, `Lyrics`, `Events`, `Tempo`. Each has `read` (collect
-    one annotation) and `result` (histograms and label counts). `Beats` also
-    derives the tempo.
-  - `STATS`: maps each type name to its class, checked against mirdata's own
-    list.
-  - Helpers: `unpack`, `is_empty`, `chord_quality`, `interval_lengths`,
-    `to_seconds`, `top_counts`.
-- **`remote_files.py`**: remote mode for annotations. mirdata's loaders only read
-  files on disk, so the files have to be put there first.
-  - `annotation_paths`: every non-audio file the index lists, plus metadata.
-    It skips multitrack member lists, and with `--limit` keeps only the
-    selected tracks.
-  - `fetch`: gets those files. Zips up to 200 MB are downloaded whole, bigger
-    ones are read by range, plain files are downloaded whole. It reports
-    problems: tar.gz archives, the limit reached.
-  - `open_zip`, `download_whole`: the download paths, with a fallback for
-    servers without range support, such as GitHub's generated archives.
-  - `index_notes`: logs index sections that are empty, such as Billboard's
-    metadata.
-- **`__init__.py`**: runs the annotation part.
-  - `dataset_stats`: loads each track, then each property separately, so one
-    broken file only costs that annotation. It feeds each property's `Stat`
-    and collects `tracks_with`, `skipped` and `annotation_errors`.
-  - `remote_stats`: fetch, then `dataset_stats`, then the status.
-  - `local_stats`: the same on a local copy.
-  - `quiet_logging`: silences mirdata's per-track warnings while loading.
+- `print_to_do`: the closing list of datasets to rerun locally, incomplete
+  or failed.
+- `add_stats_arguments`: the stats flags both commands share.
+- `select_datasets`, `positive_int`: the `--dataset` and `--exclude`
+  choice, and argument checking.
 
 ## Tests
 

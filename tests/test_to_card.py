@@ -1,10 +1,10 @@
-"""Tests for scripts/stats/to_card.py (the card's stats field) and its YAML form (cards_io.py)."""
+"""Tests for scripts/stats/card.py (the card's stats field) and its YAML form (card_utils.py)."""
 
 import pytest
 import yaml
 
-import cards_io
-from stats.to_card import card_stats, index_checksum
+import card_utils
+from stats.card import result_to_card_stats, index_checksum
 
 HIST = {"unit": "s", "edges": [1, 2, 3], "counts": [4, 5]}
 
@@ -34,7 +34,7 @@ ANNOTATIONS = {
 
 
 def test_card_stats_keeps_numbers_and_drops_logs():
-    stats = card_stats({"name": "fake", "audio": AUDIO, "annotations": ANNOTATIONS}, "remote", "abc")
+    stats = result_to_card_stats({"name": "fake", "audio": AUDIO, "annotations": ANNOTATIONS}, "remote", "abc")
     assert stats["computed"] == {"mode": "remote", "index": "abc"}
     assert stats["audio"] == {"status": "ok", "problems": [], "n_tracks": 2, "n_audio_files": 4}
     ann = stats["annotations"]
@@ -48,23 +48,23 @@ def test_card_stats_keeps_numbers_and_drops_logs():
 
 
 def test_card_stats_with_one_part_only():
-    stats = card_stats({"name": "fake", "audio": AUDIO}, "local", "abc")
+    stats = result_to_card_stats({"name": "fake", "audio": AUDIO}, "local", "abc")
     assert sorted(stats) == ["audio", "computed"]
 
 
 def test_error_parts_and_loader_errors():
-    stats = card_stats(
+    stats = result_to_card_stats(
         {"name": "fake", "audio": {"status": "error", "error": "RuntimeError: x"}, "annotations": ANNOTATIONS},
         "remote", "abc",
     )
     assert stats["audio"] == {"status": "error", "error": "RuntimeError: x"}
-    stats = card_stats({"name": "fake", "error": "ImportError: y"}, "remote", "abc")
+    stats = result_to_card_stats({"name": "fake", "error": "ImportError: y"}, "remote", "abc")
     assert stats == {"computed": {"mode": "remote", "index": "abc"}, "error": "ImportError: y"}
 
 
 def test_mode_is_checked():
     with pytest.raises(ValueError, match="mode"):
-        card_stats({"name": "f"}, "cloud", "abc")
+        result_to_card_stats({"name": "f"}, "cloud", "abc")
 
 
 def test_index_checksum_is_the_published_checksum(tmp_path):
@@ -86,10 +86,10 @@ def test_number_lists_go_on_one_line_and_round_trip(tmp_path):
     card = {
         "name": "fake",
         "annotations": ["BeatData", "ChordData"],
-        "stats": card_stats({"name": "fake", "audio": AUDIO, "annotations": ANNOTATIONS}, "local", "abc"),
+        "stats": result_to_card_stats({"name": "fake", "audio": AUDIO, "annotations": ANNOTATIONS}, "local", "abc"),
     }
     path = tmp_path / "fake.yaml"
-    cards_io.write_card(str(path), card)
+    card_utils.write_card(str(path), card)
     text = path.read_text()
     assert "edges: [1, 2, 3]" in text
     assert "counts: [4, 5]" in text

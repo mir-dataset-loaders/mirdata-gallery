@@ -20,8 +20,7 @@ import pytest
 import fake_dataset
 from conftest import dataset_files, zip_bytes
 from fake_dataset import DATA_HOME
-from stats import dataset
-from stats.annotations import remote_files
+from stats import compute
 
 ZIPS = ("audio", "annotations")  # the server's two zips: audio.zip, annotations.zip
 
@@ -35,11 +34,11 @@ def waits(monkeypatch):
 
 
 def remote_run(tmp_path, **kwargs):
-    return dataset.compute("fake_dataset", str(tmp_path / "fetch"), **kwargs)
+    return compute("fake_dataset", str(tmp_path / "fetch"), **kwargs)
 
 
 def local_run(data_home=DATA_HOME):
-    return dataset.compute("fake_dataset", data_home, local=True)
+    return compute("fake_dataset", data_home, local=True)
 
 
 def without_sources(part):
@@ -149,7 +148,7 @@ def test_needs_local_when_zip_is_truncated(fake_remotes, tmp_path):
 def test_incomplete_when_a_file_in_the_zip_is_corrupt(fake_remotes, tmp_path, monkeypatch, big):
     """One member's bytes changed after zipping (its CRC no longer matches): only that file is lost."""
     if big:
-        monkeypatch.setattr(remote_files, "MAX_ARCHIVE_MB", 0)  # every zip counts as big
+        monkeypatch.setattr("stats.remote.MAX_ARCHIVE_MB", 0)  # every zip counts as big
     files = dataset_files("annotations")
     good = files["annotations/chords/track1.lab"]
     data = zip_bytes(files, zipfile.ZIP_STORED)  # stored: the file's bytes appear as is

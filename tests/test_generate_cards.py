@@ -13,7 +13,7 @@ import tempfile
 
 import pytest
 
-import cards_io
+import card_utils
 import fake_dataset
 import generate_cards
 from conftest import files_under
@@ -40,7 +40,7 @@ def run(fake_remotes, tmp_path, monkeypatch, capsys):
         generate_cards.main()
         run.out = capsys.readouterr().out
         assert "[OK]    fake_dataset" in run.out, run.out
-        return cards_io.read_card(cards_io.card_path(cards, "fake_dataset"))
+        return card_utils.read_card(card_utils.card_path(cards, "fake_dataset"))
 
     return run
 

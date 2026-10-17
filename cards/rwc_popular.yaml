@@ -53,27 +53,13 @@ summary: The dataset includes 100 popular songs, 20 with English lyrics and 80 w
   information retrieval tasks focusing on genre, tempo, and key.
 stats:
   computed:
-    mode: local
-    index: c7f5f85376881588
-    date: '2026-10-13'
+    mode: remote
+    index: c7f5f853768815885cea70d6c246895d
   audio:
     status: ok
     problems: []
     n_tracks: 100
-    n_tracks_with_audio: 100
-    n_tracks_counted: 100
-    total_seconds: 24216.4
-    duration_histogram:
-      unit: min
-      edges: [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5]
-      counts: [1, 2, 22, 26, 25, 16, 5, 2, 1]
-    sample_rate: 44100
-    sample_rates:
-      44100: 100
     n_audio_files: 100
-    n_audio_files_counted: 100
-    all_files_seconds: 24216.4
-    n_errors: 0
   annotations:
     status: ok
     problems: []

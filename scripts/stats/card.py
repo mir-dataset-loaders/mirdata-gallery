@@ -30,34 +30,26 @@ def index_checksum(ds):
     return ds._index_data.remote.checksum
 
 
-def _number_keys(counts, kind=int):
-    """{44100: 3} whether the keys arrive as numbers or (after JSON) as strings."""
-    return {kind(k): v for k, v in counts.items()}
-
-
-# Annotation fields whose keys are numbers (meter), not labels.
-NUMBER_KEYED = {"beats_per_bar": int}
-
-
-def _error_part(part):
-    return {"status": "error", "error": part["error"]}
-
-
-def audio_card(part):
+def audio_to_card(part):
     """The audio part as stored in a card."""
     if "error" in part:
-        return _error_part(part)
+        return {"status": "error", "error": part["error"]}
     return {key: part[key] for key in AUDIO_KEYS if key in part}
 
 
-def annotations_card(part):
+def annotations_to_card(part):
     """The annotations part as stored in a card: per-file and per-track details become counts."""
     if "error" in part:
-        return _error_part(part)
+        return {"status": "error", "error": part["error"]}
     card = {key: part[key] for key in ANNOTATION_KEYS if key in part}
     card["annotations"] = {
         prop: {
-            key: _number_keys(value, NUMBER_KEYED[key]) if key in NUMBER_KEYED else value
+            # beats_per_bar is keyed by meter (4, 3, ...): numbers, even after a JSON round trip
+            key: (
+                {int(k): v for k, v in value.items()}
+                if key == "beats_per_bar"
+                else value
+            )
             for key, value in entry.items()
         }
         for prop, entry in card.get("annotations", {}).items()
@@ -65,12 +57,13 @@ def annotations_card(part):
     card["n_missing_files"] = len(part.get("missing_files", {}))
     card["n_track_errors"] = len(part.get("errors", {}))
     card["annotation_errors"] = {
-        prop: failed["n_tracks"] for prop, failed in part.get("annotation_errors", {}).items()
+        prop: failed["n_tracks"]
+        for prop, failed in part.get("annotation_errors", {}).items()
     }
     return card
 
 
-def card_stats(result, mode, checksum):
+def result_to_card_stats(result, mode, checksum):
     """The "stats" field for one compute_stats result ({"name", "audio", "annotations"}).
 
     mode: "remote" or "local"; checksum: index_checksum of the dataset.
@@ -82,9 +75,9 @@ def card_stats(result, mode, checksum):
         stats["error"] = result["error"]
         return stats
     if "audio" in result:
-        stats["audio"] = audio_card(result["audio"])
+        stats["audio"] = audio_to_card(result["audio"])
     if "annotations" in result:
-        stats["annotations"] = annotations_card(result["annotations"])
+        stats["annotations"] = annotations_to_card(result["annotations"])
     return stats
 
 
@@ -110,11 +103,6 @@ def is_current(stats, checksum):
     return bool(stats) and (stats.get("computed") or {}).get("index") == checksum
 
 
-def needs_compute(old, checksum, force=False, local=False):
-    """Whether to compute the stats again: none yet, a new index, or asked to (--force, --local)."""
-    return force or local or not is_current(old, checksum)
-
-
 def choose(old, new, checksum):
     """The stats to keep: the new ones, unless the old ones are current and more complete.
 
@@ -132,4 +120,8 @@ def status_line(stats):
         return "none"
     if "error" in stats:
         return f"error ({stats['error'][:60]})"
-    return ", ".join(f"{part} {stats[part]['status']}" for part in ("audio", "annotations") if part in stats)
+    return ", ".join(
+        f"{part} {stats[part]['status']}"
+        for part in ("audio", "annotations")
+        if part in stats
+    )
