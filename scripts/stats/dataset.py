@@ -3,9 +3,9 @@
 compute() initializes the dataset with the folder its files are read from or
 fetched into, then runs each part (audio, annotations) on its own: a part
 that fails holds {"status": "error", "error": ...} and does not stop the
-other. A remote run gets one Budget for the whole dataset: both parts share
-its time limit, and only the annotation downloads count toward its MB limit
-(the audio part reads headers only). Local runs have no limits.
+other. A remote run gets one Budget for the whole dataset, spent by the
+annotation downloads (the audio part reads only the index). Local runs have
+no limits.
 scripts/compute_stats.py prints the result, scripts/generate_cards.py turns
 it into the card's stats field (stats/to_card.py).
 """
@@ -20,17 +20,8 @@ from stats.common import MAX_REMOTE_MB, MAX_REMOTE_MINUTES, PARTS, Budget, load_
 
 
 def audio_part(name, ds, index, data_home, local, limit, workers, verbose, budget):
-    """stats.audio for one dataset, from its remotes or (local) from data_home."""
-    stats = audio.dataset_stats(
-        name,
-        index(),
-        ds.remotes or {},
-        workers,
-        limit,
-        verbose,
-        data_home if local else None,
-        budget=budget.time_only() if budget else None,
-    )
+    """stats.audio for one dataset, counted from its index whatever the mode or limit."""
+    stats = audio.dataset_stats(name, index())
     stats.pop("name", None)
     return stats
 

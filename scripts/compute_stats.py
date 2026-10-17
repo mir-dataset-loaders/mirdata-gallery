@@ -79,31 +79,9 @@ def print_part(part, stats, limit, elapsed):
 
 
 def print_audio(stats, limit):
-    """The terminal block for one dataset's audio."""
-    print("\n".join(stats["sources"]))
+    """The terminal block for one dataset's audio, counted from its index (limit does not apply)."""
     print(f"  tracks in index:        {stats['n_tracks']}")
-    print(f"  with audio in index:    {stats['n_tracks_with_audio']}")
-    print(f"  counted from files:     {stats['n_tracks_counted']}")
-    print(f"  total duration:         {stats['total_seconds']:.0f} s = {hms(stats['total_seconds'])}")
-    if stats["duration_histogram"]:
-        print(f"  durations:              {format_histogram(stats['duration_histogram'])}")
-    if stats["sample_rate"]:
-        print(f"  sample rate:            {stats['sample_rate']} Hz (all files)")
-    elif stats["sample_rates"]:
-        counts = ", ".join(f"{sr} Hz x {n}" for sr, n in stats["sample_rates"].items())
-        print(f"  sample rates:           {counts}")
-    if stats["n_audio_files"] != stats["n_tracks_with_audio"]:
-        print(
-            f"  all audio files:        {stats['n_audio_files_counted']}/{stats['n_audio_files']}"
-            f" read, {hms(stats['all_files_seconds'])} in total"
-        )
-    if stats["errors"]:
-        print(f"  errors:                 {len(stats['errors'])}")
-        if stats["status"] != "needs_local":  # else they follow from the problems below
-            for path, error in list(stats["errors"].items())[:5]:
-                print(f"    {path}: {error}")
-    if limit:
-        print(f"  (only the first {limit} audio files were read)")
+    print(f"  audio files in index:   {stats['n_audio_files']}")
 
 
 def print_annotations(stats, limit):
@@ -143,17 +121,17 @@ def print_annotations(stats, limit):
 
 def print_table(results):
     """One line per dataset, after a run over several datasets."""
-    print(f"\n{'dataset':36s} {'tracks':>7s} {'counted':>10s}  {'duration':>13s}  {'rate':>6s}  {'annotations':>11s}")
+    print(f"\n{'dataset':36s} {'tracks':>7s} {'audio files':>11s}  {'duration':>13s}  {'rate':>6s}  {'annotations':>11s}")
     for name, result in results.items():
         a, n = result.get("audio") or {}, result.get("annotations") or {}
         ok_a = a and "error" not in a
         tracks = a.get("n_tracks", n.get("n_tracks", "-")) if not result.get("error") else "-"
-        counted = f"{a['n_tracks_counted']}/{a['n_tracks_with_audio']}" if ok_a else "-"
-        duration = hms(a["total_seconds"]) if ok_a and a["n_tracks_counted"] else "-"
-        rate = str(a["sample_rate"]) if ok_a and a["sample_rate"] else ("mixed" if ok_a and a["sample_rates"] else "-")
+        files = str(a["n_audio_files"]) if ok_a else "-"
+        duration = hms(a["total_seconds"]) if a.get("total_seconds") else "-"  # until the index has durations
+        rate = str(a["sample_rate"]) if a.get("sample_rate") else ("mixed" if a.get("sample_rates") else "-")
         entries = str(len(n["annotations"])) if n and "error" not in n else "-"
         note = result.get("error") or a.get("error") or n.get("error") or ""
-        print(f"{name:36s} {str(tracks):>7s} {counted:>10s}  {duration:>13s}  {rate:>6s}  {entries:>11s}  {note[:60]}")
+        print(f"{name:36s} {str(tracks):>7s} {files:>11s}  {duration:>13s}  {rate:>6s}  {entries:>11s}  {note[:60]}")
 
 
 # ------------------------------------------------------------ command line
@@ -172,7 +150,7 @@ def parse_args(argv=None):
         "--limit",
         type=positive_int,
         default=None,
-        help="quick look: only the first N audio files (audio) and N tracks (annotations)",
+        help="quick look: only the first N tracks (annotations)",
     )
     parser.add_argument("--workers", type=int, default=4, help="parallel range requests")
     parser.add_argument("--verbose", action="store_true", help="print one line per file or track")

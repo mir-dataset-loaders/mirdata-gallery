@@ -24,10 +24,8 @@ scripts/
     histograms.py           # numbers -> {unit, edges, counts}
     remote_zip.py           # reading parts of a zip on a server (HTTP range requests)
     audio/
-      __init__.py           # dataset_stats: source -> read -> summarize -> status
-      headers.py            # duration and sample rate from the first 64 KB of a file
-      sources.py            # reading those headers remotely or locally
-      summary.py            # per-file results -> dataset numbers
+      __init__.py           # dataset_stats: counts from the index, status ok
+      summary.py            # which index entries are audio -> track and file counts
     annotations/
       __init__.py           # dataset_stats, remote_stats, local_stats
       properties.py         # which track properties are official mirdata annotations
@@ -41,7 +39,7 @@ scripts/
 `stats`. Like the summary, the stats are only recomputed when needed:
 
 - the card has no stats yet, or the dataset's index changed (the card stores
-  the index fingerprint), or `--force-stats` or `--local` is given;
+  the index checksum), or `--force-stats` or `--local` is given;
 - otherwise the card keeps its stats, and nothing is computed.
 
 When both old and new stats exist for the same index, the more complete ones
@@ -65,9 +63,9 @@ python scripts/generate_cards.py --max-mb 2000 --max-minutes 30 # larger remote 
    (`select_datasets` in `common.py`).
 2. For each dataset it calls `mirdata.initialize`, then runs two independent
    parts:
-   - **Audio**: `stats.audio.dataset_stats` reads only the first bytes of each
-     audio file, from the remote zips or from your disk, and adds up
-     durations and sample rates.
+   - **Audio**: `stats.audio.dataset_stats` counts the tracks and audio files
+     in the index. No audio file is read, remote or local; durations and
+     sample rates will come from mirdata's index once it carries them.
    - **Annotations**: in remote mode, `stats.annotations.remote_stats` first
      copies the annotation files into a temporary folder (`remote_files.py`). Then
      mirdata's own loaders read every track, and one `Stat` object per
@@ -107,10 +105,13 @@ no access (HTTP 403 or 404), archives that cannot be read remotely
 (tar.gz), the remote limit reached, or files that are in
 no readable remote.
 
-A remote run has one budget per dataset, shared by both parts: `--max-mb`
-(default 4000) counts only the annotation files downloaded, since the audio
-part reads headers only, and `--max-minutes` (default 10) counts the time of
-both parts. Local runs have no limits.
+The audio part is always `ok`: it reads only the index, so these statuses
+come from the annotations part.
+
+A remote run has one budget per dataset, spent by the annotations part:
+`--max-mb` (default 4000) counts the annotation files downloaded, and
+`--max-minutes` (default 10) the time spent reading remotes. Local runs have
+no limits.
 
 ## What each file holds, and why it is needed
 
@@ -149,11 +150,10 @@ compute exactly the same thing.
   dataset once with the folder its files are read from (local) or fetched
   into (remote), loads its index once for both parts, then runs each part in
   its own try, so a failing part does not stop the other. A remote run gets
-  one `Budget` for both parts (the audio part sees it through
-  `Budget.time_only`, so its header reads do not count toward the MB limit);
-  local runs have none.
-- `audio_part`, `annotations_part`: call `stats.audio` and
-  `stats.annotations` in local or remote mode.
+  one `Budget`, spent by the annotations part; local runs have none.
+- `audio_part`: calls `stats.audio`, the same in both modes and whatever
+  `--limit`.
+- `annotations_part`: calls `stats.annotations` in local or remote mode.
 
 ### `stats/common.py`
 
@@ -166,8 +166,7 @@ What both parts share.
 - `load_index`: gets a dataset's index file, never the whole dataset. Some
   mirdata loaders download gigabytes when their own download is called.
 - `remote_problems`: the closing problems of a remote read (the limit, or
-  the files no readable remote held), worded the same for audio and
-  annotations.
+  the files no readable remote held).
 - `print_to_do`: the closing list of datasets to rerun locally, incomplete
   or failed; used by both commands.
 - `add_stats_arguments`: the stats flags both commands share.
@@ -182,9 +181,9 @@ each part's status and problems, and counts of errors instead of the error
 lists. Log lines and per-file details stay out.
 
 - `card_stats`: the whole field, with a `computed` block saying how
-  (`remote` or `local`), from which index (its fingerprint) and when.
+  (`remote` or `local`), and from which index (its checksum).
 - `audio_card`, `annotations_card`: what each part keeps.
-- `index_fingerprint`: the index's published MD5 checksum, read from
+- `index_checksum`: the index's published MD5 checksum, read from
   mirdata without downloading the index. It changes exactly when mirdata's
   index for the dataset changes, which tells a later run whether the stats
   are still current.
@@ -205,8 +204,6 @@ module means every histogram on every card follows the same rules.
   `log=True` it uses log-spaced edges, for lengths that span milliseconds to
   minutes.
 - `step_width`, `next_step_width`, `log_edges`: choose those widths and edges.
-- `duration_histogram`: seconds, or minutes when the median track is over
-  2 minutes.
 - `format_histogram`: the one-line terminal version.
 
 ### `stats/remote_zip.py`
@@ -217,31 +214,19 @@ remote mode possible: a 4 GB audio zip costs a few megabytes.
 - `HTTPFile`: makes a URL behave like a file. Each read becomes one HTTP
   range request, retried when the server rate-limits, and charged to the
   budget.
-- `member_head`: the first bytes of one file inside the zip (what audio
-  needs).
-- `member_bytes`: one whole file inside the zip, CRC-checked (what
-  annotations need).
+- `member_bytes`: one whole file inside the zip, CRC-checked.
 - `match_members`: matches zip entries to index paths, handling the
   destination folder and the wrapper folders mirdata strips when unpacking.
 - `session`, `ARCHIVE_EXTENSIONS`: the HTTP session and the list of
-  non-zip archives, shared by the audio and annotation remote readers.
+  non-zip archives, used by the annotation remote reader.
 
 ### `stats/audio/`
 
-- **`headers.py`**: duration and sample rate from the first 64 KB of a file,
-  without decoding any audio. `wav_header`, `flac_header`, `mp3_header` parse
-  each format; `read_member` reads from a remote zip, `read_file` from disk.
-- **`sources.py`**: the two ways of getting at those files.
-  `remote_durations` opens each zip remote, reads the matching audio files in
-  parallel, and collects the problems that mean "run locally".
-  `local_durations` reads the same headers from a local copy, and raises an
-  error if there is no copy.
-- **`summary.py`**: per-file results to dataset numbers. `track_audio_paths`
-  finds which index entries are audio (keys containing "audio"); `summarize`
-  computes track counts, total duration, the duration histogram and sample
-  rates.
-- **`__init__.py`**: `dataset_stats` ties the three together: choose a
-  source, read, summarize, add the status.
+- **`summary.py`**: `track_audio_paths` finds which index entries are audio
+  (keys containing "audio"); `summarize` counts the tracks and the distinct
+  audio files they list.
+- **`__init__.py`**: `dataset_stats` adds the status (always `ok`) to those
+  counts.
 
 ### `stats/annotations/`
 

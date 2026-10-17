@@ -1,10 +1,12 @@
 """Fetch a dataset's annotation and metadata files from its remotes, without the audio.
 
 mirdata's loaders read files from disk, so the files the index lists are
-written into a folder laid out like a local copy. Zips up to MAX_ARCHIVE_MB,
-and servers without range support, are downloaded whole; bigger zips are
-read by range (remote_zip.py). tar.gz and similar archives are reported and
-skipped.
+written into a folder laid out like a local copy. Each zip's file list is read
+first, by range (remote_zip.py), so a zip without annotation files costs a few
+KB. A zip that holds some is downloaded whole up to MAX_ARCHIVE_MB, and read
+file by file by range when bigger. On a server without range support, zips up
+to MAX_ARCHIVE_MB are downloaded whole. tar.gz and similar archives are
+reported and skipped.
 """
 
 import io
@@ -18,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from stats import remote_zip
 from stats.common import RemoteLimit, remote_problems
 
-MAX_ARCHIVE_MB = 200  # a zip up to this size is downloaded whole; bigger ones are read by range
+MAX_ARCHIVE_MB = 200  # a zip with annotation files up to this size is downloaded whole
 
 
 def _entry_path(value):
@@ -94,24 +96,30 @@ def download_whole(url, session, budget=None):
         r.close()
 
 
-def open_zip(url, session, budget=None):
-    """(ZipFile, read(info) -> bytes, http) for a remote zip.
+def whole_zip(data):
+    """(ZipFile, read(info) -> bytes, None) for a zip downloaded whole."""
+    zf = zipfile.ZipFile(io.BytesIO(data))
+    return zf, zf.read, None  # ZipFile.read checks the CRC itself
 
-    http is the HTTPFile when members are read by range, None when the zip
-    was downloaded whole: because it is small, or because the server has no
-    range support.
+
+def open_zip(url, session, budget=None):
+    """(ZipFile, read(info) -> bytes, http) for a remote zip, of which only the file list is read.
+
+    http is the HTTPFile the members are read from by range, None when the
+    server has no range support and the zip had to be downloaded whole (only
+    up to MAX_ARCHIVE_MB).
     """
     try:
         http = remote_zip.HTTPFile(url, session, budget)
     except IOError:  # no size, no range support: GitHub archives, some web servers
-        data = download_whole(url, session, budget=budget)
-    else:
-        if http.size > MAX_ARCHIVE_MB * 1e6:
-            zf = zipfile.ZipFile(http)
-            return zf, lambda info: remote_zip.member_bytes(http, info), http
-        data = http.read_at(0, http.size)  # small: one request for everything
-    zf = zipfile.ZipFile(io.BytesIO(data))
-    return zf, zf.read, None  # ZipFile.read checks the CRC itself
+        return whole_zip(download_whole(url, session, budget=budget))
+    try:
+        zf = zipfile.ZipFile(http)  # the file list only, read from the end of the zip
+    except Exception:  # zipfile reports a failed read as BadZipFile, hence the flag
+        if not http.ranges_ignored or http.size > MAX_ARCHIVE_MB * 1e6:
+            raise
+        return whole_zip(download_whole(http.url, session, budget=budget))
+    return zf, lambda info: remote_zip.member_bytes(http, info), http
 
 
 def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
@@ -148,6 +156,10 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
                 members = remote_zip.match_members(
                     zf, todo, remote.destination_dir, getattr(remote, "unpack_directories", None)
                 )
+                if members and http and http.size <= MAX_ARCHIVE_MB * 1e6:
+                    # Small and holding annotation files: one download instead of a request per
+                    # file. It is the same zip, so the members found above fit it.
+                    zf, read_member, http = whole_zip(download_whole(http.url, session, budget))
             except RemoteLimit as e:
                 limit_hit = str(e)
                 sources.append(f"  {key:22s} {remote.filename}: {e}")

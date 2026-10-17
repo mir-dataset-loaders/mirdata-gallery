@@ -1,32 +1,15 @@
 """The card's "stats" field, made from a computed result, and when to replace it.
 
 A card keeps the numbers, histograms, statuses and problems, with error
-counts instead of error lists. Its "computed" block records the mode, the
-index fingerprint and the date, so a later run knows whether the stats are
-still current.
+counts instead of error lists. Its "computed" block records the mode and the
+index checksum, so a later run knows whether the stats are still current.
 """
-
-import datetime
-import hashlib
 
 MODES = ("remote", "local")
 
 # Keys copied from each part's result; everything else (log lines, per-file
 # dicts) stays out of the card.
-AUDIO_KEYS = (
-    "status",
-    "problems",
-    "n_tracks",
-    "n_tracks_with_audio",
-    "n_tracks_counted",
-    "total_seconds",
-    "duration_histogram",
-    "sample_rate",
-    "sample_rates",
-    "n_audio_files",
-    "n_audio_files_counted",
-    "all_files_seconds",
-)
+AUDIO_KEYS = ("status", "problems", "n_tracks", "n_audio_files")
 ANNOTATION_KEYS = (
     "status",
     "problems",
@@ -38,19 +21,13 @@ ANNOTATION_KEYS = (
 )
 
 
-def index_fingerprint(ds):
-    """A short fingerprint of a dataset's index, without downloading it.
+def index_checksum(ds):
+    """The MD5 checksum mirdata publishes with a dataset's index, without downloading it.
 
-    mirdata publishes every index with its MD5 checksum, and a new index
-    version comes with a new checksum, so the fingerprint changes exactly when
-    the index does. An index without a remote (mirdata's test indexes) is
-    hashed from its file instead.
+    A new index version comes with a new checksum, so it changes exactly when
+    the index does.
     """
-    remote = getattr(ds._index_data, "remote", None)
-    if remote is not None and remote.checksum:
-        return remote.checksum[:16]
-    with open(ds.index_path, "rb") as f:
-        return hashlib.md5(f.read()).hexdigest()[:16]
+    return ds._index_data.remote.checksum
 
 
 def _number_keys(counts, kind=int):
@@ -70,11 +47,7 @@ def audio_card(part):
     """The audio part as stored in a card."""
     if "error" in part:
         return _error_part(part)
-    card = {key: part[key] for key in AUDIO_KEYS if key in part}
-    if "sample_rates" in card:
-        card["sample_rates"] = _number_keys(card["sample_rates"])
-    card["n_errors"] = len(part.get("errors", {}))
-    return card
+    return {key: part[key] for key in AUDIO_KEYS if key in part}
 
 
 def annotations_card(part):
@@ -97,16 +70,14 @@ def annotations_card(part):
     return card
 
 
-def card_stats(result, mode, fingerprint, date=None):
+def card_stats(result, mode, checksum):
     """The "stats" field for one compute_stats result ({"name", "audio", "annotations"}).
 
-    mode: "remote" or "local"; fingerprint: index_fingerprint of the dataset
-    index; date: an ISO date string, today (UTC) by default.
+    mode: "remote" or "local"; checksum: index_checksum of the dataset.
     """
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}, got {mode!r}")
-    date = date or datetime.datetime.now(datetime.timezone.utc).date().isoformat()
-    stats = {"computed": {"mode": mode, "index": fingerprint, "date": date}}
+    stats = {"computed": {"mode": mode, "index": checksum}}
     if "error" in result:  # the loader could not even be initialized
         stats["error"] = result["error"]
         return stats
@@ -134,23 +105,23 @@ def rank(stats):
     return min(STATUS_RANK.get(part.get("status"), 0) for part in parts)
 
 
-def is_current(stats, fingerprint):
+def is_current(stats, checksum):
     """True when the stats were computed from this exact index."""
-    return bool(stats) and (stats.get("computed") or {}).get("index") == fingerprint
+    return bool(stats) and (stats.get("computed") or {}).get("index") == checksum
 
 
-def needs_compute(old, fingerprint, force=False, local=False):
+def needs_compute(old, checksum, force=False, local=False):
     """Whether to compute the stats again: none yet, a new index, or asked to (--force, --local)."""
-    return force or local or not is_current(old, fingerprint)
+    return force or local or not is_current(old, checksum)
 
 
-def choose(old, new, fingerprint):
+def choose(old, new, checksum):
     """The stats to keep: the new ones, unless the old ones are current and more complete.
 
     So a local "ok" is never replaced by a later remote "needs_local" for the
     same index; a new index always takes the new stats.
     """
-    if is_current(old, fingerprint) and rank(old) > rank(new):
+    if is_current(old, checksum) and rank(old) > rank(new):
         return old
     return new
 

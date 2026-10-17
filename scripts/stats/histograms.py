@@ -2,7 +2,6 @@
 
 The width is the Freedman-Diaconis estimate rounded to 1, 2, 2.5 or 5 times
 a power of ten, with at most MAX_BINS bins; log=True gives log-spaced edges.
-Durations are binned in seconds, or in minutes when the median track is long.
 """
 
 import math
@@ -12,7 +11,6 @@ import numpy as np
 MAX_BINS = 20
 STEP_SIZES = (1, 2, 2.5, 5)  # bin widths are one of these times a power of ten
 LOG_STEP_SIZES = (1, 2, 5)  # log-spaced edges are one of these times a power of ten
-MINUTES_FROM = 120  # seconds; a dataset whose median track is longer is binned in minutes
 
 
 def step_width(raw):
@@ -94,16 +92,6 @@ def histogram(values, unit, log=False):
         "edges": [_number(e) for e in edges],
         "counts": [int(c) for c in counts],
     }
-
-
-def duration_histogram(seconds):
-    """Histogram of durations: in seconds, or in minutes when the median is over MINUTES_FROM."""
-    seconds = [s for s in seconds if s is not None]
-    if not seconds:
-        return None
-    if np.median(seconds) > MINUTES_FROM:
-        return histogram([s / 60 for s in seconds], "min")
-    return histogram(seconds, "s")
 
 
 def format_histogram(hist):

@@ -15,7 +15,7 @@ MAX_REMOTE_MB = (
     2000  # default budget per dataset: annotation data downloaded from the remotes
 )
 MAX_REMOTE_MINUTES = (
-    10  # default budget per dataset: time spent reading remotes, both parts
+    10  # default budget per dataset: time spent reading the annotation remotes
 )
 PARTS = ("audio", "annotations")
 
@@ -58,31 +58,11 @@ class Budget:
         with self._lock:
             self.bytes += n_bytes
 
-    def time_only(self):
-        """A view of this budget that checks the time but neither checks nor charges bytes.
-
-        For the audio part: it reads only file headers, so its bytes do not count.
-        """
-        return TimeOnly(self)
-
-
-class TimeOnly:
-    """A Budget that only checks the time of the budget it wraps (see Budget.time_only)."""
-
-    def __init__(self, budget):
-        self.budget = budget
-
-    def check(self, more_bytes=0):
-        self.budget.check()
-
-    def charge(self, n_bytes):
-        pass
-
 
 def remote_problems(kind, limit_hit, unmatched, unreadable):
     """The closing problems of a remote read: the limit, or the files no readable remote held.
 
-    kind: "audio" or "annotation"; limit_hit: the RemoteLimit message or None;
+    kind: "annotation"; limit_hit: the RemoteLimit message or None;
     unmatched: wanted files found in no remote; unreadable: "remote: why" for
     remotes that could not be read. After the limit the unread remotes explain
     the unmatched files, so only the limit is reported.
@@ -182,7 +162,7 @@ def add_stats_arguments(parser):
         "--max-minutes",
         type=positive_int,
         default=MAX_REMOTE_MINUTES,
-        help=f"remote limit per dataset, in minutes for both parts (default {MAX_REMOTE_MINUTES})",
+        help=f"remote limit per dataset, in minutes of reading annotation remotes (default {MAX_REMOTE_MINUTES})",
     )
 
 

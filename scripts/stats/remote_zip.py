@@ -1,10 +1,10 @@
 """Read pieces of a zip archive straight from its URL, without downloading it.
 
 Servers like Zenodo honour HTTP range requests ("send me bytes X to Y"), so a
-zip's table of contents can be read from the end of the file and the first
-bytes of any member from its offset, while the rest of the archive is never
-transferred. The audio stats use this to read audio headers out of multi-GB
-dataset archives, the annotation stats to pull whole annotation files out.
+zip's table of contents can be read from the end of the file and any member
+from its offset, while the rest of the archive is never transferred. The
+annotation stats use this to pull annotation files out of multi-GB dataset
+archives.
 """
 
 import io
@@ -53,6 +53,7 @@ class HTTPFile(io.RawIOBase):
         self.pos = 0
         self.requests = 0
         self.bytes = 0
+        self.ranges_ignored = False  # set once the server answers a range request with the whole file
         self._lock = threading.Lock()
 
     def _request(self, method, **kwargs):
@@ -116,6 +117,7 @@ class HTTPFile(io.RawIOBase):
         r = self._request("GET", headers={"Range": f"bytes={offset}-{end}"}, stream=True)
         if r.status_code == 200:
             r.close()
+            self.ranges_ignored = True
             raise IOError("server ignored the range request")
         r.raise_for_status()
         # A 206 must say which bytes it carries and carry all of them; anything
@@ -133,25 +135,6 @@ class HTTPFile(io.RawIOBase):
         if self.budget:
             self.budget.charge(len(data))
         return data
-
-
-def member_head(http, info, n):
-    """The first n bytes of one zip member, decompressed, in one range request.
-
-    A member is stored as a local header (30 bytes + name + extra fields)
-    followed by its data, deflated or stored as is. The table of contents told
-    us where the member starts.
-    """
-    raw = http.read_at(info.header_offset, 30 + 4096 + n)
-    if raw[:4] != b"PK\x03\x04":
-        raise ValueError("bad local file header")
-    name_len, extra_len = struct.unpack("<HH", raw[26:30])
-    data = raw[30 + name_len + extra_len :]
-    if info.compress_type == zipfile.ZIP_DEFLATED:
-        data = zlib.decompressobj(-zlib.MAX_WBITS).decompress(data, n)
-    elif info.compress_type != zipfile.ZIP_STORED:
-        raise ValueError(f"unsupported zip compression {info.compress_type}")
-    return data
 
 
 def member_bytes(http, info):

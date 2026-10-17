@@ -4,7 +4,8 @@ Each test breaks one thing and checks the status the docs promise
 (scripts/scripts_structure.md, "Status of each part"):
     needs_local   the remotes cannot give a complete answer; problems say why
     incomplete    some files are broken in a way a local copy would not fix
-A broken remote costs only its own part: the other part stays as in a local run.
+Only the annotations part reads the remotes: the audio part, counted from the
+index, stays as in a local run whatever breaks.
 """
 
 import io
@@ -22,9 +23,7 @@ from fake_dataset import DATA_HOME
 from stats import dataset
 from stats.annotations import remote_files
 
-PARTS = ("audio", "annotations")  # each part has its own zip: audio.zip, annotations.zip
-OTHER = {"audio": "annotations", "annotations": "audio"}
-ZIPS = [f"{part}.zip" for part in PARTS]  # test ids: which zip is broken
+ZIPS = ("audio", "annotations")  # the server's two zips: audio.zip, annotations.zip
 
 
 @pytest.fixture(autouse=True)
@@ -70,31 +69,26 @@ def closed_port_url(name):
 # ------------------------------------------------------- 1. the server misbehaves
 
 
-SERVER_ERRORS = [(part, status) for status in ("404", "403") for part in PARTS]
-
-
-@pytest.mark.parametrize("part, status", SERVER_ERRORS, ids=[f"{s} on {p}.zip" for p, s in SERVER_ERRORS])
-def test_needs_local_when_server_answers_404_or_403(fake_remotes, tmp_path, part, status):
-    fake_remotes.failures[f"{part}.zip"] = status
+@pytest.mark.parametrize("status", ["404", "403"])
+def test_needs_local_when_server_answers_404_or_403(fake_remotes, tmp_path, status):
+    fake_remotes.failures["annotations.zip"] = status
     result = remote_run(tmp_path)
-    assert_needs_local_because(result[part], f"{part}.zip")
-    assert_same_as_local(result, OTHER[part])
+    assert_needs_local_because(result["annotations"], "annotations.zip")
+    assert_same_as_local(result, "audio")
 
 
-@pytest.mark.parametrize("part", PARTS, ids=ZIPS)
-def test_needs_local_when_server_sends_fewer_bytes_than_asked(fake_remotes, tmp_path, part):
-    fake_remotes.failures[f"{part}.zip"] = "short range"
+def test_needs_local_when_server_sends_fewer_bytes_than_asked(fake_remotes, tmp_path):
+    fake_remotes.failures["annotations.zip"] = "short range"
     result = remote_run(tmp_path)
-    assert_needs_local_because(result[part], f"{part}.zip")
-    assert_same_as_local(result, OTHER[part])
+    assert_needs_local_because(result["annotations"], "annotations.zip")
+    assert_same_as_local(result, "audio")
 
 
-@pytest.mark.parametrize("part", PARTS, ids=ZIPS)
-def test_needs_local_when_server_is_down(fake_remotes, tmp_path, part):
-    fake_dataset.REMOTES[part].url = closed_port_url(f"{part}.zip")
+def test_needs_local_when_server_is_down(fake_remotes, tmp_path):
+    fake_dataset.REMOTES["annotations"].url = closed_port_url("annotations.zip")
     result = remote_run(tmp_path)
-    assert_needs_local_because(result[part], f"{part}.zip")
-    assert_same_as_local(result, OTHER[part])
+    assert_needs_local_because(result["annotations"], "annotations.zip")
+    assert_same_as_local(result, "audio")
 
 
 def test_waits_as_asked_when_rate_limited(fake_remotes, tmp_path, waits):
@@ -111,24 +105,6 @@ def test_annotations_ok_when_server_has_no_range_support(fake_remotes, tmp_path,
     result = remote_run(tmp_path)
     assert_same_as_local(result, "annotations")
     assert_same_as_local(result, "audio")
-
-
-@pytest.mark.parametrize("mode", ["no length", "ignore range"])
-def test_audio_needs_local_when_server_has_no_range_support(fake_remotes, tmp_path, mode):
-    fake_remotes.failures["audio.zip"] = mode
-    result = remote_run(tmp_path)
-    assert_needs_local_because(result["audio"], "audio.zip")
-    assert_same_as_local(result, "annotations")
-
-
-@pytest.mark.parametrize("mode", ["no length", "ignore range"])
-def test_audio_zip_not_downloaded_when_server_has_no_range_support(fake_remotes, tmp_path, mode):
-    """Even when the server answers with the whole file, the audio part stops reading at once."""
-    files = {**dataset_files("audio"), "audio/padding.bin": bytes(50_000_000)}  # a 50 MB audio zip
-    fake_remotes.files["audio.zip"] = zip_bytes(files, zipfile.ZIP_STORED)
-    fake_remotes.failures["audio.zip"] = mode
-    remote_run(tmp_path, parts=["audio"])
-    assert fake_remotes.sent.get("audio.zip", 0) < 10_000_000
 
 
 def bytes_asked(server, name):
@@ -154,21 +130,19 @@ def test_zip_not_downloaded_when_it_has_no_annotations(fake_remotes, tmp_path):
 # ------------------------------------------------------- 2. the zip or the index
 
 
-@pytest.mark.parametrize("part", PARTS, ids=ZIPS)
-def test_needs_local_when_server_sends_a_web_page(fake_remotes, tmp_path, part):
-    fake_remotes.files[f"{part}.zip"] = b"<html><body>Please log in</body></html>"
+def test_needs_local_when_server_sends_a_web_page(fake_remotes, tmp_path):
+    fake_remotes.files["annotations.zip"] = b"<html><body>Please log in</body></html>"
     result = remote_run(tmp_path)
-    assert_needs_local_because(result[part], f"{part}.zip")
-    assert_same_as_local(result, OTHER[part])
+    assert_needs_local_because(result["annotations"], "annotations.zip")
+    assert_same_as_local(result, "audio")
 
 
-@pytest.mark.parametrize("part", PARTS, ids=ZIPS)
-def test_needs_local_when_zip_is_truncated(fake_remotes, tmp_path, part):
-    data = fake_remotes.files[f"{part}.zip"]
-    fake_remotes.files[f"{part}.zip"] = data[: len(data) // 2]
+def test_needs_local_when_zip_is_truncated(fake_remotes, tmp_path):
+    data = fake_remotes.files["annotations.zip"]
+    fake_remotes.files["annotations.zip"] = data[: len(data) // 2]
     result = remote_run(tmp_path)
-    assert_needs_local_because(result[part], f"{part}.zip")
-    assert_same_as_local(result, OTHER[part])
+    assert_needs_local_because(result["annotations"], "annotations.zip")
+    assert_same_as_local(result, "audio")
 
 
 @pytest.mark.parametrize("big", [False, True], ids=["downloaded whole", "read by range"])
@@ -190,56 +164,45 @@ def test_incomplete_when_a_file_in_the_zip_is_corrupt(fake_remotes, tmp_path, mo
     assert "D:maj" not in ann["annotations"]["chords"]["labels"]
 
 
-@pytest.mark.parametrize("part", PARTS, ids=ZIPS)
-def test_needs_local_when_remote_is_a_tar(fake_remotes, tmp_path, part):
+def test_needs_local_when_remote_is_a_tar(fake_remotes, tmp_path):
     buffer = io.BytesIO()
     with tarfile.open(fileobj=buffer, mode="w:gz") as tar:
-        for path, data in dataset_files(part).items():
+        for path, data in dataset_files("annotations").items():
             info = tarfile.TarInfo(path)
             info.size = len(data)
             tar.addfile(info, io.BytesIO(data))
-    fake_remotes.files[f"{part}.tar.gz"] = buffer.getvalue()
-    fake_dataset.REMOTES[part].filename = f"{part}.tar.gz"
-    fake_dataset.REMOTES[part].url = fake_remotes.url(f"{part}.tar.gz")
+    fake_remotes.files["annotations.tar.gz"] = buffer.getvalue()
+    fake_dataset.REMOTES["annotations"].filename = "annotations.tar.gz"
+    fake_dataset.REMOTES["annotations"].url = fake_remotes.url("annotations.tar.gz")
     result = remote_run(tmp_path)
-    assert_needs_local_because(result[part], f"{part}.tar.gz")
-    assert_same_as_local(result, OTHER[part])
+    assert_needs_local_because(result["annotations"], "annotations.tar.gz")
+    assert_same_as_local(result, "audio")
 
 
-@pytest.mark.parametrize(
-    "part, path, listed_in",
-    [
-        ("audio", "audio/track3.wav", "errors"),
-        ("annotations", "annotations/beats/track3.txt", "missing_files"),
-    ],
-    ids=ZIPS,
-)
-def test_needs_local_when_a_file_is_missing_from_the_zip(fake_remotes, tmp_path, part, path, listed_in):
-    files = dataset_files(part)
-    del files[path]
-    fake_remotes.files[f"{part}.zip"] = zip_bytes(files)
+def test_needs_local_when_a_file_is_missing_from_the_zip(fake_remotes, tmp_path):
+    files = dataset_files("annotations")
+    del files["annotations/beats/track3.txt"]
+    fake_remotes.files["annotations.zip"] = zip_bytes(files)
     result = remote_run(tmp_path)
-    assert_needs_local_because(result[part], "not found")
-    assert path in result[part][listed_in]
-    assert_same_as_local(result, OTHER[part])
+    assert_needs_local_because(result["annotations"], "not found")
+    assert "annotations/beats/track3.txt" in result["annotations"]["missing_files"]
+    assert_same_as_local(result, "audio")
 
 
-@pytest.mark.parametrize("part", PARTS, ids=ZIPS)
-def test_ok_when_zip_has_a_wrapper_folder(fake_remotes, tmp_path, part):
+def test_ok_when_zip_has_a_wrapper_folder(fake_remotes, tmp_path):
     """Like GitHub archives: everything inside fake_dataset-main/, which mirdata moves up when unpacking."""
-    files = {f"fake_dataset-main/{path}": data for path, data in dataset_files(part).items()}
-    fake_remotes.files[f"{part}.zip"] = zip_bytes(files)
-    fake_dataset.REMOTES[part].unpack_directories = ["fake_dataset-main"]
-    assert_same_as_local(remote_run(tmp_path), part)
+    files = {f"fake_dataset-main/{path}": data for path, data in dataset_files("annotations").items()}
+    fake_remotes.files["annotations.zip"] = zip_bytes(files)
+    fake_dataset.REMOTES["annotations"].unpack_directories = ["fake_dataset-main"]
+    assert_same_as_local(remote_run(tmp_path), "annotations")
 
 
-@pytest.mark.parametrize("part", PARTS, ids=ZIPS)
-def test_ok_when_remote_has_a_destination_dir(fake_remotes, tmp_path, part):
-    """The zip holds track1.wav, mirdata unpacks it into audio/ (the remote's destination_dir)."""
-    files = {path.split("/", 1)[1]: data for path, data in dataset_files(part).items()}
-    fake_remotes.files[f"{part}.zip"] = zip_bytes(files)
-    fake_dataset.REMOTES[part].destination_dir = part
-    assert_same_as_local(remote_run(tmp_path), part)
+def test_ok_when_remote_has_a_destination_dir(fake_remotes, tmp_path):
+    """The zip holds beats/track1.txt, mirdata unpacks it into annotations/ (the remote's destination_dir)."""
+    files = {path.split("/", 1)[1]: data for path, data in dataset_files("annotations").items()}
+    fake_remotes.files["annotations.zip"] = zip_bytes(files)
+    fake_dataset.REMOTES["annotations"].destination_dir = "annotations"
+    assert_same_as_local(remote_run(tmp_path), "annotations")
 
 
 # ------------------------------------------------------- 3. limits and broken files
@@ -248,13 +211,13 @@ def test_ok_when_remote_has_a_destination_dir(fake_remotes, tmp_path, part):
 def test_needs_local_for_annotations_only_when_mb_limit_is_hit(fake_remotes, tmp_path):
     result = remote_run(tmp_path, max_mb=0.0001)  # 100 bytes: less than annotations.zip
     assert_needs_local_because(result["annotations"], "remote limit")
-    assert_same_as_local(result, "audio")  # header reads do not count toward the MB limit
+    assert_same_as_local(result, "audio")  # the audio part reads no remote
 
 
-def test_needs_local_for_both_parts_when_time_limit_is_hit(fake_remotes, tmp_path):
+def test_needs_local_for_annotations_only_when_time_limit_is_hit(fake_remotes, tmp_path):
     result = remote_run(tmp_path, max_minutes=0)
-    for part in PARTS:
-        assert_needs_local_because(result[part], "remote limit")
+    assert_needs_local_because(result["annotations"], "remote limit")
+    assert_same_as_local(result, "audio")
 
 
 def run_with_changed_files(mode, changes, server, tmp_path):
@@ -265,23 +228,10 @@ def run_with_changed_files(mode, changes, server, tmp_path):
         for path, data in changes.items():
             (home / path).write_bytes(data)
         return local_run(str(home))
-    for part in PARTS:
+    for part in ZIPS:
         files = {**dataset_files(part), **{p: d for p, d in changes.items() if p.startswith(part)}}
         server.files[f"{part}.zip"] = zip_bytes(files)
     return remote_run(tmp_path)
-
-
-@pytest.mark.parametrize("mode", ["local", "remote"])
-def test_incomplete_when_an_audio_file_is_corrupt(fake_remotes, tmp_path, mode):
-    result = run_with_changed_files(mode, {"audio/track1.wav": b"not a wav file"}, fake_remotes, tmp_path)
-    audio = result["audio"]
-    assert audio["status"] == "incomplete"
-    assert audio["problems"] == []
-    assert set(audio["errors"]) == {"audio/track1.wav"}
-    assert audio["n_tracks_counted"] == 2
-    assert audio["total_seconds"] == 5.0  # track2 (4 s) + track3 (1 s)
-    assert audio["sample_rates"] == {8000: 1, 16000: 1}
-    assert result["annotations"]["status"] == "ok"
 
 
 @pytest.mark.parametrize("mode", ["local", "remote"])

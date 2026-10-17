@@ -23,6 +23,13 @@ def test_remote_stats_equal_local_stats(fake_remotes, tmp_path):
         assert without_sources(remote[part]) == without_sources(local[part])
 
 
+def test_audio_part_sends_no_request(fake_remotes, tmp_path):
+    """The audio part counts the index: the server is never asked for audio.zip or anything else."""
+    audio = dataset.compute("fake_dataset", str(tmp_path), parts=["audio"])["audio"]
+    assert audio == {"status": "ok", "problems": [], "n_tracks": 3, "n_audio_files": 3}
+    assert fake_remotes.requests == []
+
+
 def test_small_zip_is_downloaded_whole(fake_remotes, tmp_path):
     """A zip up to 200 MB comes in one piece: fewer requests than the 5 files it holds."""
     dataset.compute("fake_dataset", str(tmp_path), parts=["annotations"])
@@ -40,7 +47,7 @@ def test_big_zip_is_read_by_range(fake_remotes, tmp_path, monkeypatch):
 
 
 def test_only_annotation_files_are_saved(fake_remotes, tmp_path):
-    """The fetch folder gets the 5 annotation files and no audio (the audio part reads headers only).
+    """The fetch folder gets the 5 annotation files and no audio (the audio part reads only the index).
 
     compute() leaves them there; the commands delete the folder after the run (test_compute_stats.py).
     """

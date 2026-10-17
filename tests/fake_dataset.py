@@ -30,9 +30,13 @@ BIBTEX = """@misc{fake_dataset, title={A fake dataset for the mirdata-gallery te
 INDEXES = {
     "default": "1.0",
     "test": "1.0",
-    "1.0": core.Index(filename="fake_dataset_index_1.0.json"),
+    "1.0": core.Index(
+        filename="fake_dataset_index_1.0.json",
+        url="https://example.com/fake_dataset_index_1.0.json",  # never fetched: the file is in RESOURCES
+        checksum="2047e922e60a768ae2dff8a62853f8b4",
+    ),
 }
-# mirdata looks for an index without a url in its own tests folder: point it to ours.
+# mirdata keeps a remote index in its own package folder: point it to ours.
 INDEXES["1.0"].indexes_dir = RESOURCES
 
 REMOTES = None

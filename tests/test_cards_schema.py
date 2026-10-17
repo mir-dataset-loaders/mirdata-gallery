@@ -117,14 +117,12 @@ def _check_stats(stats):
 
     computed = stats.get("computed")
     if not isinstance(computed, dict):
-        yield "computed: missing (needs mode, index, date)"
+        yield "computed: missing (needs mode, index)"
     else:
         if computed.get("mode") not in STATS_MODES:
             yield f"computed.mode: must be one of {STATS_MODES}, got {computed.get('mode')!r}"
         if not isinstance(computed.get("index"), str) or not computed.get("index"):
-            yield "computed.index: must be the index fingerprint (a string)"
-        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(computed.get("date", ""))):
-            yield f"computed.date: must be YYYY-MM-DD, got {computed.get('date')!r}"
+            yield "computed.index: must be the index checksum (a string)"
 
     if "error" in stats:
         if not isinstance(stats["error"], str):
@@ -253,12 +251,8 @@ def BEATS(stats):
 
 
 VALID_STATS = {
-    "computed": {"mode": "remote", "index": "cb3998bcae39d9c1", "date": "2026-10-12"},
-    "audio": {
-        "status": "ok",
-        "problems": [],
-        "duration_histogram": {"unit": "min", "edges": [2, 2.5, 3], "counts": [1, 2]},
-    },
+    "computed": {"mode": "remote", "index": "cb3998bcae39d9c1"},
+    "audio": {"status": "ok", "problems": [], "n_tracks": 3, "n_audio_files": 3},
     "annotations": {
         "status": "needs_local",
         "problems": ["no remotes: the annotations have to be downloaded manually"],
@@ -296,15 +290,14 @@ def test_annotation_entries_may_have_parts_and_null_histograms():
     [
         (lambda s: s.pop("computed"), "computed: missing"),
         (lambda s: s["computed"].update(mode="cloud"), "computed.mode"),
-        (lambda s: s["computed"].update(date="12/10/2026"), "computed.date"),
         (lambda s: s["computed"].update(index=""), "computed.index"),
         (lambda s: s.update(extra=1), "unknown keys: extra"),
         (lambda s: s["audio"].update(status="fine"), "audio.status"),
         (lambda s: s["audio"].pop("problems"), "audio.problems: must be a list"),
         (lambda s: s["annotations"].update(problems=[]), "needs_local must say why"),
-        (lambda s: s["audio"]["duration_histogram"].update(counts=[1]), "3 edges for 1 counts"),
-        (lambda s: s["audio"]["duration_histogram"].update(edges=[3, 2, 1]), "edges must rise"),
-        (lambda s: s["audio"]["duration_histogram"].update(counts=[1, -2]), "non-negative integers"),
+        (lambda s: BEATS(s)["tempo"].update(counts=[1, 2]), "2 edges for 2 counts"),
+        (lambda s: BEATS(s)["tempo"].update(edges=[80, 60]), "edges must rise"),
+        (lambda s: BEATS(s)["tempo"].update(counts=[-3]), "non-negative integers"),
         (lambda s: (s.pop("audio"), s.pop("annotations")), "needs at least one of"),
         (lambda s: BEATS(s).update(type="Beats"), "beats.type: must be one of"),
         (lambda s: BEATS(s).pop("beats_per_bar"), "beats: missing keys: beats_per_bar"),
@@ -329,5 +322,5 @@ def test_real_stats_from_card_py_pass_the_schema():
     from stats.to_card import card_stats
     from test_to_card import ANNOTATIONS, AUDIO
 
-    stats = card_stats({"name": "fake", "audio": AUDIO, "annotations": ANNOTATIONS}, "local", "abc", "2026-10-12")
+    stats = card_stats({"name": "fake", "audio": AUDIO, "annotations": ANNOTATIONS}, "local", "abc")
     assert _stats_errors(stats) == []

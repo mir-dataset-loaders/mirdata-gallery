@@ -60,8 +60,8 @@ def card_stats(ds, old, options):
         return old, "kept" if old else "none"
     if options["local"] and not os.path.isdir(os.path.join(options["datasets_dir"], ds.name)):
         return old, "kept (no local copy)" if old else "none (no local copy)"
-    fingerprint = to_card.index_fingerprint(ds)
-    if not to_card.needs_compute(old, fingerprint, options["force"], options["local"]):
+    checksum = to_card.index_checksum(ds)
+    if not to_card.needs_compute(old, checksum, options["force"], options["local"]):
         return old, "kept"
     root = options["datasets_dir"] if options["local"] else options["fetch_root"]
     result = stats_dataset.compute(
@@ -72,8 +72,8 @@ def card_stats(ds, old, options):
         max_minutes=options["max_minutes"],
     )
     mode = "local" if options["local"] else "remote"
-    new = to_card.card_stats(result, mode, fingerprint)
-    chosen = to_card.choose(old, new, fingerprint)
+    new = to_card.card_stats(result, mode, checksum)
+    chosen = to_card.choose(old, new, checksum)
     return chosen, "new" if chosen is new else "kept (more complete than the new run)"
 
 

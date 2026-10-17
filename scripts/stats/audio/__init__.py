@@ -1,36 +1,16 @@
-"""Audio stats of one dataset: track count, durations and sample rates.
+"""Audio stats of one dataset, counted from its index: tracks and audio files.
 
-Durations come from the audio file headers only (headers.py), read by range
-from the zip remotes or from a local copy (sources.py), then added up
-(summary.py). No audio is decoded or downloaded whole.
+No audio file is read, remote or local. Durations and sample rates will come
+from mirdata's index once it carries them.
 """
 
-from stats.audio.sources import local_durations, remote_durations
-from stats.audio.summary import summarize, track_audio_paths
-from stats.common import part_status
+from stats.audio.summary import summarize
 
 
-def dataset_stats(name, index, remotes, workers=4, limit=None, verbose=False, data_home=None, budget=None):
-    """Count tracks and read every audio duration of one dataset. Returns a dict.
+def dataset_stats(name, index):
+    """Count the tracks and audio files of one dataset. Returns a dict.
 
-    index: the dataset's index dict; remotes: its REMOTES dict (may be empty).
-    data_home: when given, the audio is read from that local folder instead of
-    the remotes (restricted or licensed audio). budget: a stats.common.Budget
-    for the remote reads. The result carries "status" (ok, incomplete or
-    needs_local) and "problems", the reasons a local run is needed.
+    index: the dataset's index dict. The status is always ok: a local run
+    would find nothing the index does not already say.
     """
-    tracks = track_audio_paths(index)
-    wanted = {p for paths in tracks.values() for p in paths}
-    if data_home is None:
-        durations, rates, errors, sources, problems = remote_durations(
-            remotes, wanted, workers, limit, verbose, budget
-        )
-    else:
-        durations, rates, errors, sources, problems = local_durations(data_home, wanted, limit, verbose)
-    return {
-        "name": name,
-        "status": part_status(problems, bool(errors)),
-        "problems": problems,
-        **summarize(index, durations, rates, errors),
-        "sources": sources,
-    }
+    return {"name": name, "status": "ok", "problems": [], **summarize(index)}
