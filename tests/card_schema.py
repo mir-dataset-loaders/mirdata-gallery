@@ -49,16 +49,6 @@ ANNOTATION_TYPES = [
     "TempoData",
 ]
 
-# Closed vocabulary for `audio`: how the audio can be obtained. Cards store the
-# label itself and the gallery shows it as-is.
-AUDIO_AVAILABILITY = [
-    "✅ Freely downloadable",
-    "🔑 Available upon request",
-    "📺 Do-it-yourself download",
-    "🧮 Features only",
-    "❌ Not available",
-]
-
 # The "stats" field (written by scripts/generate_cards.py, see scripts/stats/card.py).
 STATS_PARTS = ["audio", "annotations"]
 STATS_STATUSES = ["ok", "incomplete", "needs_local", "error"]
@@ -95,10 +85,6 @@ SCHEMA = {
         "type": str,
         "min_length": 1,
         "single_line": True,
-    },
-    "audio": {
-        "type": str,
-        "choices": AUDIO_AVAILABILITY,
     },
     "annotations": {
         "type": list,
