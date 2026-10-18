@@ -5,20 +5,22 @@ Usage in an .rst file::
     .. dataset-gallery:: ../cards
 
 The argument is the directory holding one YAML card per dataset, relative to
-the current document. Each card becomes a section with the markup that
-``scripts/generate_gallery_cards.py`` used to write into ``index.rst``, so the
-resulting HTML (and therefore ``gallery.js`` / ``custom.css``) is unchanged.
+the current document. Each card becomes a section, the dataset's panel: its
+title, an overview (the summary), an "At a glance" box, the statistics as SVG
+bar charts, and the BibTeX citation. gallery.js arranges the sections into
+the filterable gallery, custom.css styles them.
 
 Every card is registered as a dependency of the page, and the directory is
 snapshotted, so editing, adding or removing a card makes Sphinx re-read the
 page on the next incremental build without needing ``-E``.
 """
 
+import html
 import os
-import posixpath
 import textwrap
 
 import yaml
+from card_schema import STATS_ANNOTATION_FIELDS
 from docutils import nodes
 from docutils.statemachine import StringList, string2lines
 from sphinx.util import logging
@@ -27,104 +29,55 @@ from sphinx.util.nodes import nested_parse_with_titles
 
 logger = logging.getLogger(__name__)
 
-# FIXME: should revisit this script. just pulled from make_index.py
+MAX_PLOTS = 3  # plots shown before "Show more"
+UNIT_LABELS = {"hz": "Hz", "midi": "MIDI"}  # how a unit is written; others as stored
+
+# Size of every chart, in SVG units (the chart scales to the width it gets).
+# The margins leave room for the y labels (left) and the x labels and unit (bottom).
+WIDTH, HEIGHT = 120, 90
+LEFT, RIGHT, TOP, BOTTOM = 26, 12, 6, 24
+MAX_TICKS = 3  # edge values written under the x axis
+
+# "Try it with mirdata": mirdata's README quickstart, the same for every dataset but its name
+TRY_IT = """import mirdata
+dataset = mirdata.initialize("{name}")
+dataset.download()
+dataset.validate()
+track = dataset.choice_track()
+print(track)"""
 
 # --- Card rendering ----------------------------------------------------------
 
 
-def render_card(data, yaml_relpath, fallback_name):
+def render_card(data, fallback_name):
     """Return the RST for one dataset card.
 
-    ``yaml_relpath`` is the card's path relative to the current document; it is
-    used for the :download: link and the literalinclude.
+    The title, the panel as raw HTML, the "Try it with mirdata" code, and the
+    BibTeX dropdown.
     """
-    yaml_name = posixpath.basename(yaml_relpath)
-
     name = data.get("name", fallback_name)
-    license_str = data.get("license", "Not specified")
-    if isinstance(license_str, str):
-        # Collapse multi-line/whitespace into a single clean line
-        license_str = " ".join(license_str.split())
-
-    # 1. Format annotations as inline code tags
-    annotations_list = data.get("annotations")
-    if annotations_list and isinstance(annotations_list, list):
-        annotations_str = ", ".join(f"``{a}``" for a in annotations_list)
-    else:
-        annotations_str = "*None*"
-
-    # 2. Format remotes / downloadable components
-    remotes_list = data.get("remotes")
-    if remotes_list and isinstance(remotes_list, list):
-        remotes_str = ", ".join(f"``{r}``" for r in remotes_list)
-    else:
-        remotes_str = "*No direct download available*"
-
+    panel = "\n".join(
+        [
+            overview(data),
+            at_a_glance(data),
+            statistics(data.get("stats")),
+            '<h3 class="panel-heading">Try it with mirdata</h3>',
+        ]
+    )
     card = f"""{name}
 {'-' * len(name)}
 
+.. raw:: html
 
-* **Annotations:** {annotations_str}
+{textwrap.indent(panel, "   ")}
 
+.. code-block:: python
+   :class: try-mirdata
+   :linenos:
+
+{textwrap.indent(TRY_IT.format(name=name), "   ")}
 """
 
-    # 3. "About this dataset": LLM summary if present, else the cleaned docstring
-    docstring = data.get("docstring")
-    if docstring and docstring.strip():
-        filtered = []
-        for line in docstring.strip().splitlines():
-            stripped = line.strip()
-            # Remove redundant ".. admonition::", ":class:", and "<Dataset> Loader" headers
-            if stripped.startswith(".. admonition::") or stripped.startswith(":class:"):
-                continue
-            if stripped.endswith("Loader") and len(stripped.split()) <= 4:
-                continue
-            filtered.append(line)
-
-        clean_doc = textwrap.dedent("\n".join(filtered)).strip()
-        about_text = data.get("summary") or clean_doc
-
-        card += f"""
-**About this dataset:**
-
-{about_text}
-
-"""
-
-    # 4. License, remotes & YAML download
-    card += f"""* **License:** {license_str}
-* **Downloadable Remotes:** {remotes_str}
-* **YAML File:** :download:`{yaml_name}<{yaml_relpath}>`
-
-"""
-
-    # 5. Download instructions dropdown
-    download_info = data.get("download_info")
-    if download_info and download_info.strip():
-        # Detect if download_info contains a file tree
-        tree_markers = ["├──", "|--", "└──", "> "]
-        if any(marker in download_info for marker in tree_markers):
-            formatted_lines = []
-            tree_started = False
-            for line in download_info.strip().splitlines():
-                if not tree_started and (
-                    line.startswith("    ") or any(m in line for m in tree_markers)
-                ):
-                    formatted_lines.extend(["", "::", ""])
-                    tree_started = True
-                formatted_lines.append(line)
-            download_info = "\n".join(formatted_lines)
-
-        indented_download = textwrap.indent(download_info.strip(), "   ")
-        card += f"""
-.. admonition:: Download Instructions
-   :class: dropdown
-
-
-{indented_download}
-"""
-
-    # 6. BibTeX dropdown
     bibtex = data.get("bibtex")
     if bibtex and bibtex.strip():
         indented_bibtex = textwrap.indent(bibtex.strip(), "      ")
@@ -136,16 +89,236 @@ def render_card(data, yaml_relpath, fallback_name):
 
 {indented_bibtex}
 """
-
-    # 7. Raw YAML, viewable inside a collapsible toggle
-    card += f"""
-.. admonition:: View Full YAML Definition
-   :class: dropdown
-
-   .. literalinclude:: {yaml_relpath}
-      :language: yaml
-"""
     return card
+
+
+def overview(data):
+    summary = data.get("summary")
+    text = html.escape(summary) if summary else '<span class="panel-missing">No summary yet.</span>'
+    return f'<h3 class="panel-heading">Overview</h3>\n<p class="panel-summary">{text}</p>'
+
+
+def at_a_glance(data):
+    """The box of quick facts, with the annotation tags at the bottom. "—" marks a missing value."""
+    stats = data.get("stats") or {}
+    audio = stats.get("audio") or {}
+    tracks = audio.get("n_tracks", (stats.get("annotations") or {}).get("n_tracks"))
+    sample_rate = audio.get("sample_rate")
+    tags = data.get("annotations") or []
+    license_text = " ".join((data.get("license") or "").split())
+
+    rows = [
+        glance_row("Tracks", f"{tracks:,}" if tracks is not None else None),
+        glance_row("Sample rate", f"{sample_rate / 1000:g} kHz" if sample_rate else None),
+        glance_row("Total duration", duration(audio.get("total_seconds"))),
+        # gallery.js replaces the full text with its short license label
+        glance_row(
+            "License",
+            license_text,
+            f' data-license="{html.escape(license_text)}"',
+        ),
+        glance_row("Annotations", f"{len(tags)} type{'s' if len(tags) != 1 else ''}" if tags else None),
+    ]
+    rows = "\n".join(rows)
+    tag_html = "\n".join(f'<code data-ann="{html.escape(t)}">{html.escape(t)}</code>' for t in tags)
+    return f"""<div class="panel-box">
+<div class="box-title">At a glance</div>
+<div class="glance-grid">
+{rows}
+</div>
+<div class="box-title">Annotation types</div>
+<div class="glance-tags">
+{tag_html or "—"}
+</div>
+</div>"""
+
+
+def glance_row(label, value, value_attributes=""):
+    return (
+        f'<div class="glance-row"><span class="glance-label">{label}</span>'
+        f'<span class="glance-value"{value_attributes}>{html.escape(value or "—")}</span></div>'
+    )
+
+
+def duration(seconds):
+    """'6.7 hours' from one hour up, else '23.6 min'; None when unknown."""
+    if not seconds:
+        return None
+    if seconds >= 3600:
+        return f"{seconds / 3600:.1f} hours"
+    return f"{seconds / 60:.1f} min"
+
+
+# --- Statistics --------------------------------------------------------------
+
+
+def statistics(stats):
+    """The Statistics box: status notes, the first MAX_PLOTS plots, the rest behind "Show more"."""
+    out = ['<div class="panel-box">', '<div class="box-title">Statistics</div>']
+    if not stats:
+        out.append(note("No statistics yet."))
+    elif "error" in stats:
+        out.append(note("Statistics unavailable."))
+    else:
+        out.extend(note(text) for text in status_notes(stats))
+        plots = ordered_plots(stats)
+        if not plots:
+            out.append(note("Nothing to plot yet."))
+        else:
+            out.append(plot_grid(plots[:MAX_PLOTS]))
+            if plots[MAX_PLOTS:]:
+                out.append(show_more(plots[MAX_PLOTS:]))
+    out.append("</div>")
+    return "\n".join(out)
+
+
+def note(text):
+    return f'<p class="stats-note">{html.escape(text)}</p>'
+
+
+def status_notes(stats):
+    """One line per part that is not ok: unavailable, or computed from fewer tracks."""
+    notes = []
+    for part, label in (("audio", "Audio"), ("annotations", "Annotation")):
+        value = stats.get(part)
+        if not value or value.get("status") == "ok":
+            continue
+        if value.get("status") == "error":
+            notes.append(f"{label} statistics unavailable.")
+            continue
+        reason = (
+            "some files need a local run"
+            if value.get("status") == "needs_local"
+            else "some files could not be read"
+        )
+        loaded, total = value.get("n_tracks_loaded"), value.get("n_tracks")
+        if loaded is not None and total and loaded < total:
+            notes.append(f"Computed from {loaded:,} of {total:,} tracks ({reason}).")
+        else:
+            notes.append(f"{label} statistics are incomplete ({reason}).")
+    return notes
+
+
+def ordered_plots(stats):
+    """Every histogram to plot, in display order.
+
+    The audio duration comes first, then the first plot of each annotation type,
+    then the rest of each type's plots. When several entries (track properties)
+    have the same type, the one with the most annotations counts for its type;
+    the others' plots come last.
+    """
+    plots = []
+    audio = stats.get("audio") or {}
+    if is_histogram(audio.get("duration_histogram")):
+        plots.append(
+            plot("duration_histogram", audio["duration_histogram"], "audio", audio.get("n_tracks"))
+        )
+
+    by_type = {}
+    entries = (stats.get("annotations") or {}).get("annotations") or {}
+    for prop, entry in entries.items():
+        entry_plots = annotation_plots(prop, entry)
+        if entry_plots:
+            by_type.setdefault(entry["type"], []).append((prop, entry, entry_plots))
+
+    firsts, rests, others = [], [], []
+    for ann_type in sorted(by_type):
+        candidates = by_type[ann_type]
+        best = max(candidates, key=lambda c: c[1].get("n_annotations", 0))  # first one wins a tie
+        firsts.append(best[2][0])
+        rests.extend(best[2][1:])
+        others.extend(p for prop, _, entry_plots in candidates if prop != best[0] for p in entry_plots)
+    return plots + firsts + rests + others
+
+
+def annotation_plots(prop, entry):
+    """The plots of one annotation entry, its histograms in the schema's field order."""
+    order = list(STATS_ANNOTATION_FIELDS.get(entry["type"], {}))
+    fields = [key for key, value in entry.items() if is_histogram(value)]
+    fields.sort(key=lambda key: order.index(key) if key in order else len(order))
+    return [
+        plot(key, entry[key], f"{prop} · {entry['type']}", entry.get("n_tracks"), entry.get("n_annotations"))
+        for key in fields
+    ]
+
+
+def is_histogram(value):
+    return isinstance(value, dict) and set(value) == {"unit", "edges", "counts"} and bool(value["counts"])
+
+
+def plot(field, hist, source, n_tracks=None, n_annotations=None):
+    """What one plot needs. counted names what the bars count, for the hover text."""
+    total = sum(hist["counts"])
+    counted = "tracks" if total == n_tracks else "annotations" if total == n_annotations else "values"
+    words = field.removesuffix("_histogram").removesuffix("_per_annotation").replace("_", " ")
+    return {"title": words[:1].upper() + words[1:], "source": source, "hist": hist, "counted": counted}
+
+
+def plot_grid(plots):
+    figures = "\n".join(
+        f'<figure class="plot"><figcaption><span class="plot-title">{html.escape(p["title"])}</span>'
+        f'<span class="plot-source">{html.escape(p["source"])}</span></figcaption>'
+        f'{histogram_svg(p["hist"], p["counted"])}</figure>'
+        for p in plots
+    )
+    return f'<div class="plot-grid">\n{figures}\n</div>'
+
+
+def show_more(plots):
+    """The rest of the plots, folded; the label reads "Show less" while open (custom.css)."""
+    return (
+        '<details class="plot-toggle"><summary><span class="when-closed">Show more</span>'
+        f'<span class="when-open">Show less</span></summary>\n{plot_grid(plots)}\n</details>'
+    )
+
+
+def number(x):
+    """An edge value as written on the axis: 1,000 or 12.5."""
+    return f"{int(x):,}" if float(x).is_integer() else f"{x:g}"
+
+
+def histogram_svg(hist, counted):
+    """One histogram {unit, edges, counts} as an SVG bar chart; the one chart every plot uses.
+
+    The y axis shows 0 and the highest count, the x axis up to MAX_TICKS edge
+    values and the unit. Hovering a bar shows its range and count.
+    """
+    edges, counts = hist["edges"], hist["counts"]
+    unit = UNIT_LABELS.get(hist["unit"], hist["unit"])
+    plot_width, plot_height = WIDTH - LEFT - RIGHT, HEIGHT - TOP - BOTTOM
+    bar_width = plot_width / len(counts)
+    highest = max(counts) or 1
+    base = TOP + plot_height
+
+    out = [f'<svg class="plot-svg" viewBox="0 0 {WIDTH} {HEIGHT}" role="img">']
+    for i, count in enumerate(counts):
+        x = LEFT + i * bar_width
+        height = plot_height * count / highest
+        tip = f"{number(edges[i])}–{number(edges[i + 1])} {unit}: {count:,} {counted}"
+        out.append(
+            f"<g><title>{html.escape(tip)}</title>"
+            f'<rect class="plot-hit" x="{x:.1f}" y="{TOP}" width="{bar_width:.1f}" height="{plot_height}"/>'
+            f'<rect class="plot-bar" x="{x + 0.5:.1f}" y="{base - height:.1f}"'
+            f' width="{max(bar_width - 1, 0.5):.1f}" height="{height:.1f}"/></g>'
+        )
+    out.append(f'<line class="plot-axis" x1="{LEFT}" y1="{base}" x2="{WIDTH - RIGHT}" y2="{base}"/>')
+    for y, label in ((TOP, f"{highest:,}"), (base, "0")):
+        out.append(
+            f'<text class="plot-label" x="{LEFT - 3}" y="{y}" text-anchor="end"'
+            f' dominant-baseline="middle">{label}</text>'
+        )
+    step = -(-len(counts) // (MAX_TICKS - 1))  # every step-th edge, so labels are evenly spaced
+    for i in range(0, len(edges), step):
+        out.append(
+            f'<text class="plot-label" x="{LEFT + i * bar_width:.1f}" y="{base + 10}"'
+            f' text-anchor="middle">{number(edges[i])}</text>'
+        )
+    out.append(
+        f'<text class="plot-unit" x="{LEFT + plot_width / 2:.1f}" y="{HEIGHT - 4}"'
+        f' text-anchor="middle">{html.escape(unit)}</text>'
+    )
+    out.append("</svg>")
+    return "".join(out)
 
 
 # --- Directive ---------------------------------------------------------------
@@ -189,7 +362,7 @@ class DatasetGallery(SphinxDirective):
             with open(abs_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
 
-            card = render_card(data, posixpath.join(cards_arg, fname), fname[:-5])
+            card = render_card(data, fname[:-5])
             card_lines = string2lines(card, tab_width, convert_whitespace=True) + [""]
             lines.extend(card_lines)
             items.extend((abs_path, i) for i in range(len(card_lines)))

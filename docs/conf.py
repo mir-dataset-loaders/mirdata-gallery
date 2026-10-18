@@ -8,6 +8,8 @@ import sys
 
 # Local extensions (the dataset-gallery directive lives in _ext/gallery.py)
 sys.path.insert(0, os.path.abspath("_ext"))
+# tests/card_schema.py: the card format, read by _ext/gallery.py for the order of the plots
+sys.path.insert(0, os.path.abspath("../tests"))
 
 # -- Project information -----------------------------------------------------
 
@@ -40,10 +42,12 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinxawesome_theme"
+html_title = "Mirdata Gallery"  # shown in the header next to the logo
 html_logo = "img/mirdata.png"
+html_permalinks = False  # no ¶ link after the headings
 
 # Custom static files, copied after the theme's own so they can override it.
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
-html_js_files = ["js/gallery.js"]
+html_js_files = ["js/light-mode.js", "js/gallery.js"]
