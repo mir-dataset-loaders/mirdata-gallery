@@ -25,6 +25,12 @@ stats:
     problems: []
     n_tracks: 64
     n_audio_files: 128
+    total_seconds: 1413.1
+    sample_rate: 44100
+    duration_histogram:
+      unit: s
+      edges: [5, 10, 15, 20, 25, 30, 35]
+      counts: [1, 9, 12, 20, 18, 4]
   annotations:
     status: ok
     problems: []

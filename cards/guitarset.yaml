@@ -27,6 +27,13 @@ stats:
     problems: []
     n_tracks: 360
     n_audio_files: 1440
+    total_seconds: 10968.4
+    sample_rate: 44100
+    duration_histogram:
+      unit: s
+      edges: [12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45,
+        47.5]
+      counts: [12, 0, 12, 48, 24, 48, 48, 36, 36, 24, 24, 12, 12, 24]
   annotations:
     status: ok
     problems: []

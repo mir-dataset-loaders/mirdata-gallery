@@ -60,6 +60,12 @@ stats:
     problems: []
     n_tracks: 100
     n_audio_files: 100
+    total_seconds: 24216.4
+    sample_rate: 44100
+    duration_histogram:
+      unit: min
+      edges: [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5]
+      counts: [1, 2, 22, 26, 25, 16, 5, 2, 1]
   annotations:
     status: ok
     problems: []
