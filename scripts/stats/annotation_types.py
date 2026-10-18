@@ -14,7 +14,7 @@ from mirdata.annotations import Annotation, MultiAnnotator
 
 from stats.histograms import histogram
 
-TOP = 10  # how many labels to keep per label distribution
+TOP = 30  # how many labels to keep per label distribution (the gallery plots fewer)
 # The official mirdata annotation types (BeatData, ChordData, ... TempoData): the
 # only ones the stats cover. Properties the card detection labels otherwise
 # (Instrument, Genre) are ignored.
@@ -49,6 +49,20 @@ def interval_lengths(annotation):
     if not len(intervals):
         return None
     return to_seconds(intervals[:, 1] - intervals[:, 0], unit)
+
+
+def bar_lengths(positions):
+    """Beats in every bar of bar_index positions: a bar ends where the count goes back down."""
+    lengths, last = [], 0
+    for p in np.asarray(positions, dtype=float):
+        if p <= 0:  # 0 marks beats outside any bar
+            continue
+        if last and p <= last:
+            lengths.append(int(last))
+        last = p
+    if last:
+        lengths.append(int(last))
+    return lengths
 
 
 def chord_quality(label):
@@ -147,35 +161,33 @@ class Tempo(Stat):
         self.bpm.extend(float(t) for t in value.tempos)
 
     def result(self):
-        return {
-            "tempo": histogram(self.bpm, "bpm")
-        }  # same name as the tempo derived from beats
+        return {"tempo": histogram(self.bpm, "bpm")}  # annotated by hand, unlike tempo_from_beats
 
 
 class Beats(Stat):
-    """Tempo from the beat intervals, and beats per bar (meter)."""
+    """Tempo from the beat intervals, and the meter as beats per bar (3/4 and 3/8 both count as 3)."""
 
     annotation = annotations.BeatData
 
     def __init__(self):
         super().__init__()
-        self.bpm = []  # one value per annotation, reported as the dataset's tempo
-        self.beats_per_bar = Counter()  # tracks per meter
+        self.bpm = []  # one value per annotation, reported as tempo_from_beats
+        self.meter = Counter()  # tracks per beats-per-bar count (3, 4, ...)
 
     def read(self, value):
         times = to_seconds(value.times, value.time_unit)
         if times is not None and len(times) > 1:
             self.bpm.append(60.0 / float(np.median(np.diff(times))))
         if value.positions is not None and value.position_unit == "bar_index":
-            positions = np.asarray(value.positions, dtype=float)
-            positions = positions[positions > 0]  # 0 marks beats outside any bar
-            if len(positions):
-                self.beats_per_bar[int(positions.max())] += 1
+            lengths = bar_lengths(value.positions)
+            if lengths:
+                # the most common bar length: one odd bar does not change a track's meter
+                self.meter[Counter(lengths).most_common(1)[0][0]] += 1
 
     def result(self):
         return {
-            "beats_per_bar": dict(sorted(self.beats_per_bar.items())),
-            "tempo": histogram(self.bpm, "bpm"),  # tempo derived from the beats
+            "meter": dict(sorted(self.meter.items())),
+            "tempo_from_beats": histogram(self.bpm, "bpm"),  # 60 / median beat gap, not annotated
         }
 
 
@@ -202,53 +214,59 @@ class Chords(Stat):
 
 
 class F0(Stat):
-    """Pitch and voiced fraction of frame-wise F0 annotations."""
+    """Frequencies of the voiced frames of frame-wise F0 annotations."""
 
     annotation = annotations.F0Data
 
     def __init__(self):
         super().__init__()
-        self.voiced_fraction = []
-        self.f0_median = []  # one value per annotation, over its voiced frames
+        self.frequencies = []  # one array per annotation: the frequencies of its voiced frames
         self.units = Counter()
 
     def read(self, value):
         frequencies = np.asarray(value.frequencies, dtype=float)
-        if value.voicing is not None:
-            voicing = np.asarray(value.voicing, dtype=float)
+        if value.voicing is None:
+            voiced = frequencies > 0
+        elif value.voicing_unit == "likelihood":  # a probability: voiced from 0.5 up
+            voiced = np.asarray(value.voicing, dtype=float) >= 0.5
         else:
-            voicing = frequencies > 0
-        voiced = frequencies[(voicing > 0) & (frequencies > 0)]
-        self.voiced_fraction.append(
-            len(voiced) / len(frequencies) if len(frequencies) else 0.0
-        )
-        if len(voiced):
-            self.f0_median.append(float(np.median(voiced)))
+            voiced = np.asarray(value.voicing, dtype=float) > 0
+        self.frequencies.append(frequencies[voiced & (frequencies > 0)])
         self.units[value.frequency_unit] += 1
 
     def result(self):
         unit = max(self.units, key=self.units.get) if self.units else None
-        return {
-            "voiced_fraction": histogram(self.voiced_fraction, "fraction"),
-            "f0_median_per_annotation": histogram(self.f0_median, unit),
-        }
+        values = np.concatenate(self.frequencies) if self.frequencies else []
+        return {"frequencies": histogram(values, unit)}
 
 
 class MultiF0(Stat):
-    """Polyphony of multi-pitch annotations."""
+    """Frequencies and polyphony (pitches sounding at once) of multi-pitch annotations."""
 
     annotation = annotations.MultiF0Data
 
     def __init__(self):
         super().__init__()
-        self.max_polyphony = []
+        self.frequencies = []  # one array per annotation: every pitch of every frame
+        self.polyphony = Counter()  # frames per number of pitches; silent frames left out
+        self.units = Counter()
 
     def read(self, value):
-        counts = [len(f) for f in value.frequency_list]
-        self.max_polyphony.append(max(counts) if counts else 0)
+        for frame in value.frequency_list:
+            pitches = np.asarray(frame, dtype=float)
+            pitches = pitches[pitches > 0]
+            if len(pitches):
+                self.frequencies.append(pitches)
+                self.polyphony[len(pitches)] += 1
+        self.units[value.frequency_unit] += 1
 
     def result(self):
-        return {"max_polyphony": histogram(self.max_polyphony, "voices")}
+        unit = max(self.units, key=self.units.get) if self.units else None
+        values = np.concatenate(self.frequencies) if self.frequencies else []
+        return {
+            "frequencies": histogram(values, unit),
+            "polyphony": dict(sorted(self.polyphony.items())),
+        }
 
 
 class Notes(Stat):
@@ -267,17 +285,17 @@ class Notes(Stat):
 
     def result(self):
         unit = max(self.units, key=self.units.get) if self.units else None
-        return {"pitch": histogram(self.pitches, unit)}
+        return {"pitches": histogram(self.pitches, unit)}
 
 
 class Sections(Stat):
-    """Section labels and section lengths."""
+    """Section labels, and the length of every section interval in seconds."""
 
     annotation = annotations.SectionData
 
     def __init__(self):
         super().__init__()
-        self.section_seconds = []
+        self.section_interval_seconds = []
         self.labels = Counter()
 
     def read(self, value):
@@ -285,12 +303,12 @@ class Sections(Stat):
             self.labels.update(str(label) for label in value.labels)
         lengths = interval_lengths(value)
         if lengths is not None:
-            self.section_seconds.extend(lengths.tolist())
+            self.section_interval_seconds.extend(lengths.tolist())
 
     def result(self):
         return {
             "labels": top_counts(self.labels),
-            "section_seconds": histogram(self.section_seconds, "s", log=True),
+            "section_interval_seconds": histogram(self.section_interval_seconds, "s", log=True),
         }
 
 
@@ -314,31 +332,49 @@ class Keys(Stat):
 
 
 class Lyrics(Stat):
-    """Lyrics: only the counts every type has (tracks, annotations)."""
+    """How the lyrics are aligned (annotations per lyric_unit), and how many lyrics each track has."""
 
     annotation = annotations.LyricData
 
+    def __init__(self):
+        super().__init__()
+        self.lyric_unit = Counter()
+        self.lyrics_per_track = []  # one value per track: its words, syllables, ... over all its annotations
+        self.track_lyrics = 0
+
+    def add(self, value):
+        self.track_lyrics = 0
+        if not super().add(value):
+            return False
+        self.lyrics_per_track.append(self.track_lyrics)
+        return True
+
     def read(self, value):
-        pass
+        self.lyric_unit[value.lyric_unit] += 1
+        self.track_lyrics += len(value.lyrics)
 
     def result(self):
-        return {}
+        unit = max(self.lyric_unit, key=self.lyric_unit.get) if self.lyric_unit else None
+        return {
+            "lyric_unit": dict(self.lyric_unit.most_common()),
+            "lyrics_per_track": histogram(self.lyrics_per_track, unit),
+        }
 
 
 class Events(Stat):
-    """Event labels."""
+    """Event labels: how often each one appears."""
 
     annotation = annotations.EventData
 
     def __init__(self):
         super().__init__()
-        self.labels = Counter()
+        self.events = Counter()
 
     def read(self, value):
-        self.labels.update(str(e) for e in value.events)
+        self.events.update(str(e) for e in value.events)
 
     def result(self):
-        return {"labels": top_counts(self.labels)}
+        return {"events": top_counts(self.events)}
 
 
 STATS = {

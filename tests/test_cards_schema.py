@@ -261,8 +261,8 @@ VALID_STATS = {
                 "type": "BeatData",
                 "n_tracks": 3,
                 "n_annotations": 3,
-                "beats_per_bar": {4: 3},
-                "tempo": {"unit": "bpm", "edges": [60, 80], "counts": [3]},
+                "meter": {4: 3},
+                "tempo_from_beats": {"unit": "bpm", "edges": [60, 80], "counts": [3]},
             }
         },
     },
@@ -281,7 +281,7 @@ def test_annotation_entries_may_have_parts_and_null_histograms():
     import copy
 
     stats = copy.deepcopy(VALID_STATS)
-    BEATS(stats).update(parts={"annotator_1": 3}, tempo=None)
+    BEATS(stats).update(parts={"annotator_1": 3}, tempo_from_beats=None)
     assert _stats_errors(stats) == []
 
 
@@ -295,17 +295,17 @@ def test_annotation_entries_may_have_parts_and_null_histograms():
         (lambda s: s["audio"].update(status="fine"), "audio.status"),
         (lambda s: s["audio"].pop("problems"), "audio.problems: must be a list"),
         (lambda s: s["annotations"].update(problems=[]), "needs_local must say why"),
-        (lambda s: BEATS(s)["tempo"].update(counts=[1, 2]), "2 edges for 2 counts"),
-        (lambda s: BEATS(s)["tempo"].update(edges=[80, 60]), "edges must rise"),
-        (lambda s: BEATS(s)["tempo"].update(counts=[-3]), "non-negative integers"),
+        (lambda s: BEATS(s)["tempo_from_beats"].update(counts=[1, 2]), "2 edges for 2 counts"),
+        (lambda s: BEATS(s)["tempo_from_beats"].update(edges=[80, 60]), "edges must rise"),
+        (lambda s: BEATS(s)["tempo_from_beats"].update(counts=[-3]), "non-negative integers"),
         (lambda s: (s.pop("audio"), s.pop("annotations")), "needs at least one of"),
         (lambda s: BEATS(s).update(type="Beats"), "beats.type: must be one of"),
-        (lambda s: BEATS(s).pop("beats_per_bar"), "beats: missing keys: beats_per_bar"),
+        (lambda s: BEATS(s).pop("meter"), "beats: missing keys: meter"),
         (lambda s: BEATS(s).pop("n_tracks"), "beats: missing keys: n_tracks"),
         (lambda s: BEATS(s).update(beats_per_annotation={}), "beats: unknown keys: beats_per_annotation"),
         (lambda s: BEATS(s).update(n_tracks=-1), "beats.n_tracks: must be a non-negative integer"),
-        (lambda s: BEATS(s).update(tempo=[60, 80]), "beats.tempo: must be a histogram"),
-        (lambda s: BEATS(s).update(beats_per_bar={4: "three"}), "beats.beats_per_bar: must be {label: count}"),
+        (lambda s: BEATS(s).update(tempo_from_beats=[60, 80]), "beats.tempo_from_beats: must be a histogram"),
+        (lambda s: BEATS(s).update(meter={4: "three"}), "beats.meter: must be {label: count}"),
     ],
 )
 def test_invalid_stats_are_reported(change, message):

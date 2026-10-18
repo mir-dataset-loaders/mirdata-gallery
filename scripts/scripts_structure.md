@@ -186,10 +186,10 @@ What to measure for each annotation type.
 - One subclass per type: `Beats`, `Chords`, `F0`, `MultiF0`, `Notes`,
   `Sections`, `Keys`, `Lyrics`, `Events`, `Tempo`. Each has `read` (collect
   one annotation) and `result` (histograms and label counts). `Beats` also
-  derives the tempo.
+  derives the meter and `tempo_from_beats` (60 / median beat gap).
 - `STATS`: maps each type name to its class, checked against mirdata's own
   list.
-- Helpers: `unpack`, `is_empty`, `chord_quality`, `interval_lengths`,
+- Helpers: `unpack`, `is_empty`, `chord_quality`, `interval_lengths`, `bar_lengths`,
   `to_seconds`, `top_counts`.
 
 ### `stats/remote.py`
@@ -246,11 +246,12 @@ rule). In the YAML, lists of numbers are written on one line
 Turns lists of numbers into `{unit, edges, counts}` for the cards. One shared
 module means every histogram on every card follows the same rules.
 
-- `histogram`: picks a bin width from the data (Freedman-Diaconis rule,
-  rounded to 1, 2, 2.5 or 5 times a power of ten, at most 20 bins). With
-  `log=True` it uses log-spaced edges, for lengths that span milliseconds to
-  minutes.
-- `step_width`, `next_step_width`, `log_edges`: choose those widths and edges.
+- `histogram`: picks a bin width from the data with one rule: the
+  Freedman-Diaconis width rounded to 1, 2 or 5 times a power of ten, but never
+  narrower than what keeps it to 25 bins. Without 2.5, widths from 1 up are
+  whole numbers. With `log=True` it uses log-spaced edges, for lengths that
+  span milliseconds to minutes.
+- `tidy_width`, `log_edges`: choose those widths and edges.
 - `format_histogram`: the one-line terminal version.
 
 ### `stats/utils.py`

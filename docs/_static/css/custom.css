@@ -527,6 +527,11 @@ header img[alt="Logo"] {
     fill: #64748b;
 }
 
+/* Counts labels too long to sit flat under their bars (gallery.py, counts_svg) */
+.plot-label-tilted {
+    font-size: 5.5px;
+}
+
 /* "Show more": plain purple text, "Show less" while open */
 .plot-toggle>summary {
     cursor: pointer;

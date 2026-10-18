@@ -44,10 +44,11 @@ def annotations_to_card(part):
     card = {key: part[key] for key in ANNOTATION_KEYS if key in part}
     card["annotations"] = {
         prop: {
-            # beats_per_bar is keyed by meter (4, 3, ...): numbers, even after a JSON round trip
+            # meter (beats per bar) and polyphony (pitches at once) are keyed by
+            # numbers (4, 3, ...): numbers, even after a JSON round trip
             key: (
                 {int(k): v for k, v in value.items()}
-                if key == "beats_per_bar"
+                if key in ("meter", "polyphony")
                 else value
             )
             for key, value in entry.items()

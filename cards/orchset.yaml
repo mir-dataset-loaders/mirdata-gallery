@@ -43,15 +43,12 @@ stats:
         type: F0Data
         n_tracks: 64
         n_annotations: 64
-        voiced_fraction:
-          unit: fraction
-          edges: [0.65, 0.675, 0.7, 0.725, 0.75, 0.775, 0.8, 0.825, 0.85, 0.875, 0.9,
-            0.925, 0.95, 0.975, 1]
-          counts: [1, 0, 2, 0, 1, 2, 0, 3, 0, 6, 3, 8, 14, 24]
-        f0_median_per_annotation:
+        frequencies:
           unit: hz
-          edges: [200, 400, 600, 800, 1000, 1200, 1400]
-          counts: [11, 25, 15, 10, 2, 1]
+          edges: [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300,
+            1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100]
+          counts: [2344, 11740, 18425, 18878, 17971, 19276, 12649, 7386, 8994, 3378,
+            5817, 1405, 1488, 464, 423, 769, 42, 0, 0, 79]
     skipped:
       alternating_melody: not a mirdata F0Data object (got bool)
     n_missing_files: 0

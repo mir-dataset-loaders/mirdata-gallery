@@ -80,12 +80,10 @@ stats:
         type: BeatData
         n_tracks: 100
         n_annotations: 100
-        beats_per_bar:
-          4: 95
+        meter:
+          4: 99
           5: 1
-          6: 3
-          8: 1
-        tempo:
+        tempo_from_beats:
           unit: bpm
           edges: [60, 80, 100, 120, 140, 160, 180, 200, 220, 240]
           counts: [13, 23, 16, 37, 3, 4, 2, 1, 1]
@@ -104,7 +102,27 @@ stats:
           Bb:maj: 322
           A:min7: 313
           E:min7: 300
-          (other): 8550
+          N: 263
+          D:min7: 240
+          B:min: 229
+          G:min7: 221
+          E:maj: 215
+          B:min7: 203
+          Ab:maj: 191
+          E:min: 191
+          B:maj: 175
+          F#:min7: 168
+          F:min: 167
+          C:min: 164
+          Db:maj: 162
+          D:min: 160
+          F:maj7: 157
+          G:min: 141
+          C:min7: 135
+          F:min7: 135
+          G:7: 131
+          G:maj/3: 125
+          (other): 4977
         qualities:
           maj: 6180
           min7: 2004
@@ -116,19 +134,23 @@ stats:
           N: 263
           dim: 144
           sus2: 100
-          (other): 358
+          maj9: 84
+          aug: 65
+          min9: 65
+          '9': 50
+          hdim7: 48
+          min6: 36
+          dim7: 10
       melody:
         type: F0Data
         n_tracks: 100
         n_annotations: 100
-        voiced_fraction:
-          unit: fraction
-          edges: [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
-          counts: [4, 7, 18, 22, 21, 10, 14, 3, 1]
-        f0_median_per_annotation:
+        frequencies:
           unit: hz
-          edges: [150, 200, 250, 300, 350, 400, 450]
-          counts: [3, 18, 27, 27, 14, 11]
+          edges: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
+            1300, 1400, 1500]
+          counts: [492, 126100, 473953, 410189, 151945, 49359, 2226, 50, 5, 4, 13,
+            6, 1, 5, 6]
     skipped:
       midi: not a mirdata NoteData object (got PrettyMIDI)
       tempo: not a mirdata TempoData object (got str)

@@ -1,32 +1,31 @@
 """Histograms as {"unit", "edges", "counts"}, with bin widths chosen from the data.
 
-The width is the Freedman-Diaconis estimate rounded to 1, 2, 2.5 or 5 times
-a power of ten, with at most MAX_BINS bins; log=True gives log-spaced edges.
+One rule picks the width: the Freedman-Diaconis estimate rounded to 1, 2 or
+5 times a power of ten, but never so narrow that there are more than MAX_BINS
+bins. log=True gives log-spaced edges instead.
 """
 
 import math
 
 import numpy as np
 
-MAX_BINS = 20
-STEP_SIZES = (1, 2, 2.5, 5)  # bin widths are one of these times a power of ten
-LOG_STEP_SIZES = (1, 2, 5)  # log-spaced edges are one of these times a power of ten
+MAX_BINS = 25
+STEP_SIZES = (1, 2, 5)  # bin widths and log-spaced edges are one of these times a power of ten
 
 
-def step_width(raw):
-    """The step size closest to raw (in ratio), e.g. 1.4 -> 1, 37 -> 50, 0.3 -> 0.25."""
+def tidy_width(raw, up=False):
+    """1, 2 or 5 times a power of ten: the closest to raw (in ratio), or with up=True the smallest at or above it.
+
+    e.g. 1.4 -> 1 (up: 2), 37 -> 50 (up: 50), 0.3 -> 0.2 (up: 0.5). Without 2.5,
+    every width from 1 up is a whole number.
+    """
     if raw <= 0:
         raise ValueError("bin width must be positive")
     scale = 10 ** math.floor(math.log10(raw))
     candidates = [step * scale for step in STEP_SIZES] + [10 * scale]
+    if up:
+        return min(c for c in candidates if c >= raw * (1 - 1e-9))  # 1e-9: float noise
     return min(candidates, key=lambda c: abs(math.log(c / raw)))
-
-
-def next_step_width(width):
-    """The step size just above a step size: 1 -> 2 -> 2.5 -> 5 -> 10."""
-    return min(
-        c for c in (step_width(width * f) for f in (1.5, 2, 2.5, 3)) if c > width
-    )
 
 
 def _number(x):
@@ -41,7 +40,7 @@ def log_edges(lo, hi):
     Falls back to whole decades when that would be more than MAX_BINS bins.
     """
     k_lo, k_hi = math.floor(math.log10(lo)), math.floor(math.log10(hi))
-    for steps in (LOG_STEP_SIZES, (1,)):
+    for steps in (STEP_SIZES, (1,)):
         candidates = sorted(s * 10.0**k for k in range(k_lo, k_hi + 2) for s in steps)
         start = max(c for c in candidates if c <= lo)
         end = min(c for c in candidates if c > hi)
@@ -54,10 +53,11 @@ def log_edges(lo, hi):
 def histogram(values, unit, log=False):
     """{"unit", "edges", "counts"} of the values, or None when there are none.
 
-    counts[i] is the number of values in [edges[i], edges[i + 1]). Data without
-    spread falls back to the Sturges rule or a single bin. With log=True the
-    edges are 1, 2, 5 times powers of ten, and values that are not positive are
-    left out.
+    counts[i] is the number of values in [edges[i], edges[i + 1]). The width is
+    the larger of the Freedman-Diaconis width and the narrowest width that keeps
+    to MAX_BINS bins; a single repeated value gets a single bin. With log=True
+    the edges are 1, 2, 5 times powers of ten, and values that are not positive
+    are left out.
     """
     values = np.asarray([v for v in values if v is not None], dtype=float)
     values = values[np.isfinite(values)]
@@ -74,16 +74,17 @@ def histogram(values, unit, log=False):
             "edges": [_number(e) for e in edges],
             "counts": [int(c) for c in counts],
         }
-    n = len(values)
-    q1, q3 = np.percentile(values, [25, 75])
-    if hi == lo:
-        width = step_width(abs(lo) / 10) if lo else 1.0
-    elif q3 > q1:
-        width = step_width(2 * (q3 - q1) / n ** (1 / 3))
+    if hi == lo:  # one repeated value: a single bin around it
+        width = tidy_width(abs(lo) / 10) if lo else 1
     else:
-        width = step_width((hi - lo) / math.ceil(math.log2(n) + 1))
-    while (math.floor(hi / width) - math.floor(lo / width) + 1) > MAX_BINS:
-        width = next_step_width(width)
+        q1, q3 = np.percentile(values, [25, 75])
+        fd = 2 * (q3 - q1) / len(values) ** (1 / 3)  # Freedman-Diaconis
+        fewest_bins = tidy_width((hi - lo) / MAX_BINS, up=True)
+        if math.floor(hi / fewest_bins) - math.floor(lo / fewest_bins) + 1 > MAX_BINS:
+            # edges sit on multiples of the width, which can add one bin: the next tidy width
+            fewest_bins = tidy_width(fewest_bins * 1.5, up=True)
+        # fd is 0 when most values are equal: the bin limit alone decides then
+        width = max(tidy_width(fd), fewest_bins) if fd > 0 else fewest_bins
 
     start = math.floor(lo / width) * width
     end = math.floor(hi / width) * width + width  # every value is in [start, end)

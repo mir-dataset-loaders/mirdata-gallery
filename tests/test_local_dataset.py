@@ -49,12 +49,12 @@ def test_annotation_stats_are_correct(fake_mirdata):
     assert beats["type"] == "BeatData"
     assert beats["n_tracks"] == 3
     assert beats["n_annotations"] == 3
-    assert beats["beats_per_bar"] == {3: 1, 4: 2}
-    tempo = beats["tempo"]  # 120, 60 and 240 bpm
+    assert beats["meter"] == {3: 1, 4: 2}
+    tempo = beats["tempo_from_beats"]  # 120, 60 and 240 bpm
     assert tempo["unit"] == "bpm"
     assert sum(tempo["counts"]) == 3
     assert tempo["edges"][0] <= 60 and tempo["edges"][-1] >= 240
-    assert set(beats) == {"type", "n_tracks", "n_annotations", "tempo", "beats_per_bar"}
+    assert set(beats) == {"type", "n_tracks", "n_annotations", "tempo_from_beats", "meter"}
 
     chords = result["annotations"]["chords"]
     assert chords["type"] == "ChordData"
