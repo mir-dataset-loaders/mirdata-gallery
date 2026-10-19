@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const pill = document.createElement("button");
             pill.className = "filter-pill";
             pill.setAttribute("data-ann", ann); // Tag sidebar filter pills
-            pill.innerHTML = `${ann} <span class="count">${annCounts[ann]}</span>`;
+            pill.textContent = ann;
             pill.addEventListener("click", () => {
                 if (state.selectedAnnotations.has(ann)) {
                     state.selectedAnnotations.delete(ann);
