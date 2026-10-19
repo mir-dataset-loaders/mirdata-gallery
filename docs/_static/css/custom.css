@@ -532,24 +532,6 @@ header img[alt="Logo"] {
     font-size: 5.5px;
 }
 
-/* "Show more": plain purple text, "Show less" while open */
-.plot-toggle>summary {
-    cursor: pointer;
-    list-style: none;
-    color: #7928ca;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.plot-toggle>summary::-webkit-details-marker {
-    display: none;
-}
-
-.plot-toggle[open] .when-closed,
-.plot-toggle:not([open]) .when-open {
-    display: none;
-}
-
 /* "Try it with mirdata": a dark code block (this one only), copy icon always
    shown; long lines wrap instead of scrolling sideways */
 .gallery-cards-information .try-mirdata .highlight {

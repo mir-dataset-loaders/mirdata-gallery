@@ -83,6 +83,13 @@ def test_without_an_annotated_tempo_the_tempo_from_beats_is_plotted():
     assert "Tempo from beats" in titles(gallery.ordered_plots(no_values))
 
 
+def test_every_plot_is_shown_none_folded_away():
+    chords = {"type": "ChordData", "n_tracks": 3, "n_annotations": 3, "labels": {"C:maj": 3}, "qualities": {"maj": 3}}
+    box = gallery.statistics(stats(beats=entry(tempo_from_beats=HIST, meter={4: 3}), chords=chords))
+    assert box.count('<figure class="plot">') == 4
+    assert "<details" not in box
+
+
 def bar_rects(svg):
     return [(float(x), float(w)) for x, w in re.findall(r'class="plot-bar" x="([\d.]+)" y="[\d.]+" width="([\d.]+)"', svg)]
 

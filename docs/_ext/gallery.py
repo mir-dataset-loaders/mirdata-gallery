@@ -30,7 +30,6 @@ from sphinx.util.nodes import nested_parse_with_titles
 
 logger = logging.getLogger(__name__)
 
-MAX_PLOTS = 3  # plots shown before "Show more"
 UNIT_LABELS = {"hz": "Hz", "midi": "MIDI"}  # how a unit is written; others as stored
 
 # Size of every chart, in SVG units (the chart scales to the width it gets).
@@ -160,7 +159,7 @@ def duration(seconds):
 
 
 def statistics(stats):
-    """The Statistics box: status notes, the first MAX_PLOTS plots, the rest behind "Show more"."""
+    """The Statistics box: status notes, then every plot."""
     out = ['<div class="panel-box">', '<div class="box-title">Statistics</div>']
     if not stats:
         out.append(note("No statistics yet."))
@@ -172,9 +171,7 @@ def statistics(stats):
         if not plots:
             out.append(note("Nothing to plot yet."))
         else:
-            out.append(plot_grid(plots[:MAX_PLOTS]))
-            if plots[MAX_PLOTS:]:
-                out.append(show_more(plots[MAX_PLOTS:]))
+            out.append(plot_grid(plots))
     out.append("</div>")
     return "\n".join(out)
 
@@ -287,14 +284,6 @@ def plot_grid(plots):
         for p in plots
     )
     return f'<div class="plot-grid">\n{figures}\n</div>'
-
-
-def show_more(plots):
-    """The rest of the plots, folded; the label reads "Show less" while open (custom.css)."""
-    return (
-        '<details class="plot-toggle"><summary><span class="when-closed">Show more</span>'
-        f'<span class="when-open">Show less</span></summary>\n{plot_grid(plots)}\n</details>'
-    )
 
 
 def number(x):
