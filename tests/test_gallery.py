@@ -1,4 +1,4 @@
-"""The gallery's plots (docs/_ext/gallery.py): histograms and counts fields, one chart style."""
+"""The gallery (docs/_ext/gallery.py): the "At a glance" box, and the plots (histograms and counts fields, one chart style)."""
 
 import os
 import re
@@ -100,3 +100,29 @@ def test_many_bars_fill_their_slots():
     bars = bar_rects(gallery.counts_svg({i: 1 for i in range(20)}, "tracks"))
     plot_width = gallery.WIDTH - gallery.LEFT - gallery.RIGHT
     assert abs(bars[0][1] - (plot_width / 20 - 1)) < 0.1
+
+
+CARD = {"name": "x", "license": "MIT", "annotations": ["BeatData"]}
+
+
+def tasks_value(box):
+    return re.search(r'glance-label">Tasks</span><span class="glance-value">([^<]*)<', box).group(1)
+
+
+def test_glance_rows_end_with_tasks_and_annotation_types_are_not_counted():
+    labels = re.findall(r'glance-label">([^<]+)<', gallery.at_a_glance(CARD))
+    assert labels == ["Tracks", "Sample rate", "Total duration", "License", "Tasks"]
+
+
+def test_annotation_tags_stay_for_the_filter():
+    assert '<code data-ann="BeatData">BeatData</code>' in gallery.at_a_glance(CARD)
+
+
+def test_tasks_are_listed():
+    box = gallery.at_a_glance({**CARD, "tasks": ["beat tracking", "chord recognition"]})
+    assert tasks_value(box) == "beat tracking, chord recognition"
+
+
+def test_missing_or_null_tasks_show_a_dash():
+    assert tasks_value(gallery.at_a_glance(CARD)) == "—"
+    assert tasks_value(gallery.at_a_glance({**CARD, "tasks": None})) == "—"

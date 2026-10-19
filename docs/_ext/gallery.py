@@ -124,7 +124,7 @@ def at_a_glance(data):
             license_text,
             f' data-license="{html.escape(license_text)}"',
         ),
-        glance_row("Annotations", f"{len(tags)} type{'s' if len(tags) != 1 else ''}" if tags else None),
+        glance_row("Tasks", ", ".join(data.get("tasks") or [])),
     ]
     rows = "\n".join(rows)
     tag_html = "\n".join(f'<code data-ann="{html.escape(t)}">{html.escape(t)}</code>' for t in tags)
