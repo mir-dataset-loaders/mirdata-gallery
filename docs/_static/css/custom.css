@@ -6,9 +6,9 @@
    Page
    ========================================================================== */
 
-/* Smaller base size: everything set in rem (theme and gallery) shrinks with it */
+/* Larger base size: everything set in rem (theme and gallery) grows with it */
 html {
-    font-size: 14px;
+    font-size: 16px;
 }
 
 /* The gallery uses the full window width */
@@ -175,11 +175,10 @@ header img[alt="Logo"] {
     opacity: 0.8;
 }
 
-/* Column 2: the dataset list, about 3 : 2 against the panel. Its table needs
-   400px; below that the list and panel stack (see @container below). */
+/* Column 2: the dataset list, a slim column of names and track counts; the
+   panel takes the rest of the width. */
 .gallery-datasets-list {
-    flex: 3 1 0;
-    min-width: 400px;
+    flex: 0 0 350px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -194,8 +193,10 @@ header img[alt="Logo"] {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 12px;
     padding: 2px 4px;
+    white-space: nowrap;
 }
 
 .list-count {
@@ -230,7 +231,7 @@ header img[alt="Logo"] {
 
 .list-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.3fr) 64px minmax(0, 1fr) minmax(0, 2fr);
+    grid-template-columns: minmax(0, 1fr) 64px;
     gap: 12px;
     align-items: center;
     padding: 12px 16px;
@@ -288,32 +289,11 @@ header img[alt="Logo"] {
     color: #334155;
 }
 
-.list-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.list-tag {
-    font-size: 0.72rem;
-    padding: 1px 7px;
-    border-radius: 6px;
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    color: #475569;
-}
-
-.list-tag-more {
-    color: #7e22ce;
-    background: #f3e8ff;
-    border-color: #e9d5ff;
-}
-
-/* Column 3: the panel. It sticks below the theme's 56px header. */
+/* Column 3: the panel, the rest of the width. It sticks below the theme's
+   56px header. */
 .gallery-cards-information {
-    flex: 2 1 0;
+    flex: 1 1 0;
     min-width: 400px;
-    max-width: 560px;
     position: sticky;
     top: 72px;
     max-height: calc(100vh - 90px);
@@ -334,16 +314,17 @@ header img[alt="Logo"] {
 #content .gallery-cards-information>section>h2 {
     margin-top: 0;
     margin-bottom: 10px;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: #a054d8;
     border-bottom: 2px solid #faf5ff;
     padding-bottom: 6px;
 }
 
-/* Too narrow for both minimum widths (400 + 24 + 400): the list goes above
-   the panel as a short scrollable box, and the panel flows with the page. */
-@container (max-width: 823px) {
+/* Too narrow for the list and the panel's minimum width (350 + 24 + 400): the
+   list goes above the panel as a short scrollable box, and the panel flows
+   with the page. */
+@container (max-width: 773px) {
     .gallery-layout {
         flex-direction: column;
         align-items: stretch;
@@ -370,7 +351,7 @@ header img[alt="Logo"] {
    ========================================================================== */
 
 #content .gallery-cards-information .panel-heading {
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: #a054d8;
     margin: 2px 0 6px;
@@ -378,7 +359,7 @@ header img[alt="Logo"] {
 
 #content .gallery-cards-information .panel-summary {
     color: #334155;
-    font-size: 0.93rem;
+    font-size: 1.03rem;
     line-height: 1.5;
     margin: 0 0 14px;
 }
@@ -402,7 +383,7 @@ header img[alt="Logo"] {
 }
 
 .box-title {
-    font-size: 0.93rem;
+    font-size: 1.03rem;
     font-weight: 700;
     color: #1e293b;
     margin-bottom: 6px;
@@ -423,7 +404,7 @@ header img[alt="Logo"] {
     justify-content: space-between;
     gap: 12px;
     padding: 3px 0;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
 }
 
 .glance-label {
@@ -444,7 +425,7 @@ header img[alt="Logo"] {
     border: 1px solid #cbd5e1;
     border-radius: 10px;
     padding: 1px 8px;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 500;
     display: inline-block;
     vertical-align: middle;
@@ -454,7 +435,8 @@ header img[alt="Logo"] {
 /* Statistics: three small plots in a row, every plot the same size */
 .plot-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* as many as fit at 170px each, at most 4 (a column is never under a quarter, less the gaps) */
+    grid-template-columns: repeat(auto-fill, minmax(max(170px, calc((100% - 3 * 10px) / 4)), 1fr));
     gap: 10px;
     margin: 4px 0 8px;
 }
@@ -486,12 +468,12 @@ header img[alt="Logo"] {
 .plot-title {
     font-weight: 600;
     color: #1e293b;
-    font-size: 0.75rem;
+    font-size: 0.95rem;
 }
 
 .plot-source {
     color: #94a3b8;
-    font-size: 0.6rem;
+    font-size: 0.8rem; color: #64748b;
 }
 
 .plot-svg {
@@ -529,7 +511,7 @@ header img[alt="Logo"] {
 
 /* Counts labels too long to sit flat under their bars (gallery.py, counts_svg) */
 .plot-label-tilted {
-    font-size: 5.5px;
+    font-size: 7px;
 }
 
 /* "Try it with mirdata": a dark code block (this one only), copy icon always
@@ -558,7 +540,7 @@ header img[alt="Logo"] {
     background: transparent;
     border: none;
     padding: 0;
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     line-height: 1.7;
     color: inherit;
 }
@@ -616,7 +598,7 @@ header img[alt="Logo"] {
 .gallery-cards-information>section .admonition .admonition-title {
     background: #f8fafc !important;
     color: #334155 !important;
-    font-size: 0.88rem;
+    font-size: 0.98rem;
     font-weight: 600;
     padding: 9px 14px;
     border-radius: 7px;

@@ -223,7 +223,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
     // The middle column: the number of datasets and a sort menu, above a table
-    // with one row per dataset (Dataset, Tracks, License, Annotation Types)
+    // with one row per dataset (Dataset, Tracks)
     const toolbar = document.createElement("div");
     toolbar.className = "list-toolbar";
     const listCount = document.createElement("span");
@@ -255,7 +255,7 @@ document.addEventListener("DOMContentLoaded", function () {
     table.className = "list-table";
     const header = document.createElement("div");
     header.className = "list-row list-header";
-    ["Dataset", "Tracks", "License", "Annotation Types"].forEach((label) => {
+    ["Dataset", "Tracks"].forEach((label) => {
         const cell = document.createElement("span");
         cell.textContent = label;
         header.appendChild(cell);
@@ -263,7 +263,6 @@ document.addEventListener("DOMContentLoaded", function () {
     table.appendChild(header);
     listColumn.appendChild(table);
 
-    const MAX_TAGS = 4; // the rest show as "+N"
     cardData.forEach((item) => {
         const btn = document.createElement("button");
         btn.className = "dataset-item-btn list-row";
@@ -273,25 +272,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const tracks = document.createElement("span");
         tracks.className = "list-cell";
         tracks.textContent = item.tracksText;
-        const license = document.createElement("span");
-        license.className = "list-cell";
-        license.textContent = item.license;
-        const tags = document.createElement("span");
-        tags.className = "list-tags";
-        item.annotations.slice(0, MAX_TAGS).forEach((ann) => {
-            const tag = document.createElement("span");
-            tag.className = "list-tag";
-            tag.setAttribute("data-ann", ann);
-            tag.textContent = ann;
-            tags.appendChild(tag);
-        });
-        if (item.annotations.length > MAX_TAGS) {
-            const more = document.createElement("span");
-            more.className = "list-tag list-tag-more";
-            more.textContent = `+${item.annotations.length - MAX_TAGS}`;
-            tags.appendChild(more);
-        }
-        btn.append(name, tracks, license, tags);
+        btn.append(name, tracks);
         btn.addEventListener("click", () => {
             selectCard(item);
         });

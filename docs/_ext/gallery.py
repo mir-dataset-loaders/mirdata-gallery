@@ -35,10 +35,12 @@ UNIT_LABELS = {"hz": "Hz", "midi": "MIDI"}  # how a unit is written; others as s
 # Size of every chart, in SVG units (the chart scales to the width it gets).
 # The margins leave room for the x labels and unit (bottom), and for the first
 # and last x label to stick out past the bars (left, right).
-WIDTH, HEIGHT = 120, 90
-LEFT, RIGHT, TOP, BOTTOM = 12, 12, 6, 24
+WIDTH, HEIGHT = 120, 98
+LEFT, RIGHT, TOP, BOTTOM = 12, 12, 6, 32
 MAX_TICKS = 3  # edge values written under the x axis
-MIN_SLOTS = 8  # a chart with fewer bars keeps the bar width of this many, with wider gaps
+MIN_SLOTS = (
+    8  # a chart with fewer bars keeps the bar width of this many, with wider gaps
+)
 MAX_LABELS = 10  # text labels plotted per counts field; the rest join "(other)"
 MAX_LABEL_CHARS = 7  # a longer label is cut under its bar; the hover text has it whole
 CHAR_WIDTH = 4.7  # about how wide one character of a plot label is, in SVG units
@@ -100,8 +102,14 @@ def render_card(data, fallback_name):
 
 def overview(data):
     summary = data.get("summary")
-    text = html.escape(summary) if summary else '<span class="panel-missing">No summary yet.</span>'
-    return f'<h3 class="panel-heading">Overview</h3>\n<p class="panel-summary">{text}</p>'
+    text = (
+        html.escape(summary)
+        if summary
+        else '<span class="panel-missing">No summary yet.</span>'
+    )
+    return (
+        f'<h3 class="panel-heading">Overview</h3>\n<p class="panel-summary">{text}</p>'
+    )
 
 
 def at_a_glance(data):
@@ -115,7 +123,9 @@ def at_a_glance(data):
 
     rows = [
         glance_row("Tracks", f"{tracks:,}" if tracks is not None else None),
-        glance_row("Sample rate", f"{sample_rate / 1000:g} kHz" if sample_rate else None),
+        glance_row(
+            "Sample rate", f"{sample_rate / 1000:g} kHz" if sample_rate else None
+        ),
         glance_row("Total duration", duration(audio.get("total_seconds"))),
         # gallery.js replaces the full text with its short license label
         glance_row(
@@ -126,7 +136,9 @@ def at_a_glance(data):
         glance_row("Tasks", ", ".join(data.get("tasks") or [])),
     ]
     rows = "\n".join(rows)
-    tag_html = "\n".join(f'<code data-ann="{html.escape(t)}">{html.escape(t)}</code>' for t in tags)
+    tag_html = "\n".join(
+        f'<code data-ann="{html.escape(t)}">{html.escape(t)}</code>' for t in tags
+    )
     return f"""<div class="panel-box">
 <div class="box-title">At a glance</div>
 <div class="glance-grid">
@@ -216,12 +228,20 @@ def ordered_plots(stats):
     audio = stats.get("audio") or {}
     if is_histogram(audio.get("duration_histogram")):
         plots.append(
-            plot("duration_histogram", audio["duration_histogram"], "audio", audio.get("n_tracks"))
+            plot(
+                "duration_histogram",
+                audio["duration_histogram"],
+                "audio",
+                audio.get("n_tracks"),
+            )
         )
 
     by_type = {}
     entries = (stats.get("annotations") or {}).get("annotations") or {}
-    annotated_tempo = any(e["type"] == "TempoData" and is_histogram(e.get("tempo")) for e in entries.values())
+    annotated_tempo = any(
+        e["type"] == "TempoData" and is_histogram(e.get("tempo"))
+        for e in entries.values()
+    )
     skip = {"tempo_from_beats"} if annotated_tempo else set()
     for prop, entry in entries.items():
         entry_plots = annotation_plots(prop, entry, skip)
@@ -231,10 +251,17 @@ def ordered_plots(stats):
     firsts, rests, others = [], [], []
     for ann_type in sorted(by_type):
         candidates = by_type[ann_type]
-        best = max(candidates, key=lambda c: c[1].get("n_annotations", 0))  # first one wins a tie
+        best = max(
+            candidates, key=lambda c: c[1].get("n_annotations", 0)
+        )  # first one wins a tie
         firsts.append(best[2][0])
         rests.extend(best[2][1:])
-        others.extend(p for prop, _, entry_plots in candidates if prop != best[0] for p in entry_plots)
+        others.extend(
+            p
+            for prop, _, entry_plots in candidates
+            if prop != best[0]
+            for p in entry_plots
+        )
     return plots + firsts + rests + others
 
 
@@ -245,17 +272,28 @@ def annotation_plots(prop, entry, skip=()):
     fields = [
         key
         for key, value in entry.items()
-        if key not in skip and (is_histogram(value) or (key in order and is_counts(value)))
+        if key not in skip
+        and (is_histogram(value) or (key in order and is_counts(value)))
     ]
     fields.sort(key=lambda key: order.index(key) if key in order else len(order))
     return [
-        plot(key, entry[key], f"{prop} · {entry['type']}", entry.get("n_tracks"), entry.get("n_annotations"))
+        plot(
+            key,
+            entry[key],
+            f"{entry['type']}",
+            entry.get("n_tracks"),
+            entry.get("n_annotations"),
+        )
         for key in fields
     ]
 
 
 def is_histogram(value):
-    return isinstance(value, dict) and set(value) == {"unit", "edges", "counts"} and bool(value["counts"])
+    return (
+        isinstance(value, dict)
+        and set(value) == {"unit", "edges", "counts"}
+        and bool(value["counts"])
+    )
 
 
 def is_counts(value):
@@ -271,9 +309,22 @@ def is_counts(value):
 def plot(field, data, source, n_tracks=None, n_annotations=None):
     """What one plot needs: data is a histogram or counts. counted names what the bars count, for the hover text."""
     total = sum(data["counts"]) if is_histogram(data) else sum(data.values())
-    counted = "tracks" if total == n_tracks else "annotations" if total == n_annotations else "values"
-    words = field.removesuffix("_histogram").removesuffix("_per_annotation").replace("_", " ")
-    return {"title": words[:1].upper() + words[1:], "source": source, "data": data, "counted": counted}
+    counted = (
+        "tracks"
+        if total == n_tracks
+        else "annotations" if total == n_annotations else "values"
+    )
+    words = (
+        field.removesuffix("_histogram")
+        .removesuffix("_per_annotation")
+        .replace("_", " ")
+    )
+    return {
+        "title": words[:1].upper() + words[1:],
+        "source": source,
+        "data": data,
+        "counted": counted,
+    }
 
 
 def plot_grid(plots):
@@ -292,7 +343,11 @@ def number(x):
 
 
 def chart_svg(data, counted):
-    return histogram_svg(data, counted) if is_histogram(data) else counts_svg(data, counted)
+    return (
+        histogram_svg(data, counted)
+        if is_histogram(data)
+        else counts_svg(data, counted)
+    )
 
 
 def bars_svg(counts, tips):
@@ -320,7 +375,9 @@ def bars_svg(counts, tips):
             f'<rect class="plot-bar" x="{bar_x + 0.5:.1f}" y="{base - height:.1f}"'
             f' width="{max(bar_width - 1, 0.5):.1f}" height="{height:.1f}"/></g>'
         )
-    out.append(f'<line class="plot-axis" x1="{LEFT}" y1="{base}" x2="{WIDTH - RIGHT}" y2="{base}"/>')
+    out.append(
+        f'<line class="plot-axis" x1="{LEFT}" y1="{base}" x2="{WIDTH - RIGHT}" y2="{base}"/>'
+    )
     return out, slot, base
 
 
@@ -338,14 +395,16 @@ def histogram_svg(hist, counted):
         for i, count in enumerate(counts)
     ]
     out, slot, base = bars_svg(counts, tips)
-    step = -(-len(counts) // (MAX_TICKS - 1))  # every step-th edge, so labels are evenly spaced
+    step = -(
+        -len(counts) // (MAX_TICKS - 1)
+    )  # every step-th edge, so labels are evenly spaced
     for i in range(0, len(edges), step):
         out.append(
             f'<text class="plot-label" x="{LEFT + i * slot:.1f}" y="{base + 10}"'
             f' text-anchor="middle">{number(edges[i])}</text>'
         )
     out.append(
-        f'<text class="plot-unit" x="{LEFT + plot_width / 2:.1f}" y="{HEIGHT - 4}"'
+        f'<text class="plot-unit" x="{LEFT + plot_width / 2:.1f}" y="{base + 20}"'
         f' text-anchor="middle">{html.escape(unit)}</text>'
     )
     out.append("</svg>")
@@ -360,7 +419,9 @@ def count_bars(counts):
     """
     if all(isinstance(k, int) for k in counts):
         return sorted(counts.items())
-    named = sorted(((str(k), v) for k, v in counts.items() if k != OTHER), key=lambda kv: -kv[1])
+    named = sorted(
+        ((str(k), v) for k, v in counts.items() if k != OTHER), key=lambda kv: -kv[1]
+    )
     rest = sum(v for _, v in named[MAX_LABELS:]) + counts.get(OTHER, 0)
     return named[:MAX_LABELS] + ([(OTHER, rest)] if rest else [])
 
@@ -385,7 +446,11 @@ def counts_svg(counts, counted):
                 f' text-anchor="middle">{html.escape(label)}</text>'
             )
             continue
-        text = label if len(label) <= MAX_LABEL_CHARS else label[: MAX_LABEL_CHARS - 1] + "…"
+        text = (
+            label
+            if len(label) <= MAX_LABEL_CHARS
+            else label[: MAX_LABEL_CHARS - 1] + "…"
+        )
         y = base + 3
         out.append(
             f'<text class="plot-label plot-label-tilted" x="{x:.1f}" y="{y}" text-anchor="end"'
