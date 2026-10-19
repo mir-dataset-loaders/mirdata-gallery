@@ -144,6 +144,42 @@ def test_histograms_get_y_ticks_too():
     assert re.findall(r'plot-y-label"[^>]*>([^<]*)<', svg) == ["1", "2"]
 
 
+def test_try_it_comes_after_the_bibtex():
+    card = gallery.render_card({"name": "x", "bibtex": "@article{x}"}, "x")
+    assert card.index("BibTeX Citation") < card.index("Try it with mirdata") < card.index("dataset.choice_track()")
+
+
+SETUP = ["import mirdata", 'dataset = mirdata.initialize("x")', "track = dataset.choice_track()"]
+
+
+def test_try_it_without_property_names_only_gets_a_track():
+    assert gallery.try_it("x", None).splitlines() == SETUP
+    assert gallery.try_it("x", {"annotations": {"status": "error", "error": "boom"}}).splitlines() == SETUP
+
+
+def test_try_it_has_one_line_per_property_grouped_by_type():
+    chords = {"type": "ChordData", "n_tracks": 3, "n_annotations": 3}
+    keys = {"type": "KeyData", "n_tracks": 3, "n_annotations": 3}
+    code = gallery.try_it("x", stats(leadsheet_chords=chords, key_mode=keys, beats=entry(), inferred_chords=chords))
+    lines = code.splitlines()
+    assert lines[:4] == SETUP + [""]
+    access = lines[4:]
+    # by type in the tags' order, A–Z inside a type: key_mode comes after both chords
+    assert [line.split("#")[0].strip() for line in access] == [
+        "track.beats", "track.inferred_chords", "track.leadsheet_chords", "track.key_mode",
+    ]
+    assert [line.split("# ")[1] for line in access] == ["BeatData", "ChordData", "ChordData", "KeyData"]
+    assert len({line.index("#") for line in access}) == 1  # the comments line up
+    assert "download" not in code and "validate" not in code and "print" not in code
+
+
+def test_try_it_names_the_parts_up_to_six():
+    notes = {"type": "NoteData", "n_tracks": 3, "n_annotations": 18, "parts": {s: 3 for s in "GDBAeE"}}
+    assert gallery.try_it("x", stats(notes=notes)).splitlines()[-1].endswith("# NoteData, one per: G, D, B, A, e, E")
+    many = {**notes, "parts": {f"a{i}": 1 for i in range(8)}}
+    assert gallery.try_it("x", stats(notes=many)).splitlines()[-1].endswith("# NoteData, one per: a0, a1, a2, a3, a4, a5, …")
+
+
 CARD ={"name": "x", "license": "MIT", "annotations": ["BeatData"]}
 
 

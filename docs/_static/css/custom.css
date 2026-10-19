@@ -577,8 +577,11 @@ header img[alt="Logo"] {
     text-indent: -2.4em;
 }
 
+/* white-space: from 10 lines on the numbers are padded (" 1"), and the
+   wrapping allowed above would break them at that space */
 #content .try-mirdata pre code .linenos {
     display: inline-block;
+    white-space: pre;
     width: 1.4em;
     margin-right: 1em;
     text-align: right;

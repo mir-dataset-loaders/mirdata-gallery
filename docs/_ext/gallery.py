@@ -48,13 +48,7 @@ MAX_LABEL_CHARS = 7  # a longer label is cut under its bar; the hover text has i
 CHAR_WIDTH = 4.7  # about how wide one character of a plot label is, in SVG units
 OTHER = "(other)"
 
-# "Try it with mirdata": mirdata's README quickstart, the same for every dataset but its name
-TRY_IT = """import mirdata
-dataset = mirdata.initialize("{name}")
-dataset.download()
-dataset.validate()
-track = dataset.choice_track()
-print(track)"""
+MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest as "…"
 
 # --- Card rendering ----------------------------------------------------------
 
@@ -62,8 +56,8 @@ print(track)"""
 def render_card(data, fallback_name):
     """Return the RST for one dataset card.
 
-    The title, the panel as raw HTML, the "Try it with mirdata" code, and the
-    BibTeX dropdown.
+    The title, the panel as raw HTML, the BibTeX dropdown, and the "Try it
+    with mirdata" code.
     """
     name = data.get("name", fallback_name)
     panel = "\n".join(
@@ -71,7 +65,6 @@ def render_card(data, fallback_name):
             overview(data),
             at_a_glance(data),
             statistics(data.get("stats")),
-            '<h3 class="panel-heading">Try it with mirdata</h3>',
         ]
     )
     card = f"""{name}
@@ -80,12 +73,6 @@ def render_card(data, fallback_name):
 .. raw:: html
 
 {textwrap.indent(panel, "   ")}
-
-.. code-block:: python
-   :class: try-mirdata
-   :linenos:
-
-{textwrap.indent(TRY_IT.format(name=name), "   ")}
 """
 
     bibtex = data.get("bibtex")
@@ -98,6 +85,18 @@ def render_card(data, fallback_name):
    .. code-block:: bibtex
 
 {indented_bibtex}
+"""
+
+    card += f"""
+.. raw:: html
+
+   <h3 class="panel-heading">Try it with mirdata</h3>
+
+.. code-block:: python
+   :class: try-mirdata
+   :linenos:
+
+{textwrap.indent(try_it(name, data.get("stats")), "   ")}
 """
     return card
 
@@ -167,6 +166,36 @@ def duration(seconds):
     if seconds >= 3600:
         return f"{seconds / 3600:.1f} hours"
     return f"{seconds / 60:.1f} min"
+
+
+def try_it(name, stats):
+    """The "Try it with mirdata" code: get a track, then one line per annotation property the stats found.
+
+    No download: it shows what a track gives access to. The lines are grouped
+    by type (the order of the annotation tags), A–Z inside a type, each with
+    its type as a comment, plus the part names (up to MAX_PARTS) when the
+    property holds several annotations. Without stats, only the track.
+    """
+    lines = [
+        "import mirdata",
+        f'dataset = mirdata.initialize("{name}")',
+        "track = dataset.choice_track()",
+    ]
+    entries = ((stats or {}).get("annotations") or {}).get("annotations") or {}
+    access = sorted(
+        (entry["type"], f"track.{prop}", list(entry.get("parts") or {}))
+        for prop, entry in entries.items()
+    )
+    if access:
+        width = max(len(code) for _, code, _ in access)
+        lines.append("")
+        for ann_type, code, parts in access:
+            comment = ann_type
+            if parts:
+                more = ", …" if len(parts) > MAX_PARTS else ""
+                comment += f", one per: {', '.join(parts[:MAX_PARTS])}{more}"
+            lines.append(f"{code.ljust(width)}  # {comment}")
+    return "\n".join(lines)
 
 
 # --- Statistics --------------------------------------------------------------
