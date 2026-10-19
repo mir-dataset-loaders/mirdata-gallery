@@ -26,7 +26,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        # docs/requirements.txt: tests/test_gallery.py imports the Sphinx extension
+        run: pip install -r requirements.txt -r docs/requirements.txt
 
       - name: Run tests
         run: pytest tests
