@@ -525,6 +525,20 @@ header img[alt="Logo"] {
     font-size: 7px;
 }
 
+/* A bar's hover text, shown at once above the cursor (gallery.js) */
+.plot-tip {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    pointer-events: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #1e293b;
+    color: #ffffff;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
 /* "Try it with mirdata": a dark code block (this one only), copy icon always
    shown; long lines wrap instead of scrolling sideways */
 .gallery-cards-information .try-mirdata .highlight {

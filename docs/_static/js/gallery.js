@@ -317,4 +317,36 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
     applyFilters();
+
+    // 6. Plot bars: show their hover text at once, in a box above the cursor.
+    // The browser's own <title> tooltip waits about a second, so the text moves
+    // from each bar's <title> to data-tip.
+    const tip = document.createElement("div");
+    tip.className = "plot-tip";
+    document.body.appendChild(tip);
+    infoColumn.querySelectorAll(".plot-svg g").forEach((bar) => {
+        const title = bar.querySelector("title");
+        if (!title) return;
+        bar.dataset.tip = title.textContent;
+        bar.setAttribute("aria-label", title.textContent);
+        title.remove();
+    });
+    function showTip(e) {
+        const bar = e.target.closest(".plot-svg g[data-tip]");
+        if (!bar) {
+            tip.style.display = "none";
+            return;
+        }
+        tip.textContent = bar.dataset.tip;
+        tip.style.display = "block";
+        // centred above the cursor, kept inside the window
+        const x = Math.min(Math.max(e.clientX - tip.offsetWidth / 2, 4), window.innerWidth - tip.offsetWidth - 4);
+        tip.style.left = `${x}px`;
+        tip.style.top = `${e.clientY - tip.offsetHeight - 10}px`;
+    }
+    const hideTip = () => (tip.style.display = "none");
+    infoColumn.addEventListener("pointermove", showTip);
+    infoColumn.addEventListener("pointerdown", showTip); // a tap on a touch screen
+    infoColumn.addEventListener("pointerleave", hideTip);
+    infoColumn.addEventListener("scroll", hideTip);
 });
