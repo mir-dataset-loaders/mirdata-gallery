@@ -17,6 +17,10 @@ Rule keywords:
  unique       list: no duplicate elements
  sorted       list: elements must be in sorted order
  choices      the value (str) or every element (list) must be one of these
+ stats        dict: the structure of the "stats" field (see STATS_* below):
+              a "computed" block, parts with a valid status, every
+              histogram {unit, edges, counts} well formed, and the fields
+              of each annotation type (STATS_ANNOTATION_FIELDS)
 
 Two rules apply to every card and are not per-field:
  - `name` must equal the file name without .yaml
@@ -45,15 +49,32 @@ ANNOTATION_TYPES = [
     "TempoData",
 ]
 
-# Closed vocabulary for `audio`: how the audio can be obtained. Cards store the
-# label itself and the gallery shows it as-is.
-AUDIO_AVAILABILITY = [
-    "✅ Freely downloadable",
-    "🔑 Available upon request",
-    "📺 Do-it-yourself download",
-    "🧮 Features only",
-    "❌ Not available",
-]
+# The "stats" field (written by scripts/generate_cards.py, see scripts/stats/card.py).
+STATS_PARTS = ["audio", "annotations"]
+STATS_STATUSES = ["ok", "incomplete", "needs_local", "error"]
+STATS_MODES = ["remote", "local"]
+
+# What each entry under stats.annotations.annotations holds (one entry per
+# track property, see scripts/stats/annotation_types.py). Every entry has
+# STATS_ANNOTATION_COMMON, plus "parts" ({key: count}) when a track holds
+# several annotations (dict keys or annotators), plus the fields of its type.
+# Field kinds:
+#   histogram  {unit, edges, counts}, or null when there were no values
+#   counts     {label: count}, the 30 most common, the rest under "(other)";
+#              meter and polyphony have every count, keyed by number
+STATS_ANNOTATION_COMMON = ["type", "n_tracks", "n_annotations"]
+STATS_ANNOTATION_FIELDS = {
+    "BeatData": {"tempo_from_beats": "histogram", "meter": "counts"},
+    "ChordData": {"labels": "counts", "qualities": "counts"},
+    "EventData": {"events": "counts"},
+    "F0Data": {"frequencies": "histogram"},
+    "KeyData": {"keys": "counts", "modes": "counts"},
+    "LyricData": {"lyric_unit": "counts", "lyrics_per_track": "histogram"},
+    "MultiF0Data": {"frequencies": "histogram", "polyphony": "counts"},
+    "NoteData": {"pitches": "histogram"},
+    "SectionData": {"labels": "counts", "section_interval_seconds": "histogram"},
+    "TempoData": {"tempo": "histogram"},
+}
 
 SCHEMA = {
     "name": {
@@ -64,10 +85,6 @@ SCHEMA = {
         "type": str,
         "min_length": 1,
         "single_line": True,
-    },
-    "audio": {
-        "type": str,
-        "choices": AUDIO_AVAILABILITY,
     },
     "annotations": {
         "type": list,
@@ -86,5 +103,10 @@ SCHEMA = {
     "summary": {
         "type": (str, NoneType),
         "min_length": 1,
+    },
+    # Audio and annotation statistics; null until computed
+    "stats": {
+        "type": (dict, NoneType),
+        "stats": True,
     },
 }

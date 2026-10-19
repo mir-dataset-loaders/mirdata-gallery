@@ -1,0 +1,37 @@
+"""Audio stats of one dataset, counted from its index: tracks and audio files.
+
+No audio file is read, remote or local. Durations and sample rates will come
+from mirdata's index once it carries them.
+"""
+
+
+def track_audio_paths(index):
+    """{track_id: [relative audio paths]} for every track, from keys containing 'audio'."""
+    result = {}
+    for track_id, files in index.get("tracks", {}).items():
+        paths = [
+            value[0]
+            for key, value in files.items()
+            if "audio" in key.lower() and isinstance(value, list) and value and value[0]
+        ]
+        if paths:
+            result[track_id] = paths
+    return result
+
+
+def summarize(index):
+    """The per-dataset counts: tracks in the index, and distinct audio files they list."""
+    tracks = track_audio_paths(index)
+    return {
+        "n_tracks": len(index.get("tracks", {})),
+        "n_audio_files": len({p for paths in tracks.values() for p in paths}),
+    }
+
+
+def dataset_stats(name, index):
+    """Count the tracks and audio files of one dataset. Returns a dict.
+
+    index: the dataset's index dict. The status is always ok: a local run
+    would find nothing the index does not already say.
+    """
+    return {"name": name, "status": "ok", "problems": [], **summarize(index)}

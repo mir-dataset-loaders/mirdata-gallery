@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "tracks": {
+    "track1": {
+      "audio": [
+        "audio/track1.wav",
+        "45b4b969a95638b5a442ecd59a765de1"
+      ],
+      "beats": [
+        "annotations/beats/track1.txt",
+        "129d35013a28a56015c33e5d8987b426"
+      ],
+      "chords": [
+        "annotations/chords/track1.lab",
+        "9a0ff6b265ad6e69dec75c08df7b0980"
+      ]
+    },
+    "track2": {
+      "audio": [
+        "audio/track2.wav",
+        "fe4db04c6bc8d14784e5037d76d0f399"
+      ],
+      "beats": [
+        "annotations/beats/track2.txt",
+        "019804dff0e16ed8e8ef08297b9a9a8c"
+      ],
+      "chords": [
+        "annotations/chords/track2.lab",
+        "4032945aeb752445d61e9ace1e73d5b7"
+      ]
+    },
+    "track3": {
+      "audio": [
+        "audio/track3.wav",
+        "800ea34119b791a1be054aafd09fc896"
+      ],
+      "beats": [
+        "annotations/beats/track3.txt",
+        "4746fdd2c9dc5453d6f0af41ba623558"
+      ],
+      "chords": [
+        null,
+        null
+      ]
+    }
+  }
+}

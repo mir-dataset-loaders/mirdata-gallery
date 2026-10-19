@@ -1,0 +1,64 @@
+name: Update cards
+
+# Rebuilds every card from the latest mirdata (new datasets get a card,
+# changed loaders update theirs, summaries are redone only when the loader
+# docstring changed) and opens a pull request if anything differs.
+# Runs on demand for now (manual trigger only while the cards are being built).
+#
+# Needs one repository setting: Settings > Actions > General >
+# "Allow GitHub Actions to create and approve pull requests".
+
+# Manual only for now. When the cards are ready, restore the weekly run:
+#   schedule:
+#     - cron: "0 6 * * 1"   # every Monday, 06:00 UTC
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-cards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # requirements.txt installs mirdata from its master branch on GitHub,
+      # so every run sees the newest loaders. No pip cache on purpose.
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+          pip install huggingface_hub
+
+      # The 4-bit Qwen model (about 4.7 GB) is downloaded on the first run and
+      # kept in the Actions cache; later runs restore it instead.
+      - name: Cache the LLM
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: qwen2.5-7b-instruct-q4_k_m
+
+      - name: Rebuild cards from the latest mirdata
+        run: python scripts/generate_cards.py
+
+      # Does nothing when no card was added or changed.
+      - name: Open a pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.PR_TEST }}
+          add-paths: |
+            cards/*.yaml
+            cards/docstring_hashes.json
+          branch: auto/update-cards
+          title: "Update dataset cards from mirdata master"
+          commit-message: "Update dataset cards from mirdata master"
+          body: |
+            Cards rebuilt with `scripts/generate_cards.py` against the latest
+            mirdata master. New cards, changed fields and refreshed summaries
+            (only where the loader docstring changed) are included.

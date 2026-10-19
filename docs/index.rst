@@ -1,4 +1,4 @@
-Mirdata Dataset Gallery
-=======================
+Mirdata Gallery
+===============
 
 .. dataset-gallery:: ../cards

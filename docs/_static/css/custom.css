@@ -1,44 +1,61 @@
-/* Hide the redundant default Sphinx RTD search box */
-div.wy-side-nav-search form#rtd-search-form {
+/* The gallery on the Awesome theme (sphinxawesome-theme), light mode only.
+   The theme styles elements inside #content by id, so rules that must win
+   over it start with #content. */
+
+/* ==========================================================================
+   Page
+   ========================================================================== */
+
+/* Smaller base size: everything set in rem (theme and gallery) shrinks with it */
+html {
+    font-size: 14px;
+}
+
+/* The gallery uses the full window width */
+.container {
+    max-width: none;
+}
+
+/* No "On this page" column, and no grid column kept for it */
+#right-sidebar {
     display: none;
 }
 
-div.wy-side-nav-search {
-    background: #FFFFFF;
+main {
+    display: block !important;
 }
 
-div.wy-side-nav-search .version {
-    color: #404040;
-    font-weight: bold;
+/* Light mode only (js/light-mode.js): no colour scheme button */
+header button[title="Toggle color scheme"] {
+    display: none;
 }
 
-
-span.caption-text {
-    color: #404040;
+/* A bigger logo in the header (the theme draws it at 24px) */
+header img[alt="Logo"] {
+    width: 36px;
+    height: 36px;
 }
 
-div.wy-menu .caption-text {
-    color: #a054d8;
+/* One copy button per code block: sphinx-copybutton's, which skips line numbers */
+.highlight button.copy {
+    display: none;
 }
 
-div.wy-nav-content {
-    max-width: 100%;
+/* ==========================================================================
+   Gallery layout: filters (left sidebar), dataset list, panel
+   ========================================================================== */
+
+/* The header already names the page */
+#content #mirdata-gallery>h1 {
+    display: none;
 }
 
-/* 1. Main gallery wrapper */
-#mirdata-dataset-gallery {
+#mirdata-gallery {
     display: block;
-    margin-top: 20px;
+    container-type: inline-size; /* the stacked layout below follows the gallery's width */
 }
 
-/* Match the left sidebar background */
-.wy-nav-side {
-    background: #ffffff;
-    border-right: 1px solid #e2e8ee;
-
-}
-
-/* Container holding Middle & Right columns */
+/* Container holding the list and the panel */
 .gallery-layout {
     display: flex;
     gap: 24px;
@@ -46,7 +63,12 @@ div.wy-nav-content {
     width: 100%;
 }
 
-/* Column 1: Left Filters Sidebar */
+/* Column 1: the filters, in the theme's left sidebar */
+#left-sidebar nav {
+    display: block;
+    margin: 0;
+}
+
 .gallery-filter-sidebar {
     width: 100%;
     padding: 16px;
@@ -153,38 +175,90 @@ div.wy-nav-content {
     opacity: 0.8;
 }
 
-/* Column 2: Middle List of Dataset Items */
+/* Column 2: the dataset list, about 3 : 2 against the panel. Its table needs
+   400px; below that the list and panel stack (see @container below). */
 .gallery-datasets-list {
-    flex: 0 0 500px;
-    width: 500px;
+    flex: 3 1 0;
+    min-width: 400px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     max-height: calc(100vh - 120px);
     overflow-y: auto;
-    padding: 6px 8px 12px 6px;
+    padding: 0 2px 12px 0;
     box-sizing: border-box;
 }
 
-.dataset-item-btn {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 12px 14px;
-    text-align: left;
-    cursor: pointer;
-    transition: all 0.15s ease;
+/* Above the table: how many datasets are shown, and the sort menu */
+.list-toolbar {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 2px 4px;
+}
+
+.list-count {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.list-sort {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.list-sort select {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    background: #ffffff;
+    color: #1e293b;
+}
+
+/* The table: a header row, then one row (a button) per dataset */
+.list-table {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.list-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) 64px minmax(0, 1fr) minmax(0, 2fr);
+    gap: 12px;
+    align-items: center;
+    padding: 12px 16px;
+    text-align: left;
+}
+
+.list-header {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.dataset-item-btn {
+    width: 100%;
+    background: #ffffff;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.dataset-item-btn:last-child {
+    border-bottom: none;
 }
 
 .dataset-item-btn:hover {
-    border-color: #d8b4fe;
     background: #faf5ff;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(160, 84, 216, 0.08);
 }
 
 .dataset-item-btn:hover .dataset-item-title {
@@ -192,13 +266,14 @@ div.wy-nav-content {
 }
 
 .dataset-item-btn.active {
-    border-color: #a054d8;
     background: #faf5ff;
-    box-shadow: 0 2px 10px rgba(160, 84, 216, 0.15);
+    border-radius: 10px;
+    outline: 1.5px solid #a054d8;
+    outline-offset: -1.5px;
 }
 
 .dataset-item-title {
-    font-size: 1.15rem;
+    font-size: 1rem;
     font-weight: 700;
     color: #1e293b;
     word-break: break-word;
@@ -208,38 +283,40 @@ div.wy-nav-content {
     color: #7928ca;
 }
 
-.dataset-item-meta {
+.list-cell {
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.list-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
+    gap: 4px;
 }
 
-.dataset-badge-license {
-    background: #f1f5f9;
+.list-tag {
+    font-size: 0.72rem;
+    padding: 1px 7px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
     color: #475569;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 500;
 }
 
-.dataset-badge-ann {
-    background: #f3e8ff;
+.list-tag-more {
     color: #7e22ce;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    background: #f3e8ff;
+    border-color: #e9d5ff;
 }
 
-/* Column 3: Right Information Card Pane */
+/* Column 3: the panel. It sticks below the theme's 56px header. */
 .gallery-cards-information {
-    flex: 1;
-    min-width: 0;
+    flex: 2 1 0;
+    min-width: 400px;
+    max-width: 560px;
     position: sticky;
-    top: 20px;
-    max-height: calc(100vh - 100px);
+    top: 72px;
+    max-height: calc(100vh - 90px);
     overflow-y: auto;
 }
 
@@ -247,56 +324,303 @@ div.wy-nav-content {
     background: #ffffff;
     border: 1px solid #e3e8ee;
     border-radius: 12px;
-    padding: 24px 28px;
+    padding: 16px 18px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
     min-width: 0;
     display: flex;
     flex-direction: column;
 }
 
-.gallery-cards-information>section>h2 {
+#content .gallery-cards-information>section>h2 {
     margin-top: 0;
-    margin-bottom: 16px;
-    font-size: 1.4rem;
+    margin-bottom: 10px;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #a054d8;
     border-bottom: 2px solid #faf5ff;
-    padding-bottom: 8px;
+    padding-bottom: 6px;
 }
 
-.gallery-cards-information>section>ul {
-    list-style: none;
-    padding-left: 0;
-    margin-bottom: 18px;
+/* Too narrow for both minimum widths (400 + 24 + 400): the list goes above
+   the panel as a short scrollable box, and the panel flows with the page. */
+@container (max-width: 823px) {
+    .gallery-layout {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .gallery-datasets-list {
+        flex: none;
+        min-width: 0;
+        max-height: 35vh;
+    }
+
+    .gallery-cards-information {
+        flex: none;
+        min-width: 0;
+        max-width: none;
+        position: static;
+        max-height: none;
+        overflow-y: visible;
+    }
 }
 
-.gallery-cards-information>section>ul>li {
-    margin-bottom: 10px;
-    font-size: 0.92em;
-    color: #475569;
-    line-height: 1.6;
+/* ==========================================================================
+   Panel: Overview, At a glance, Statistics, Try it with mirdata
+   ========================================================================== */
+
+#content .gallery-cards-information .panel-heading {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #a054d8;
+    margin: 2px 0 6px;
 }
 
-.gallery-cards-information>section>ul>li strong {
+#content .gallery-cards-information .panel-summary {
+    color: #334155;
+    font-size: 0.93rem;
+    line-height: 1.5;
+    margin: 0 0 14px;
+}
+
+.gallery-cards-information .panel-missing,
+.gallery-cards-information .stats-note {
+    color: #94a3b8;
+    font-size: 0.9em;
+}
+
+.gallery-cards-information .stats-note {
+    margin: 0 0 8px;
+}
+
+/* The bordered boxes: "At a glance" and "Statistics" */
+.panel-box {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+}
+
+.box-title {
+    font-size: 0.93rem;
+    font-weight: 700;
     color: #1e293b;
+    margin-bottom: 6px;
+}
+
+/* "At a glance": label/value rows in two columns, annotation tags below */
+.glance-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.glance-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 3px 0;
+    font-size: 0.85rem;
+}
+
+.glance-label {
+    color: #475569;
+}
+
+.glance-value {
+    margin: 0;
+    color: #1e293b;
+    text-align: right;
 }
 
 /* Badge pills for annotation tags. Silver by default; official
    mirdata.annotations classes get their own colour further down. */
-.gallery-cards-information>section code {
+.glance-tags code {
     background-color: #f1f5f9;
     color: #475569;
     border: 1px solid #cbd5e1;
     border-radius: 10px;
-    padding: 2px 10px;
-    font-size: 0.85em;
+    padding: 1px 8px;
+    font-size: 0.75rem;
     font-weight: 500;
     display: inline-block;
     vertical-align: middle;
     margin: 2px 3px;
 }
 
-/* Dropdown Accordion Styling */
+/* Statistics: three small plots in a row, every plot the same size */
+.plot-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 4px 0 8px;
+}
+
+.plot-grid .plot {
+    margin: 0;
+}
+
+/* Title above its grey source note, one line each, so the charts line up.
+   (The theme gives every figure caption a 48px bottom margin.) */
+#content .plot figcaption {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 2px;
+}
+
+#content .plot figcaption>* {
+    margin-top: 0;
+}
+
+.plot-title,
+.plot-source {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.plot-title {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.75rem;
+}
+
+.plot-source {
+    color: #94a3b8;
+    font-size: 0.6rem;
+}
+
+.plot-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.plot-bar {
+    fill: #a054d8;
+}
+
+.plot-hit {
+    fill: transparent;
+}
+
+.plot-svg g:hover .plot-bar {
+    fill: #7928ca;
+}
+
+.plot-svg g:hover .plot-hit {
+    fill: #faf5ff;
+}
+
+.plot-axis {
+    stroke: #cbd5e1;
+    stroke-width: 1;
+}
+
+.plot-label,
+.plot-unit {
+    font-size: 8.5px;
+    fill: #64748b;
+}
+
+/* Counts labels too long to sit flat under their bars (gallery.py, counts_svg) */
+.plot-label-tilted {
+    font-size: 5.5px;
+}
+
+/* "Show more": plain purple text, "Show less" while open */
+.plot-toggle>summary {
+    cursor: pointer;
+    list-style: none;
+    color: #7928ca;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.plot-toggle>summary::-webkit-details-marker {
+    display: none;
+}
+
+.plot-toggle[open] .when-closed,
+.plot-toggle:not([open]) .when-open {
+    display: none;
+}
+
+/* "Try it with mirdata": a dark code block (this one only), copy icon always
+   shown; long lines wrap instead of scrolling sideways */
+.gallery-cards-information .try-mirdata .highlight {
+    background: #1e1e2e;
+    border: none;
+    border-radius: 10px;
+}
+
+#content .try-mirdata pre {
+    margin-top: 0;
+    padding: 16px 18px;
+    color: #e2e8f0;
+}
+
+#content .try-mirdata pre,
+#content .try-mirdata pre code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow-x: hidden;
+}
+
+#content .try-mirdata pre code {
+    display: block;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: inherit;
+}
+
+/* A wrapped line continues under its code, not under the line number */
+#content .try-mirdata pre code>span[id^="line-"] {
+    display: block;
+    padding-left: 2.4em;
+    text-indent: -2.4em;
+}
+
+#content .try-mirdata pre code .linenos {
+    display: inline-block;
+    width: 1.4em;
+    margin-right: 1em;
+    text-align: right;
+    text-indent: 0;
+    color: #64748b;
+}
+
+.gallery-cards-information .try-mirdata .highlight span {
+    color: inherit;
+    font-weight: normal;
+    font-style: normal;
+}
+
+.gallery-cards-information .try-mirdata .highlight .kn,
+.gallery-cards-information .try-mirdata .highlight .k {
+    color: #c084fc;
+}
+
+.gallery-cards-information .try-mirdata .highlight .s2,
+.gallery-cards-information .try-mirdata .highlight .s1 {
+    color: #86efac;
+}
+
+.gallery-cards-information .try-mirdata button.copybtn {
+    opacity: 1;
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+}
+
+/* BibTeX dropdown */
 .gallery-cards-information>section .admonition {
     margin-top: 10px;
     margin-bottom: 8px;
@@ -328,8 +652,6 @@ div.wy-nav-content {
 .gallery-cards-information>section .toggle-button {
     color: #64748b !important;
 }
-
-
 
 /* ==========================================================================
    Distinct Colors per Annotation Type

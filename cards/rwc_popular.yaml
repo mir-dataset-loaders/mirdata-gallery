@@ -1,37 +1,12 @@
 name: rwc_popular
-license: |-
-  From the dataset's owner webpage:
-
-  'Users who have submitted the Pledge and received authorization may freely use the database for research purposes
-  without facing the usual copyright restrictions, but all of the copyrights and neighboring rights connected with
-  this database belong to the National Institute of Advanced Industrial Science and Technology and are managed by the
-  RWC Music Database Administrator. Persons or organizations that have not submitted a Pledge and that have not
-  received authorization may not use the database.'
-
-  See https://staff.aist.go.jp/m.goto/RWC-MDB/ for more details.
-remotes:
-- metadata
-- annotations_beat
-- annotations_sections
-- annotations_chords
-- annotations_vocal_act
+license: Creative Commons Attribution Non Commercial 4.0 International
 annotations:
 - BeatData
 - ChordData
-- TempoData
-- EventData
-- SectionData
+- F0Data
 - Instrument
-download_info: |2
-
-      Unfortunately the audio files of the RWC-Popular dataset are not available
-      for download. If you have the RWC-Popular dataset, place the contents into a
-      folder called RWC-Popular with the following structure:
-          > RWC-Popular/
-              > annotations/
-              > audio/rwc-p-m0i with i in [1 .. 7]
-              > metadata-master/
-      and copy the RWC-Popular folder to {}
+- NoteData
+- TempoData
 bibtex: |-
   @inproceedings{goto2002rwc,
     title={RWC Music Database: Popular, Classical and Jazz Music Databases.},
@@ -39,15 +14,21 @@ bibtex: |-
     booktitle={3rd International Society for Music Information Retrieval Conference},
     year={2002},
     series={ISMIR},
-    note={Cite this if using audio, beat or section annotations},
   }
-  @inproceedings{cho2011feature,
-    title={A feature smoothing method for chord recognition using recurrence plots},
-    author={Cho, Taemin and Bello, Juan P},
-    booktitle={12th International Society for Music Information Retrieval Conference},
-    year={2011},
-    series={ISMIR},
-    note={Cite this if using chord annotations},
+  @inproceedings{GotoHNO03_RWCGenre_ISMIR,
+    author    = {Masataka Goto and Hiroki Hashiguchi and Takuichi Nishimura and Ryuichi Oka},
+    title     = {{RWC} Music Database: Music genre database and musical instrument sound database},
+    booktitle = {Proceedings of the International Society for Music Information Retrieval Conference ({ISMIR})},
+    address   = {Baltimore, Maryland, USA},
+    year      = {2003},
+    pages     = {229--230},
+  }
+  @inproceedings{Goto06_AnnotationsAIST_ISMIR,
+    author    = {Masataka Goto},
+    title     = {{AIST} Annotation for the {RWC} Music Database},
+    booktitle = {Proceedings of the International Society for Music Information Retrieval Conference ({ISMIR})},
+    year      = {2006},
+    pages     = {359--360},
   }
   @inproceedings{mauch2011timbre,
     title={Timbre and Melody Features for the Recognition of Vocal Activity and Instrumental Solos in Polyphonic Music.},
@@ -57,20 +38,122 @@ bibtex: |-
     series={ISMIR},
     note={Cite this if using vocal-instrumental activity annotations},
   }
-docstring: |+
-  RWC Popular Dataset Loader
-
-  .. admonition:: Dataset Info
-      :class: dropdown
-
-      The Popular Music Database consists of 100 songs — 20 songs with English lyrics
-      performed in the style of popular music typical of songs on the American hit
-      charts in the 1980s, and 80 songs with Japanese lyrics performed in the style of
-      modern Japanese popular music typical of songs on the Japanese hit charts in
-      the 1990s.
-
-      For more details, please visit: https://staff.aist.go.jp/m.goto/RWC-MDB/rwc-mdb-p.html
-
-summary: The RWC Popular Dataset includes 100 songs—20 English-lyric and 80 Japanese-lyric
-  popular music pieces from the 1980s and 1990s. Annotations provide metadata for
-  music information retrieval tasks.
+  @Article{BalkeZAMTGM26_RWCRevisited_TISMIR,
+  author = {Stefan Balke and Johannes Zeitler and Vlora Arifi-Müller and Brian McFee and Tomoyasu Nakano and Masataka Goto and Meinard M{"u}ller},
+  title = {{RWC} Revisited: {T}owards a Community-Driven {MIR} Corpus},
+  journal = {Transactions of the International Society for Music Information Retrieval},
+  volume = {9},
+  issue = {1},
+  pages = {21--35},
+  year = {2026},
+  doi = {10.5334/tismir.326}
+  }
+summary: The dataset includes 100 popular songs, 20 with English lyrics and 80 with
+  Japanese lyrics, from the 1980s and 1990s. Annotations provide information for music
+  information retrieval tasks focusing on genre, tempo, and key.
+stats:
+  computed:
+    mode: remote
+    index: c7f5f853768815885cea70d6c246895d
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 100
+    n_audio_files: 100
+    total_seconds: 24216.4
+    sample_rate: 44100
+    duration_histogram:
+      unit: min
+      edges: [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5]
+      counts: [1, 2, 22, 26, 25, 16, 5, 2, 1]
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 100
+    n_tracks_loaded: 100
+    tracks_with:
+      BeatData: 100
+      ChordData: 100
+      F0Data: 100
+    annotations:
+      beats:
+        type: BeatData
+        n_tracks: 100
+        n_annotations: 100
+        meter:
+          4: 99
+          5: 1
+        tempo_from_beats:
+          unit: bpm
+          edges: [60, 80, 100, 120, 140, 160, 180, 200, 220, 240]
+          counts: [13, 23, 16, 37, 3, 4, 2, 1, 1]
+      chords:
+        type: ChordData
+        n_tracks: 100
+        n_annotations: 100
+        labels:
+          G:maj: 834
+          C:maj: 692
+          F:maj: 657
+          D:maj: 560
+          A:maj: 489
+          A:min: 377
+          Eb:maj: 373
+          Bb:maj: 322
+          A:min7: 313
+          E:min7: 300
+          N: 263
+          D:min7: 240
+          B:min: 229
+          G:min7: 221
+          E:maj: 215
+          B:min7: 203
+          Ab:maj: 191
+          E:min: 191
+          B:maj: 175
+          F#:min7: 168
+          F:min: 167
+          C:min: 164
+          Db:maj: 162
+          D:min: 160
+          F:maj7: 157
+          G:min: 141
+          C:min7: 135
+          F:min7: 135
+          G:7: 131
+          G:maj/3: 125
+          (other): 4977
+        qualities:
+          maj: 6180
+          min7: 2004
+          min: 1953
+          '7': 907
+          maj7: 827
+          sus4: 372
+          maj6: 359
+          N: 263
+          dim: 144
+          sus2: 100
+          maj9: 84
+          aug: 65
+          min9: 65
+          '9': 50
+          hdim7: 48
+          min6: 36
+          dim7: 10
+      melody:
+        type: F0Data
+        n_tracks: 100
+        n_annotations: 100
+        frequencies:
+          unit: hz
+          edges: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
+            1300, 1400, 1500]
+          counts: [492, 126100, 473953, 410189, 151945, 49359, 2226, 50, 5, 4, 13,
+            6, 1, 5, 6]
+    skipped:
+      midi: not a mirdata NoteData object (got PrettyMIDI)
+      tempo: not a mirdata TempoData object (got str)
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
