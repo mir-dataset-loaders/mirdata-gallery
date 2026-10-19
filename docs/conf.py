@@ -46,6 +46,12 @@ html_theme = "sphinxawesome_theme"
 html_title = "Mirdata Gallery"  # shown in the header next to the logo
 html_logo = "img/mirdata.png"
 html_permalinks = False  # no ¶ link after the headings
+html_theme_options = {
+    "main_nav_links": {"Home": "index", "Gallery": "gallery"},  # header links
+    "show_breadcrumbs": False,  # two pages; the header links are the navigation
+}
+# The front page has no left sidebar (on the gallery page, gallery.js puts the filters there)
+html_sidebars = {"index": []}
 
 # Custom static files, copied after the theme's own so they can override it.
 html_static_path = ["_static"]

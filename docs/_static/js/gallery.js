@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const gallery = document.getElementById("mirdata-gallery"); // the section of index.rst's title
+    const gallery = document.getElementById("mirdata-gallery"); // the section of gallery.rst's title
     if (!gallery) return;
 
     const cards = Array.from(gallery.querySelectorAll(":scope > section"));
@@ -198,8 +198,10 @@ document.addEventListener("DOMContentLoaded", function () {
         c.style.display = "none";
         infoColumn.appendChild(c);
     });
-    // Mount Column 1 to the theme's left sidebar, and Columns 2 & 3 to main area
-    const themeSidebar = document.querySelector("#left-sidebar nav");
+    // Mount Column 1 to the theme's left sidebar, and Columns 2 & 3 to main area.
+    // The filters replace the sidebar's last nav, the page list; a nav before it
+    // holds the header links for small screens.
+    const themeSidebar = document.querySelector("#left-sidebar nav:last-of-type");
     if (themeSidebar) {
         themeSidebar.innerHTML = "";
         themeSidebar.appendChild(sidebar);

@@ -42,6 +42,78 @@ header img[alt="Logo"] {
 }
 
 /* ==========================================================================
+   Front page (index.rst): the hero, then the sections in a readable column
+   ========================================================================== */
+
+/* Without a sidebar the theme keeps a page to a text column (max-w-prose);
+   the front page lets the hero use the width */
+.max-w-prose:has(section#home) {
+    max-width: none;
+}
+
+/* "Home" only names the browser tab; the hero has the visible heading */
+#content section#home>h1 {
+    display: none;
+}
+
+#content section#home>.landing-hero {
+    max-width: 1100px;
+    margin: 0 auto 36px;
+}
+
+#content section#home>section {
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.landing-hero {
+    text-align: center;
+    padding: 56px 24px 48px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #faf5ff, #ede4fb);
+}
+
+#content .landing-hero h1.landing-title {
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 12px;
+    border: none;
+}
+
+.landing-hero p {
+    font-size: 1.15rem;
+    color: #475569;
+    max-width: 620px;
+    margin: 0 auto 24px;
+}
+
+.landing-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Purple button; .secondary is the white one with a purple outline */
+.landing-button {
+    display: inline-block;
+    padding: 10px 20px;
+    border: 1.5px solid #7928ca;
+    border-radius: 10px;
+    background: #7928ca;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-decoration: none !important;
+}
+
+.landing-button.secondary {
+    background: #ffffff;
+    color: #7928ca !important;
+}
+
+/* ==========================================================================
    Gallery layout: filters (left sidebar), dataset list, panel
    ========================================================================== */
 
@@ -63,8 +135,9 @@ header img[alt="Logo"] {
     width: 100%;
 }
 
-/* Column 1: the filters, in the theme's left sidebar */
-#left-sidebar nav {
+/* Column 1: the filters, in the theme's left sidebar (its last nav, see
+   gallery.js; the nav before it, the header links, stays small screens only) */
+#left-sidebar nav:last-of-type {
     display: block;
     margin: 0;
 }

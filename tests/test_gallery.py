@@ -1,10 +1,12 @@
-"""The gallery (docs/_ext/gallery.py): the "At a glance" box, and the plots (histograms and counts fields, one chart style)."""
+"""The gallery (docs/_ext/gallery.py): the "At a glance" box, the plots (histograms and counts fields, one chart style), "Try it with mirdata", and the site's two pages."""
 
 import os
 import re
+import subprocess
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "docs", "_ext"))
+DOCS = os.path.join(os.path.dirname(__file__), "..", "docs")
+sys.path.insert(0, os.path.join(DOCS, "_ext"))
 
 import gallery  # noqa: E402
 
@@ -223,3 +225,19 @@ def test_tasks_are_listed():
 def test_missing_or_null_tasks_show_a_dash():
     assert tasks_value(gallery.at_a_glance(CARD)) == "—"
     assert tasks_value(gallery.at_a_glance({**CARD, "tasks": None})) == "—"
+
+
+def test_the_site_has_a_front_page_and_a_gallery_page(tmp_path):
+    """The site builds without warnings; the front page links to the gallery, and only the
+    gallery page has the mirdata-gallery section that gallery.js turns into the gallery."""
+    out = tmp_path / "html"
+    build = subprocess.run(
+        [sys.executable, "-m", "sphinx", "-W", "-q", "-b", "html", DOCS, str(out), "-d", str(tmp_path / "doctrees")],
+        capture_output=True,
+        text=True,
+    )
+    assert build.returncode == 0, build.stderr
+    front, gallery_page = (out / "index.html").read_text(), (out / "gallery.html").read_text()
+    assert 'href="gallery.html"' in front
+    assert 'id="mirdata-gallery"' in gallery_page
+    assert 'id="mirdata-gallery"' not in front
