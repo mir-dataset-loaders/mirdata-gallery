@@ -249,11 +249,10 @@ def status_notes(stats):
 def ordered_plots(stats):
     """Every histogram and counts field to plot, in display order.
 
-    The audio duration comes first, then the first plot of each annotation type,
-    then the rest of each type's plots. When several entries (track properties)
-    have the same type, the one with the most annotations counts for its type;
-    the others' plots come last. An annotated tempo (TempoData) replaces the
-    tempo derived from beats.
+    The audio duration comes first, then the plots grouped by annotation type,
+    A–Z. Inside a type, the entry (track property) with the most annotations
+    comes first, then the others; each entry's plots in the schema's field
+    order. An annotated tempo (TempoData) replaces the tempo derived from beats.
     """
     plots = []
     audio = stats.get("audio") or {}
@@ -279,21 +278,19 @@ def ordered_plots(stats):
         if entry_plots:
             by_type.setdefault(entry["type"], []).append((prop, entry, entry_plots))
 
-    firsts, rests, others = [], [], []
     for ann_type in sorted(by_type):
         candidates = by_type[ann_type]
         best = max(
             candidates, key=lambda c: c[1].get("n_annotations", 0)
         )  # first one wins a tie
-        firsts.append(best[2][0])
-        rests.extend(best[2][1:])
-        others.extend(
+        plots.extend(best[2])
+        plots.extend(
             p
             for prop, _, entry_plots in candidates
             if prop != best[0]
             for p in entry_plots
         )
-    return plots + firsts + rests + others
+    return plots
 
 
 def annotation_plots(prop, entry, skip=()):
@@ -311,7 +308,7 @@ def annotation_plots(prop, entry, skip=()):
         plot(
             key,
             entry[key],
-            f"{entry['type']}",
+            f"{prop} · {entry['type']}",
             entry.get("n_tracks"),
             entry.get("n_annotations"),
         )

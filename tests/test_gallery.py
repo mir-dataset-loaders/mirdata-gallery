@@ -90,6 +90,25 @@ def test_every_plot_is_shown_none_folded_away():
     assert "<details" not in box
 
 
+def chords_entry(n_annotations):
+    return {"type": "ChordData", "n_tracks": 3, "n_annotations": n_annotations, "labels": {"C:maj": 3}, "qualities": {"maj": 3}}
+
+
+def test_plots_are_grouped_by_type_after_the_audio():
+    s = stats(beats=entry(tempo_from_beats=HIST, meter={4: 3}), inferred_chords=chords_entry(2), leadsheet_chords=chords_entry(5))
+    s["audio"] = {"n_tracks": 3, "duration_histogram": HIST}
+    # inside a type, the entry with the most annotations first; each entry's plots in the schema's order
+    assert [(p["title"], p["source"]) for p in gallery.ordered_plots(s)] == [
+        ("Duration", "audio"),
+        ("Tempo from beats", "beats · BeatData"),
+        ("Meter", "beats · BeatData"),
+        ("Labels", "leadsheet_chords · ChordData"),
+        ("Qualities", "leadsheet_chords · ChordData"),
+        ("Labels", "inferred_chords · ChordData"),
+        ("Qualities", "inferred_chords · ChordData"),
+    ]
+
+
 def bar_rects(svg):
     return [(float(x), float(w)) for x, w in re.findall(r'class="plot-bar" x="([\d.]+)" y="[\d.]+" width="([\d.]+)"', svg)]
 
