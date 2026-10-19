@@ -109,7 +109,42 @@ def test_many_bars_fill_their_slots():
     assert abs(bars[0][1] - (plot_width / 20 - 1)) < 0.1
 
 
-CARD = {"name": "x", "license": "MIT", "annotations": ["BeatData"]}
+def test_y_ticks_are_round_steps_below_the_tallest_bar():
+    assert gallery.y_ticks(47) == [10, 20, 30, 40]
+    assert gallery.y_ticks(360) == [100, 200, 300]
+    assert gallery.y_ticks(19_276) == [5_000, 10_000, 15_000]
+    assert gallery.y_ticks(473_953) == [100_000, 200_000, 300_000, 400_000]
+    assert gallery.y_ticks(1_658_562) == [500_000, 1_000_000, 1_500_000]
+    assert gallery.y_ticks(3) == [1, 2, 3]
+    assert gallery.y_ticks(1) == [1]
+    assert gallery.y_ticks(0) == []  # no "0" tick, and nothing above an empty chart
+
+
+def test_y_numbers_are_short_from_1000_up():
+    assert [gallery.short_number(n) for n in [500, 1_000, 1_500, 20_000, 1_000_000, 1_500_000]] == [
+        "500", "1k", "1.5k", "20k", "1M", "1.5M",
+    ]
+
+
+def gridline_ys(svg):
+    return [float(y) for y in re.findall(r'class="plot-gridline" x1="[\d.]+" y1="([\d.]+)"', svg)]
+
+
+def test_every_y_tick_has_a_gridline_behind_the_bars_and_a_number():
+    svg = gallery.counts_svg({"a": 40, "b": 10}, "tracks")
+    assert re.findall(r'plot-y-label"[^>]*>([^<]*)<', svg) == ["10", "20", "30", "40"]
+    ys = gridline_ys(svg)
+    assert len(ys) == 4
+    assert min(ys) == gallery.TOP  # the tallest bar (40) reaches the top line
+    assert svg.index("plot-gridline") < svg.index("plot-bar")  # drawn first, so behind
+
+
+def test_histograms_get_y_ticks_too():
+    svg = gallery.histogram_svg(HIST, "tracks")  # counts [2, 1]
+    assert re.findall(r'plot-y-label"[^>]*>([^<]*)<', svg) == ["1", "2"]
+
+
+CARD ={"name": "x", "license": "MIT", "annotations": ["BeatData"]}
 
 
 def tasks_value(box):

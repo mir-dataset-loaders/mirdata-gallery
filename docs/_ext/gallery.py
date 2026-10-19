@@ -16,6 +16,7 @@ page on the next incremental build without needing ``-E``.
 """
 
 import html
+import itertools
 import os
 import textwrap
 
@@ -33,11 +34,12 @@ logger = logging.getLogger(__name__)
 UNIT_LABELS = {"hz": "Hz", "midi": "MIDI"}  # how a unit is written; others as stored
 
 # Size of every chart, in SVG units (the chart scales to the width it gets).
-# The margins leave room for the x labels and unit (bottom), and for the first
-# and last x label to stick out past the bars (left, right).
+# The margins leave room for the x labels and unit (bottom), for the y numbers
+# (left), and for the last x label to stick out past the bars (right).
 WIDTH, HEIGHT = 120, 98
-LEFT, RIGHT, TOP, BOTTOM = 12, 12, 6, 32
+LEFT, RIGHT, TOP, BOTTOM = 21, 12, 6, 32
 MAX_TICKS = 3  # edge values written under the x axis
+MAX_Y_TICKS = 4  # round numbers written left of the bars, each with a grid line
 MIN_SLOTS = (
     8  # a chart with fewer bars keeps the bar width of this many, with wider gaps
 )
@@ -350,12 +352,29 @@ def chart_svg(data, counted):
     )
 
 
+def y_ticks(highest):
+    """The y ticks under the tallest bar: multiples of the smallest 1, 2 or 5 × 10ⁿ step giving at most MAX_Y_TICKS, without 0."""
+    steps = (m * 10**e for e in itertools.count() for m in (1, 2, 5))
+    step = next(s for s in steps if highest // s <= MAX_Y_TICKS)
+    return [step * i for i in range(1, highest // step + 1)]
+
+
+def short_number(n):
+    """A y tick as written: 500, 1.5k, 20k, 1.5M."""
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:g}M"
+    if n >= 1_000:
+        return f"{n / 1_000:g}k"
+    return str(n)
+
+
 def bars_svg(counts, tips):
-    """The part every chart shares: one bar per count and the x axis; no y labels, hovering shows the counts.
+    """The part every chart shares: one bar per count, the x axis, and the y ticks (y_ticks), each a grid line behind the bars and a number; hovering shows the exact counts.
 
     Each bar has an equal slot of the x axis and sits in its middle. With fewer
     than MIN_SLOTS bars, a bar keeps the width it has in a chart of MIN_SLOTS
-    bars, so a few bars are spread out instead of filling the chart.
+    bars, so a few bars are spread out instead of filling the chart. The
+    tallest bar reaches the top.
     Returns the SVG pieces (without the closing tag), the slot width and the y of the axis.
     """
     plot_width, plot_height = WIDTH - LEFT - RIGHT, HEIGHT - TOP - BOTTOM
@@ -365,6 +384,13 @@ def bars_svg(counts, tips):
     base = TOP + plot_height
 
     out = [f'<svg class="plot-svg" viewBox="0 0 {WIDTH} {HEIGHT}" role="img">']
+    for tick in y_ticks(max(counts)):
+        y = base - plot_height * tick / highest
+        out.append(
+            f'<line class="plot-gridline" x1="{LEFT}" y1="{y:.1f}" x2="{WIDTH - RIGHT}" y2="{y:.1f}"/>'
+            f'<text class="plot-label plot-y-label" x="{LEFT - 2}" y="{y:.1f}" text-anchor="end"'
+            f' dominant-baseline="middle">{short_number(tick)}</text>'
+        )
     for i, (count, tip) in enumerate(zip(counts, tips)):
         x = LEFT + i * slot
         bar_x = x + (slot - bar_width) / 2

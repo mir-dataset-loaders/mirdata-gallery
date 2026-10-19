@@ -503,6 +503,12 @@ header img[alt="Logo"] {
     stroke-width: 1;
 }
 
+/* A y tick's line across the chart, behind the bars (gallery.py, bars_svg) */
+.plot-gridline {
+    stroke: #cbd5e1;
+    stroke-width: 0.4;
+}
+
 .plot-label,
 .plot-unit {
     font-size: 8.5px;
@@ -511,6 +517,11 @@ header img[alt="Logo"] {
 
 /* Counts labels too long to sit flat under their bars (gallery.py, counts_svg) */
 .plot-label-tilted {
+    font-size: 7px;
+}
+
+/* The y tick numbers, left of the bars */
+.plot-y-label {
     font-size: 7px;
 }
 
