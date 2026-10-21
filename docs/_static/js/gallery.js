@@ -305,7 +305,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // Off, the click shows that dataset; on, it adds the dataset to the
     // combination or removes it, and the panel shows the combination
     // (combine.js works out its text). Cmd-click or Ctrl-click switches it on
-    // too. A combination of one shows that dataset's own panel. Filters only
+    // too. A combination of one shows that dataset's own panel, and removing
+    // datasets down to one switches Combine off, on that one. Filters only
     // change the list: a dataset they hide stays in the combination.
     // colours: each selected dataset's colour, given when it joins (combine.js, nextColour)
     // focus: the dataset whose part of each plot is shown (its chip's name clicked), or null: stacked
@@ -366,20 +367,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function toggleCombined(item) {
         combine.lastClicked = item;
-        if (combine.selected.includes(item)) leave(item);
-        else join(item);
+        if (combine.selected.includes(item)) {
+            removeCombined(item);
+            return;
+        }
+        join(item);
         showCombination();
+    }
+
+    // One left after a dataset leaves: Combine off, showing that one
+    function removeCombined(item) {
+        leave(item);
+        if (combine.selected.length === 1) {
+            combine.lastClicked = combine.selected[0];
+            combineBtn.click();
+        } else {
+            showCombination();
+        }
     }
 
     function showCombination() {
         const selected = combine.selected;
-        if (selected.length === 1) {
-            combinedPanel.style.display = "none";
-            selectCard(selected[0]);
-        } else {
+        if (selected.length > 1) {
             selectCard(null); // hides the dataset on show
             fillCombinedPanel(selected);
             combinedPanel.style.display = "flex";
+        } else {
+            // one (Combine just switched on): its own panel; none: nothing
+            combinedPanel.style.display = "none";
+            selectCard(selected[0] || null);
         }
         cardData.forEach((d) => d.btn.classList.toggle("active", selected.includes(d)));
     }
@@ -391,11 +407,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // theirs (combine.js), stacked by dataset or showing the focused one's part
     function fillCombinedPanel(selected) {
         const escape = mirdataCharts.escapeHtml;
-        if (selected.length === 0) {
-            combinedPanel.innerHTML =
-                '<h2>Combine datasets</h2><p class="stats-note">Click datasets to combine them.</p>';
-            return;
-        }
         const datasets = selected.map((d) => ({ name: d.title, slot: combine.colours.get(d), plots: d.plots }));
         const slots = datasets.map((d) => d.slot);
         const chips = selected
@@ -448,9 +459,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
         const remove = e.target.closest(".combine-remove");
-        if (!remove) return;
-        leave(combine.selected[Number(remove.dataset.index)]);
-        showCombination();
+        if (remove) removeCombined(combine.selected[Number(remove.dataset.index)]);
     });
 
     // 5. Apply filtering logic
