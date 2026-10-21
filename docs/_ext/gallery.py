@@ -214,9 +214,10 @@ def statistics(stats):
     """The Statistics box: status notes, then every plot."""
     out = ['<div class="panel-box">', '<div class="box-title">Statistics</div>']
     out.extend(note(text) for text in stats_notes(stats))
-    plots = ordered_plots(stats) if stats and "error" not in stats else []
+    plots = ordered_plots(stats, with_beat_tempo=True) if stats and "error" not in stats else []
     if plots:
-        out.append(plot_grid(plots))
+        shown = ordered_plots(stats)  # the rest only Combine mode shows
+        out.append(plot_grid([p if p in shown else {**p, "combined_only": True} for p in plots]))
     out.append("</div>")
     return "\n".join(out)
 
@@ -260,13 +261,14 @@ def status_notes(stats):
     return notes
 
 
-def ordered_plots(stats):
+def ordered_plots(stats, with_beat_tempo=False):
     """Every histogram and counts field to plot, in display order.
 
     The audio duration comes first, then the plots grouped by annotation type,
     A–Z. Inside a type, the entry (track property) with the most annotations
     comes first, then the others; each entry's plots in the schema's field
-    order. An annotated tempo (TempoData) replaces the tempo derived from beats.
+    order. An annotated tempo (TempoData) replaces the tempo derived from beats,
+    unless with_beat_tempo (Combine mode hides neither).
     """
     plots = []
     audio = stats.get("audio") or {}
@@ -286,7 +288,7 @@ def ordered_plots(stats):
         e["type"] == "TempoData" and is_histogram(e.get("tempo"))
         for e in entries.values()
     )
-    skip = {"tempo_from_beats"} if annotated_tempo else set()
+    skip = {"tempo_from_beats"} if annotated_tempo and not with_beat_tempo else set()
     for prop, entry in entries.items():
         entry_plots = annotation_plots(prop, entry, skip)
         if entry_plots:
@@ -325,6 +327,8 @@ def annotation_plots(prop, entry, skip=()):
             f"{prop} · {entry['type']}",
             entry.get("n_tracks"),
             entry.get("n_annotations"),
+            prop,
+            entry["type"],
         )
         for key in fields
     ]
@@ -348,8 +352,12 @@ def is_counts(value):
     )
 
 
-def plot(field, data, source, n_tracks=None, n_annotations=None):
-    """What one plot needs: data is a histogram or counts. counted names what the bars count, for the hover text."""
+def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_type=None):
+    """What one plot needs: data is a histogram or counts. counted names what the bars count, for the hover text.
+
+    prop, type and field (None for the audio's) are what Combine mode matches
+    the plots of several datasets by.
+    """
     total = sum(data["counts"]) if is_histogram(data) else sum(data.values())
     counted = (
         "tracks"
@@ -366,14 +374,18 @@ def plot(field, data, source, n_tracks=None, n_annotations=None):
         "source": source,
         "data": data,
         "counted": counted,
+        "prop": prop,
+        "type": ann_type,
+        "field": field,
     }
 
 
 def plot_grid(plots):
     """The grid of plots, empty: charts.js draws them in the page from its data-plots.
 
-    data-plots is the plots as JSON. A counts field goes as [label, count]
-    pairs, so number labels (meter, polyphony) stay numbers.
+    data-plots is the plots as JSON; one marked combined_only is not drawn
+    here, only in Combine mode. A counts field goes as [label, count] pairs, so
+    number labels (meter, polyphony) stay numbers.
     """
     data = [
         {

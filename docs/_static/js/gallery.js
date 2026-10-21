@@ -5,11 +5,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const cards = Array.from(gallery.querySelectorAll(":scope > section"));
     if (cards.length === 0) return;
 
-    // Draw each panel's plots (charts.js) from the data gallery.py put on its plot grid
-    gallery.querySelectorAll(".plot-grid[data-plots]").forEach((grid) => {
-        grid.innerHTML = mirdataCharts.plotGridHtml(JSON.parse(grid.dataset.plots));
-    });
-
     // Helper to group licenses into clean categories (like your brainstorm mockup)
     function normalizeLicense(raw) {
         if (!raw) return "Not specified";
@@ -73,8 +68,13 @@ document.addEventListener("DOMContentLoaded", function () {
         const tracks = parseInt(tracksText.replace(/,/g, ""), 10); // NaN for "—"
         // what Combine mode adds up (gallery.py, combine_facts)
         const facts = JSON.parse(card.querySelector(".panel-facts").dataset.facts);
+        // the plots gallery.py put on the plot grid: drawn here (charts.js), and
+        // kept for Combine mode, which also shows the combined_only ones
+        const grid = card.querySelector(".plot-grid[data-plots]");
+        const plots = grid ? JSON.parse(grid.dataset.plots) : [];
+        if (grid) grid.innerHTML = mirdataCharts.plotGridHtml(plots.filter((p) => !p.combined_only));
 
-        return { card, title, annotations, license, tracksText, tracks: isNaN(tracks) ? null : tracks, facts };
+        return { card, title, annotations, license, tracksText, tracks: isNaN(tracks) ? null : tracks, facts, plots };
     });
 
 
@@ -282,7 +282,12 @@ document.addEventListener("DOMContentLoaded", function () {
         tracks.className = "list-cell";
         tracks.textContent = item.tracksText;
         btn.append(name, tracks);
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", (e) => {
+            // Cmd-click (Mac) or Ctrl-click: Combine mode's click, switching it on first
+            if ((e.metaKey || e.ctrlKey) && !combine.on) {
+                combineBtn.click();
+                if (combine.selected.includes(item)) return; // the dataset on show: already in
+            }
             if (combine.on) toggleCombined(item);
             else selectCard(item);
         });
@@ -299,9 +304,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // Combine mode: the Combine button switches what a click on a dataset does.
     // Off, the click shows that dataset; on, it adds the dataset to the
     // combination or removes it, and the panel shows the combination
-    // (combine.js works out its text). A combination of one shows that
-    // dataset's own panel. Filters only change the list: a dataset they hide
-    // stays in the combination.
+    // (combine.js works out its text). Cmd-click or Ctrl-click switches it on
+    // too. A combination of one shows that dataset's own panel. Filters only
+    // change the list: a dataset they hide stays in the combination.
     const combine = { on: false, selected: [], lastClicked: null };
     const combineBar = document.createElement("div");
     combineBar.className = "combine-bar";
@@ -310,7 +315,8 @@ document.addEventListener("DOMContentLoaded", function () {
     combineBtn.textContent = "Combine";
     combineBtn.setAttribute("aria-pressed", "false");
     const combineHint = document.createElement("span");
-    combineHint.textContent = "Show several datasets together";
+    const OFF_HINT = "Show several together (or ⌘/Ctrl-click)";
+    combineHint.textContent = OFF_HINT;
     combineBar.append(combineBtn, combineHint);
     listColumn.insertBefore(combineBar, table);
 
@@ -323,7 +329,7 @@ document.addEventListener("DOMContentLoaded", function () {
         combine.on = !combine.on;
         combineBtn.setAttribute("aria-pressed", String(combine.on));
         combineBtn.classList.toggle("active", combine.on);
-        combineHint.textContent = combine.on ? "Click datasets to add or remove them" : "Show several datasets together";
+        combineHint.textContent = combine.on ? "Click datasets to add or remove them" : OFF_HINT;
         if (combine.on) {
             // the dataset on show is the first one of the combination
             const shown = activeItem && activeItem.card.style.display !== "none";
@@ -363,7 +369,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // The combined panel: its title and datasets (a chip each, a click removes
-    // it), At a glance, and each dataset's notes about its statistics
+    // it; its dot is the dataset's colour in the plots, so the chips are the
+    // legend), At a glance, and Statistics: each dataset's notes, and the plots
+    // pooled from theirs (combine.js), stacked by dataset
     function fillCombinedPanel(selected) {
         const escape = mirdataCharts.escapeHtml;
         if (selected.length === 0) {
@@ -371,10 +379,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 '<h2>Combine datasets</h2><p class="stats-note">Click datasets to combine them.</p>';
             return;
         }
+        const datasets = selected.map((d) => ({ name: d.title, tracks: d.facts.tracks, plots: d.plots }));
+        const slots = mirdataCombine.colourSlots(datasets);
         const chips = selected
             .map(
                 (d, i) =>
                     `<button class="combine-chip" data-index="${i}" title="Remove ${escape(d.title)}">` +
+                    `<span class="combine-dot combine-${slots[i] == null ? "other" : `c${slots[i]}`}"></span>` +
                     `${escape(d.title)} <span aria-hidden="true">×</span></button>`
             )
             .join("");
@@ -389,17 +400,19 @@ document.addEventListener("DOMContentLoaded", function () {
         const types = [...new Set(selected.flatMap((d) => d.annotations))].sort();
         const tags = types.map((t) => `<code data-ann="${escape(t)}">${escape(t)}</code>`).join("");
         const notes = mirdataCombine.namedNotes(selected.map((d) => ({ name: d.title, notes: d.facts.notes })));
+        const plots = mirdataCombine.combinedPlots(datasets);
+        if (!plots.length) notes.push("Nothing to plot yet.");
         combinedPanel.innerHTML =
             `<h2>${selected.length} datasets combined</h2>` +
             `<div class="combine-chips">${chips}</div>` +
             '<div class="panel-box"><div class="box-title">At a glance</div>' +
             `<div class="glance-grid">${rows}</div>` +
             `<div class="box-title">Annotation types</div><div class="glance-tags">${tags || "—"}</div></div>` +
-            (notes.length
-                ? '<div class="panel-box"><div class="box-title">Statistics</div>' +
-                  notes.map((text) => `<p class="stats-note">${escape(text)}</p>`).join("") +
-                  "</div>"
-                : "");
+            '<div class="panel-box"><div class="box-title">Statistics</div>' +
+            notes.map((text) => `<p class="stats-note">${escape(text)}</p>`).join("") +
+            (plots.length ? `<div class="plot-grid">${mirdataCharts.plotGridHtml(plots)}</div>` : "") +
+            "</div>";
+        moveTips(combinedPanel);
     }
 
     combinedPanel.addEventListener("click", (e) => {
@@ -449,13 +462,17 @@ document.addEventListener("DOMContentLoaded", function () {
     const tip = document.createElement("div");
     tip.className = "plot-tip";
     document.body.appendChild(tip);
-    infoColumn.querySelectorAll(".plot-svg g").forEach((bar) => {
-        const title = bar.querySelector("title");
-        if (!title) return;
-        bar.dataset.tip = title.textContent;
-        bar.setAttribute("aria-label", title.textContent);
-        title.remove();
-    });
+    // (moveTips runs again on every combined panel drawn)
+    function moveTips(root) {
+        root.querySelectorAll(".plot-svg g").forEach((bar) => {
+            const title = bar.querySelector("title");
+            if (!title) return;
+            bar.dataset.tip = title.textContent;
+            bar.setAttribute("aria-label", title.textContent);
+            title.remove();
+        });
+    }
+    moveTips(infoColumn);
     function showTip(e) {
         const bar = e.target.closest(".plot-svg g[data-tip]");
         if (!bar) {

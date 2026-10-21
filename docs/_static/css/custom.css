@@ -501,6 +501,14 @@ header img[alt="Logo"] {
     border-color: #a054d8;
 }
 
+.combine-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
 /* The bordered boxes: "At a glance" and "Statistics" */
 .panel-box {
     border: 1px solid #e2e8f0;
@@ -628,6 +636,27 @@ header img[alt="Logo"] {
 .plot-axis {
     stroke: #cbd5e1;
     stroke-width: 1;
+}
+
+/* Combine mode: a dataset's colour, for its pieces of the stacked bars and its
+   chip's dot (charts.js, combine.js). The five with the most tracks, in this
+   order, then grey for the rest; the order keeps neighbours in a stack apart
+   for colour-blind readers too. */
+.combine-c0 { fill: #2a78d6; background-color: #2a78d6; }
+.combine-c1 { fill: #eb6834; background-color: #eb6834; }
+.combine-c2 { fill: #1baf7a; background-color: #1baf7a; }
+.combine-c3 { fill: #eda100; background-color: #eda100; }
+.combine-c4 { fill: #e87ba4; background-color: #e87ba4; }
+.combine-other { fill: #78716c; background-color: #78716c; }
+
+/* A thin white gap between the pieces of a stacked bar */
+.plot-piece {
+    stroke: #ffffff;
+    stroke-width: 0.6;
+}
+
+.plot-svg g:hover .plot-piece {
+    filter: brightness(0.85);
 }
 
 /* A y tick's line across the chart, behind the bars (charts.js, barsSvg) */

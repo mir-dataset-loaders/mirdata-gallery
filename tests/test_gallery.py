@@ -79,8 +79,20 @@ def test_the_page_gets_counts_as_pairs_with_number_labels_kept():
     box = gallery.statistics(stats(beats=entry(tempo_from_beats=HIST, meter={4: 3}), chords=chords))
     tempo, meter, labels = page_plots(box)
     assert tempo["data"] == HIST
-    assert meter == {"title": "Meter", "source": "beats · BeatData", "data": [[4, 3]], "counted": "tracks"}
+    assert meter == {
+        "title": "Meter", "source": "beats · BeatData", "data": [[4, 3]], "counted": "tracks",
+        "prop": "beats", "type": "BeatData", "field": "meter",  # what Combine mode matches plots by
+    }
     assert labels["data"] == [["C:maj", 2], ["7", 1]]  # "7" is a text label: it stays a string
+
+
+def test_the_page_gets_the_hidden_tempo_from_beats_for_combine_mode():
+    s = stats(beats=entry(tempo_from_beats=HIST), tempo=tempo_entry(HIST))
+    s["audio"] = {"n_tracks": 3, "duration_histogram": HIST}
+    duration, beat_tempo, tempo = page_plots(gallery.statistics(s))
+    assert (duration["prop"], duration["type"], duration["field"]) == (None, None, "duration_histogram")
+    assert beat_tempo["title"] == "Tempo from beats" and beat_tempo["combined_only"]  # the single panel hides it
+    assert "combined_only" not in tempo and "combined_only" not in duration
 
 
 def chords_entry(n_annotations):
