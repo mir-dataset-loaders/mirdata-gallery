@@ -164,6 +164,33 @@ def test_missing_or_null_tasks_show_a_dash():
     assert tasks_value(gallery.at_a_glance({**CARD, "tasks": None})) == "—"
 
 
+def card_facts(card):
+    """What a card hands to Combine mode (its data-facts)."""
+    return json.loads(html.unescape(re.search(r'data-facts="([^"]*)"', gallery.combine_facts(card)).group(1)))
+
+
+def test_combine_mode_gets_the_numbers_behind_at_a_glance():
+    audio = {"status": "ok", "n_tracks": 3, "total_seconds": 90.5, "sample_rate": 44100}
+    card = {**CARD, "tasks": ["beat tracking"], "stats": {"audio": audio}}
+    assert card_facts(card) == {
+        "tracks": 3, "seconds": 90.5, "sample_rate": 44100, "tasks": ["beat tracking"], "notes": ["Nothing to plot yet."],
+    }
+
+
+def test_unknown_facts_are_null_and_a_card_without_stats_says_so():
+    assert card_facts(CARD) == {
+        "tracks": None, "seconds": None, "sample_rate": None, "tasks": [], "notes": ["No statistics yet."],
+    }
+
+
+def test_combine_mode_gets_the_notes_the_statistics_box_shows():
+    s = stats(beats=entry(tempo_from_beats=HIST))
+    s["annotations"].update(status="needs_local", n_tracks=10, n_tracks_loaded=8)
+    box_notes = re.findall(r'<p class="stats-note">([^<]*)</p>', gallery.statistics(s))
+    assert box_notes == ["Computed from 8 of 10 tracks (some files need a local run)."]
+    assert card_facts({**CARD, "stats": s})["notes"] == box_notes
+
+
 def test_the_site_has_a_front_page_and_a_gallery_page(tmp_path):
     """The site builds without warnings; the front page links to the gallery, and only the
     gallery page has the mirdata-gallery section that gallery.js turns into the gallery."""

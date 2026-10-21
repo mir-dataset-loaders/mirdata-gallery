@@ -362,6 +362,38 @@ header img[alt="Logo"] {
     color: #334155;
 }
 
+/* Combine mode (gallery.js): the button that switches it on, and a hint */
+.combine-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 4px;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.combine-btn {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: #ffffff;
+    color: #1e293b;
+    cursor: pointer;
+}
+
+.combine-btn:hover {
+    border-color: #a054d8;
+    color: #a054d8;
+}
+
+.combine-btn.active {
+    background: #a054d8;
+    border-color: #a054d8;
+    color: #ffffff;
+}
+
 /* Column 3: the panel, the rest of the width. It sticks below the theme's
    56px header. */
 .gallery-cards-information {
@@ -445,6 +477,28 @@ header img[alt="Logo"] {
 
 .gallery-cards-information .stats-note {
     margin: 0 0 8px;
+}
+
+/* The combined panel's datasets, under its title; a click removes one */
+.combine-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 14px;
+}
+
+.combine-chip {
+    background: #faf5ff;
+    border: 1px solid #e9d5ff;
+    border-radius: 9999px;
+    padding: 3px 10px;
+    font-size: 0.85rem;
+    color: #7928ca;
+    cursor: pointer;
+}
+
+.combine-chip:hover {
+    border-color: #a054d8;
 }
 
 /* The bordered boxes: "At a glance" and "Statistics" */

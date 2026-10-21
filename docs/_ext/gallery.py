@@ -49,6 +49,7 @@ def render_card(data, fallback_name):
             overview(data),
             at_a_glance(data),
             statistics(data.get("stats")),
+            combine_facts(data),
         ]
     )
     card = f"""{name}
@@ -101,7 +102,7 @@ def at_a_glance(data):
     """The box of quick facts, with the annotation tags at the bottom. "—" marks a missing value."""
     stats = data.get("stats") or {}
     audio = stats.get("audio") or {}
-    tracks = audio.get("n_tracks", (stats.get("annotations") or {}).get("n_tracks"))
+    tracks = track_count(stats)
     sample_rate = audio.get("sample_rate")
     tags = data.get("annotations") or []
     license_text = " ".join((data.get("license") or "").split())
@@ -134,6 +135,30 @@ def at_a_glance(data):
 {tag_html or "—"}
 </div>
 </div>"""
+
+
+def track_count(stats):
+    """The number of tracks: the audio's count, else the annotations' (None when unknown)."""
+    audio = stats.get("audio") or {}
+    return audio.get("n_tracks", (stats.get("annotations") or {}).get("n_tracks"))
+
+
+def combine_facts(data):
+    """What Combine mode (gallery.js, combine.js) adds up from this card, as JSON on a hidden element.
+
+    The numbers behind the At a glance rows (None where the row shows "—"),
+    the tasks, and the notes the Statistics box shows.
+    """
+    stats = data.get("stats") or {}
+    audio = stats.get("audio") or {}
+    facts = {
+        "tracks": track_count(stats),
+        "seconds": audio.get("total_seconds") or None,
+        "sample_rate": audio.get("sample_rate") or None,
+        "tasks": data.get("tasks") or [],
+        "notes": stats_notes(data.get("stats")),
+    }
+    return f'<div class="panel-facts" hidden data-facts="{html.escape(json.dumps(facts))}"></div>'
 
 
 def glance_row(label, value, value_attributes=""):
@@ -188,19 +213,24 @@ def try_it(name, stats):
 def statistics(stats):
     """The Statistics box: status notes, then every plot."""
     out = ['<div class="panel-box">', '<div class="box-title">Statistics</div>']
-    if not stats:
-        out.append(note("No statistics yet."))
-    elif "error" in stats:
-        out.append(note("Statistics unavailable."))
-    else:
-        out.extend(note(text) for text in status_notes(stats))
-        plots = ordered_plots(stats)
-        if not plots:
-            out.append(note("Nothing to plot yet."))
-        else:
-            out.append(plot_grid(plots))
+    out.extend(note(text) for text in stats_notes(stats))
+    plots = ordered_plots(stats) if stats and "error" not in stats else []
+    if plots:
+        out.append(plot_grid(plots))
     out.append("</div>")
     return "\n".join(out)
+
+
+def stats_notes(stats):
+    """The notes above the plots: no statistics, or not all of them, or nothing to plot."""
+    if not stats:
+        return ["No statistics yet."]
+    if "error" in stats:
+        return ["Statistics unavailable."]
+    notes = status_notes(stats)
+    if not ordered_plots(stats):
+        notes.append("Nothing to plot yet.")
+    return notes
 
 
 def note(text):

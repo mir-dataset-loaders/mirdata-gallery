@@ -71,8 +71,10 @@ document.addEventListener("DOMContentLoaded", function () {
         );
         const tracksText = tracksRow ? tracksRow.querySelector(".glance-value").textContent.trim() : "—";
         const tracks = parseInt(tracksText.replace(/,/g, ""), 10); // NaN for "—"
+        // what Combine mode adds up (gallery.py, combine_facts)
+        const facts = JSON.parse(card.querySelector(".panel-facts").dataset.facts);
 
-        return { card, title, annotations, license, tracksText, tracks: isNaN(tracks) ? null : tracks };
+        return { card, title, annotations, license, tracksText, tracks: isNaN(tracks) ? null : tracks, facts };
     });
 
 
@@ -281,7 +283,8 @@ document.addEventListener("DOMContentLoaded", function () {
         tracks.textContent = item.tracksText;
         btn.append(name, tracks);
         btn.addEventListener("click", () => {
-            selectCard(item);
+            if (combine.on) toggleCombined(item);
+            else selectCard(item);
         });
         item.btn = btn;
         table.appendChild(btn);
@@ -292,6 +295,120 @@ document.addEventListener("DOMContentLoaded", function () {
         cardData.forEach((item) => table.appendChild(item.btn));
     }
     sortRows();
+
+    // Combine mode: the Combine button switches what a click on a dataset does.
+    // Off, the click shows that dataset; on, it adds the dataset to the
+    // combination or removes it, and the panel shows the combination
+    // (combine.js works out its text). A combination of one shows that
+    // dataset's own panel. Filters only change the list: a dataset they hide
+    // stays in the combination.
+    const combine = { on: false, selected: [], lastClicked: null };
+    const combineBar = document.createElement("div");
+    combineBar.className = "combine-bar";
+    const combineBtn = document.createElement("button");
+    combineBtn.className = "combine-btn";
+    combineBtn.textContent = "Combine";
+    combineBtn.setAttribute("aria-pressed", "false");
+    const combineHint = document.createElement("span");
+    combineHint.textContent = "Show several datasets together";
+    combineBar.append(combineBtn, combineHint);
+    listColumn.insertBefore(combineBar, table);
+
+    const combinedPanel = document.createElement("section");
+    combinedPanel.className = "combined-panel";
+    combinedPanel.style.display = "none";
+    infoColumn.appendChild(combinedPanel);
+
+    combineBtn.addEventListener("click", () => {
+        combine.on = !combine.on;
+        combineBtn.setAttribute("aria-pressed", String(combine.on));
+        combineBtn.classList.toggle("active", combine.on);
+        combineHint.textContent = combine.on ? "Click datasets to add or remove them" : "Show several datasets together";
+        if (combine.on) {
+            // the dataset on show is the first one of the combination
+            const shown = activeItem && activeItem.card.style.display !== "none";
+            combine.selected = shown ? [activeItem] : [];
+            combine.lastClicked = null;
+            showCombination();
+        } else {
+            // back to one dataset: the last one clicked
+            const last = combine.lastClicked || activeItem;
+            combine.selected = [];
+            combinedPanel.style.display = "none";
+            cardData.forEach((d) => d.btn.classList.remove("active"));
+            selectCard(last);
+            applyFilters(); // the first visible one instead, if the filters hide it
+        }
+    });
+
+    function toggleCombined(item) {
+        combine.lastClicked = item;
+        const i = combine.selected.indexOf(item);
+        if (i >= 0) combine.selected.splice(i, 1);
+        else combine.selected.push(item);
+        showCombination();
+    }
+
+    function showCombination() {
+        const selected = combine.selected;
+        if (selected.length === 1) {
+            combinedPanel.style.display = "none";
+            selectCard(selected[0]);
+        } else {
+            selectCard(null); // hides the dataset on show
+            fillCombinedPanel(selected);
+            combinedPanel.style.display = "flex";
+        }
+        cardData.forEach((d) => d.btn.classList.toggle("active", selected.includes(d)));
+    }
+
+    // The combined panel: its title and datasets (a chip each, a click removes
+    // it), At a glance, and each dataset's notes about its statistics
+    function fillCombinedPanel(selected) {
+        const escape = mirdataCharts.escapeHtml;
+        if (selected.length === 0) {
+            combinedPanel.innerHTML =
+                '<h2>Combine datasets</h2><p class="stats-note">Click datasets to combine them.</p>';
+            return;
+        }
+        const chips = selected
+            .map(
+                (d, i) =>
+                    `<button class="combine-chip" data-index="${i}" title="Remove ${escape(d.title)}">` +
+                    `${escape(d.title)} <span aria-hidden="true">×</span></button>`
+            )
+            .join("");
+        const rows = mirdataCombine
+            .glanceRows(selected.map((d) => d.facts))
+            .map(
+                ([label, value]) =>
+                    `<div class="glance-row"><span class="glance-label">${label}</span>` +
+                    `<span class="glance-value">${escape(value ?? "—")}</span></div>`
+            )
+            .join("");
+        const types = [...new Set(selected.flatMap((d) => d.annotations))].sort();
+        const tags = types.map((t) => `<code data-ann="${escape(t)}">${escape(t)}</code>`).join("");
+        const notes = mirdataCombine.namedNotes(selected.map((d) => ({ name: d.title, notes: d.facts.notes })));
+        combinedPanel.innerHTML =
+            `<h2>${selected.length} datasets combined</h2>` +
+            `<div class="combine-chips">${chips}</div>` +
+            '<div class="panel-box"><div class="box-title">At a glance</div>' +
+            `<div class="glance-grid">${rows}</div>` +
+            `<div class="box-title">Annotation types</div><div class="glance-tags">${tags || "—"}</div></div>` +
+            (notes.length
+                ? '<div class="panel-box"><div class="box-title">Statistics</div>' +
+                  notes.map((text) => `<p class="stats-note">${escape(text)}</p>`).join("") +
+                  "</div>"
+                : "");
+    }
+
+    combinedPanel.addEventListener("click", (e) => {
+        const chip = e.target.closest(".combine-chip");
+        if (!chip) return;
+        combine.selected.splice(Number(chip.dataset.index), 1);
+        showCombination();
+    });
+
     // 5. Apply filtering logic
     function applyFilters() {
         let visibleCount = 0;
@@ -316,6 +433,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         counter.textContent = `Showing ${visibleCount} of ${cardData.length}`;
         listCount.textContent = visibleCount === 1 ? "1 dataset" : `${visibleCount} datasets`;
+        if (combine.on) return; // Combine mode: the filters only change the list
         // Keep current selection if visible, otherwise select first visible dataset
         if (currentActiveStillVisible && activeItem) {
             selectCard(activeItem);
