@@ -2,7 +2,8 @@
 // gallery.py puts each panel's plots on its plot grid (data-plots), gallery.js
 // draws them with plotGridHtml. A plot is {title, source, counted, data}: data
 // is a histogram {unit, edges, counts} or a counts field as [label, count] pairs
-// (and a combined one from combine.js has parts, and may have atLeast).
+// (and a combined one from combine.js has parts, and may have atLeast; it is
+// stacked by dataset, or shows one dataset in focus against the whole).
 // Every function returns SVG or HTML text, so tests/charts.test.js runs in Node.
 (function () {
     const UNIT_LABELS = { hz: "Hz", midi: "MIDI" }; // how a unit is written; others as stored
@@ -63,8 +64,17 @@
     // The pieces of each bar of a combined plot, bottom to top: its datasets'
     // counts (parts, combine.js), the ones with a colour in colour order, then the
     // others together, grey. countsOf(data) gives one part's count per bar.
-    function stacks(parts, countsOf) {
+    // With a dataset in focus (its name), just its count, then the rest of the
+    // bar's total (totals), pale grey: all of it when the dataset is not in the plot.
+    function stacks(parts, countsOf, totals, focus = null) {
         const counts = parts.map((part) => countsOf(part.data));
+        if (focus != null) {
+            const i = parts.findIndex((part) => part.name === focus);
+            return totals.map((total, bar) => {
+                const own = i < 0 ? 0 : counts[i][bar];
+                return [{ slot: i < 0 ? null : parts[i].slot, name: focus, count: own }, { rest: true, count: total - own }];
+            });
+        }
         const coloured = parts.map((_, i) => i).filter((i) => parts[i].slot != null);
         coloured.sort((a, b) => parts[a].slot - parts[b].slot);
         const grey = parts.map((_, i) => i).filter((i) => parts[i].slot == null);
@@ -78,11 +88,16 @@
         });
     }
 
-    // A bar's hover text: tip, and with several datasets their counts, " (a 36, b 48)"
-    function withPieces(tip, pieces) {
-        if (!pieces || pieces.length < 2) return tip;
+    // A bar's hover text: what it is (its range or label) and its count,
+    // "60–80 bpm: 84 tracks", "at least" when the count may miss some (atLeast).
+    // With several datasets, their counts too, " (a 36, b 48)"; with one in
+    // focus, its count of the whole instead, "60–80 bpm: a 36 of 84 tracks".
+    function barTip(what, count, counted, pieces, atLeast = false) {
+        const total = `${atLeast ? "at least " : ""}${GROUPED.format(count)} ${counted}`;
+        if (pieces && pieces.at(-1).rest) return `${what}: ${pieces[0].name} ${GROUPED.format(pieces[0].count)} of ${total}`;
+        if (!pieces || pieces.length < 2) return `${what}: ${total}`;
         const named = pieces.filter((p) => p.count).map((p) => `${p.name} ${GROUPED.format(p.count)}`);
-        return named.length ? `${tip} (${named.join(", ")})` : tip;
+        return named.length ? `${what}: ${total} (${named.join(", ")})` : `${what}: ${total}`;
     }
 
     // The part every chart shares: one bar per count, the x axis, and the y ticks
@@ -94,7 +109,8 @@
     // bars, so a few bars are spread out instead of filling the chart. The
     // tallest bar reaches the top. With pieces (stacks), a bar is drawn as its
     // pieces, each in its dataset's colour (custom.css, combine-c0 to c4, grey
-    // combine-other).
+    // combine-other), the rest of a bar with a dataset in focus pale grey
+    // (combine-rest).
     // Returns the SVG pieces (without the closing tag), the slot width and the y of the axis.
     function barsSvg(counts, tips, pieces = null) {
         const plotWidth = WIDTH - LEFT - RIGHT, plotHeight = HEIGHT - TOP - BOTTOM;
@@ -124,7 +140,8 @@
                 bar = "";
                 for (const piece of pieces[i].filter((p) => p.count)) {
                     const height = (plotHeight * piece.count) / highest;
-                    bar += rect(`plot-piece combine-${piece.slot == null ? "other" : `c${piece.slot}`}`, bottom, height);
+                    const colour = piece.rest ? "rest" : piece.slot == null ? "other" : `c${piece.slot}`;
+                    bar += rect(`plot-piece combine-${colour}`, bottom, height);
                     bottom -= height;
                 }
             }
@@ -142,14 +159,14 @@
     //
     // The x axis shows up to MAX_TICKS edge values and the unit. Hovering a bar
     // shows its range and count. parts (combine.js, each on the same edges)
-    // stack the bars by dataset.
-    function histogramSvg(hist, counted, parts = null) {
+    // stack the bars by dataset, or show one dataset in focus (its name).
+    function histogramSvg(hist, counted, parts = null, focus = null) {
         const { edges, counts } = hist;
         const unit = UNIT_LABELS[hist.unit] ?? hist.unit;
         const plotWidth = WIDTH - LEFT - RIGHT;
-        const pieces = parts && stacks(parts, (data) => data.counts);
+        const pieces = parts && stacks(parts, (data) => data.counts, counts, focus);
         const tips = counts.map((count, i) =>
-            withPieces(`${number(edges[i])}–${number(edges[i + 1])} ${unit}: ${GROUPED.format(count)} ${counted}`, pieces && pieces[i])
+            barTip(`${number(edges[i])}–${number(edges[i + 1])} ${unit}`, count, counted, pieces && pieces[i])
         );
         const { out, slot, base } = barsSvg(counts, tips, pieces);
         const step = Math.ceil(counts.length / (MAX_TICKS - 1)); // every step-th edge, so labels are evenly spaced
@@ -190,14 +207,19 @@
     // bar, else tilted, smaller and cut to MAX_LABEL_CHARS. Hovering a bar shows
     // the whole label and its count, "at least" for the labels in atLeast (a
     // pooled count that may miss some of a dataset's "(other)", combine.js).
-    // parts (combine.js, each a dataset's own pairs) stack the bars by dataset.
-    function countsSvg(pairs, counted, atLeast = [], parts = null) {
+    // parts (combine.js, each a dataset's own pairs) stack the bars by dataset,
+    // or show one dataset in focus (its name); when the label may hide in that
+    // dataset's "(other)", its count is unknown and the hover says so.
+    function countsSvg(pairs, counted, atLeast = [], parts = null, focus = null) {
         const bars = countBars(pairs);
         const unsure = new Set(atLeast.map(String));
-        const pieces = parts && stacks(parts, (data) => countsUnder(bars, data));
-        const tips = bars.map(([label, count], i) =>
-            withPieces(`${label}: ${unsure.has(String(label)) ? "at least " : ""}${GROUPED.format(count)} ${counted}`, pieces && pieces[i])
-        );
+        const pieces = parts && stacks(parts, (data) => countsUnder(bars, data), bars.map(([, count]) => count), focus);
+        const focused = focus != null && parts && parts.find((part) => part.name === focus);
+        const tips = bars.map(([label, count], i) => {
+            const tip = barTip(String(label), count, counted, pieces && pieces[i], unsure.has(String(label)));
+            if (!focused || label === OTHER || !mayHide(focused.data, label)) return tip;
+            return `${label}: at least ${GROUPED.format(count)} ${counted}; ${focus}'s may be in its ${OTHER}`;
+        });
         const { out, slot, base } = barsSvg(
             bars.map(([, count]) => count),
             tips,
@@ -235,18 +257,25 @@
         return bars.map(([label]) => (label === OTHER ? total - named : own.get(String(label)) || 0));
     }
 
-    function chartSvg(data, counted, atLeast, parts) {
-        return Array.isArray(data) ? countsSvg(data, counted, atLeast, parts) : histogramSvg(data, counted, parts);
+    // Whether a dataset's pairs may hide label in their "(other)": they have one, but not the label
+    function mayHide(pairs, label) {
+        return pairs.some(([l, count]) => l === OTHER && count > 0) && !pairs.some(([l]) => String(l) === String(label));
     }
 
-    // The figures of a plot grid: each plot's title, its source and its chart.
-    function plotGridHtml(plots) {
+    function chartSvg(data, counted, atLeast, parts, focus) {
+        return Array.isArray(data) ? countsSvg(data, counted, atLeast, parts, focus) : histogramSvg(data, counted, parts, focus);
+    }
+
+    // The figures of a plot grid: each plot's title, its source and its chart,
+    // with focus (a dataset's name, Combine mode) showing that dataset's part
+    // of every combined plot.
+    function plotGridHtml(plots, focus = null) {
         return plots
             .map(
                 (p) =>
                     `<figure class="plot"><figcaption><span class="plot-title">${escapeHtml(p.title)}</span>` +
                     `<span class="plot-source">${escapeHtml(p.source)}</span></figcaption>` +
-                    `${chartSvg(p.data, p.counted, p.atLeast, p.parts)}</figure>`
+                    `${chartSvg(p.data, p.counted, p.atLeast, p.parts, focus)}</figure>`
             )
             .join("\n");
     }

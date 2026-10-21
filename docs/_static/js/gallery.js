@@ -308,7 +308,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // too. A combination of one shows that dataset's own panel. Filters only
     // change the list: a dataset they hide stays in the combination.
     // colours: each selected dataset's colour, given when it joins (combine.js, nextColour)
-    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null };
+    // focus: the dataset whose part of each plot is shown (its chip's name clicked), or null: stacked
+    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null };
     const combineBar = document.createElement("div");
     combineBar.className = "combine-bar";
     const combineBtn = document.createElement("button");
@@ -333,6 +334,7 @@ document.addEventListener("DOMContentLoaded", function () {
         combineHint.textContent = combine.on ? "Click datasets to add or remove them" : OFF_HINT;
         combine.selected = [];
         combine.colours.clear();
+        combine.focus = null;
         if (combine.on) {
             // the dataset on show is the first one of the combination, purple as in its panel
             if (activeItem && activeItem.card.style.display !== "none") join(activeItem);
@@ -349,7 +351,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // A dataset joins the combination with the first free colour, and leaves it
-    // with its colour, free for the next one to join; the others keep theirs
+    // with its colour, free for the next one to join; the others keep theirs.
+    // The focused one leaving takes the focus with it: the plots stack again.
     function join(item) {
         combine.colours.set(item, mirdataCombine.nextColour([...combine.colours.values()]));
         combine.selected.push(item);
@@ -358,6 +361,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function leave(item) {
         combine.colours.delete(item);
         combine.selected.splice(combine.selected.indexOf(item), 1);
+        if (combine.focus === item) combine.focus = null;
     }
 
     function toggleCombined(item) {
@@ -380,10 +384,11 @@ document.addEventListener("DOMContentLoaded", function () {
         cardData.forEach((d) => d.btn.classList.toggle("active", selected.includes(d)));
     }
 
-    // The combined panel: its title and datasets (a chip each, a click removes
-    // it; its dot is the dataset's colour in the plots, so the chips are the
-    // legend), At a glance, and Statistics: each dataset's notes, and the plots
-    // pooled from theirs (combine.js), stacked by dataset
+    // The combined panel: its title and datasets (a chip each: a click on its
+    // name focuses it, one more shows them all again, and × removes it; its dot
+    // is the dataset's colour in the plots, so the chips are the legend), At a
+    // glance, and Statistics: each dataset's notes, and the plots pooled from
+    // theirs (combine.js), stacked by dataset or showing the focused one's part
     function fillCombinedPanel(selected) {
         const escape = mirdataCharts.escapeHtml;
         if (selected.length === 0) {
@@ -394,12 +399,18 @@ document.addEventListener("DOMContentLoaded", function () {
         const datasets = selected.map((d) => ({ name: d.title, slot: combine.colours.get(d), plots: d.plots }));
         const slots = datasets.map((d) => d.slot);
         const chips = selected
-            .map(
-                (d, i) =>
-                    `<button class="combine-chip" data-index="${i}" title="Remove ${escape(d.title)}">` +
-                    `<span class="combine-dot combine-${slots[i] == null ? "other" : `c${slots[i]}`}"></span>` +
-                    `${escape(d.title)} <span aria-hidden="true">×</span></button>`
-            )
+            .map((d, i) => {
+                const colour = `combine-${slots[i] == null ? "other" : `c${slots[i]}`}`;
+                const focused = combine.focus === d;
+                return (
+                    `<span class="combine-chip${focused ? ` focused ${colour}` : ""}">` +
+                    `<button class="combine-name" data-index="${i}" aria-pressed="${focused}"` +
+                    ` title="${focused ? "Show all datasets" : `Focus ${escape(d.title)}`}">` +
+                    `<span class="combine-dot ${colour}"></span>${escape(d.title)}</button>` +
+                    `<button class="combine-remove" data-index="${i}" title="Remove ${escape(d.title)}"` +
+                    ` aria-label="Remove ${escape(d.title)}">×</button></span>`
+                );
+            })
             .join("");
         const rows = mirdataCombine
             .glanceRows(selected.map((d) => d.facts))
@@ -417,20 +428,28 @@ document.addEventListener("DOMContentLoaded", function () {
         combinedPanel.innerHTML =
             `<h2>${selected.length} datasets combined</h2>` +
             `<div class="combine-chips">${chips}</div>` +
+            '<p class="combine-chips-hint">Click a name to focus it in the plots</p>' +
             '<div class="panel-box"><div class="box-title">At a glance</div>' +
             `<div class="glance-grid">${rows}</div>` +
             `<div class="box-title">Annotation types</div><div class="glance-tags">${tags || "—"}</div></div>` +
             '<div class="panel-box"><div class="box-title">Statistics</div>' +
             notes.map((text) => `<p class="stats-note">${escape(text)}</p>`).join("") +
-            (plots.length ? `<div class="plot-grid">${mirdataCharts.plotGridHtml(plots)}</div>` : "") +
+            (plots.length ? `<div class="plot-grid">${mirdataCharts.plotGridHtml(plots, combine.focus && combine.focus.title)}</div>` : "") +
             "</div>";
         moveTips(combinedPanel);
     }
 
     combinedPanel.addEventListener("click", (e) => {
-        const chip = e.target.closest(".combine-chip");
-        if (!chip) return;
-        leave(combine.selected[Number(chip.dataset.index)]);
+        const name = e.target.closest(".combine-name");
+        if (name) {
+            const item = combine.selected[Number(name.dataset.index)];
+            combine.focus = combine.focus === item ? null : item;
+            fillCombinedPanel(combine.selected);
+            return;
+        }
+        const remove = e.target.closest(".combine-remove");
+        if (!remove) return;
+        leave(combine.selected[Number(remove.dataset.index)]);
         showCombination();
     });
 

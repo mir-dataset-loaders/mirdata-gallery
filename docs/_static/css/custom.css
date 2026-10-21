@@ -479,26 +479,76 @@ header img[alt="Logo"] {
     margin: 0 0 8px;
 }
 
-/* The combined panel's datasets, under its title; a click removes one */
+/* The combined panel's datasets, under its title, and a hint under them */
 .combine-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    margin: 0 0 6px;
+}
+
+#content .gallery-cards-information .combine-chips-hint {
     margin: 0 0 14px;
+    font-size: 0.8rem;
+    color: #64748b;
 }
 
 .combine-chip {
+    display: inline-flex;
+    align-items: center;
     background: #faf5ff;
     border: 1px solid #e9d5ff;
     border-radius: 9999px;
-    padding: 3px 10px;
     font-size: 0.85rem;
     color: #7928ca;
-    cursor: pointer;
 }
 
 .combine-chip:hover {
     border-color: #a054d8;
+}
+
+/* A chip's name focuses its dataset in the plots; its × removes it */
+.combine-chip button {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.combine-name {
+    padding: 3px 4px 3px 10px;
+}
+
+.combine-name:hover {
+    text-decoration: underline;
+}
+
+.combine-remove {
+    padding: 3px 10px 3px 4px;
+}
+
+.combine-remove:hover {
+    font-weight: 700;
+}
+
+/* The focused dataset's chip, filled in its colour (its combine-c0 to c4 or
+   combine-other class): white text on the dark colours, near black on the
+   light ones (teal, amber, coral), each at least 4.4:1 */
+.combine-chip.focused {
+    border-color: transparent;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.combine-chip.focused.combine-c1,
+.combine-chip.focused.combine-c2,
+.combine-chip.focused.combine-c4 {
+    color: #0f172a;
+}
+
+.combine-chip.focused .combine-dot {
+    background-color: currentColor;
 }
 
 .combine-dot {
@@ -649,6 +699,8 @@ header img[alt="Logo"] {
 .combine-c3 { fill: #2666a2; background-color: #2666a2; }
 .combine-c4 { fill: #c87062; background-color: #c87062; }
 .combine-other { fill: #57534e; background-color: #57534e; }
+/* With a dataset in focus, the rest of each bar (the other datasets) */
+.combine-rest { fill: #cbd5e1; }
 
 /* A thin white gap between the pieces of a stacked bar */
 .plot-piece {
