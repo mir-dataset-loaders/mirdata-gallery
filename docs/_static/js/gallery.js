@@ -307,7 +307,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // (combine.js works out its text). Cmd-click or Ctrl-click switches it on
     // too. A combination of one shows that dataset's own panel. Filters only
     // change the list: a dataset they hide stays in the combination.
-    const combine = { on: false, selected: [], lastClicked: null };
+    // colours: each selected dataset's colour, given when it joins (combine.js, nextColour)
+    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null };
     const combineBar = document.createElement("div");
     combineBar.className = "combine-bar";
     const combineBtn = document.createElement("button");
@@ -330,16 +331,16 @@ document.addEventListener("DOMContentLoaded", function () {
         combineBtn.setAttribute("aria-pressed", String(combine.on));
         combineBtn.classList.toggle("active", combine.on);
         combineHint.textContent = combine.on ? "Click datasets to add or remove them" : OFF_HINT;
+        combine.selected = [];
+        combine.colours.clear();
         if (combine.on) {
-            // the dataset on show is the first one of the combination
-            const shown = activeItem && activeItem.card.style.display !== "none";
-            combine.selected = shown ? [activeItem] : [];
+            // the dataset on show is the first one of the combination, purple as in its panel
+            if (activeItem && activeItem.card.style.display !== "none") join(activeItem);
             combine.lastClicked = null;
             showCombination();
         } else {
             // back to one dataset: the last one clicked
             const last = combine.lastClicked || activeItem;
-            combine.selected = [];
             combinedPanel.style.display = "none";
             cardData.forEach((d) => d.btn.classList.remove("active"));
             selectCard(last);
@@ -347,11 +348,22 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    // A dataset joins the combination with the first free colour, and leaves it
+    // with its colour, free for the next one to join; the others keep theirs
+    function join(item) {
+        combine.colours.set(item, mirdataCombine.nextColour([...combine.colours.values()]));
+        combine.selected.push(item);
+    }
+
+    function leave(item) {
+        combine.colours.delete(item);
+        combine.selected.splice(combine.selected.indexOf(item), 1);
+    }
+
     function toggleCombined(item) {
         combine.lastClicked = item;
-        const i = combine.selected.indexOf(item);
-        if (i >= 0) combine.selected.splice(i, 1);
-        else combine.selected.push(item);
+        if (combine.selected.includes(item)) leave(item);
+        else join(item);
         showCombination();
     }
 
@@ -379,8 +391,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 '<h2>Combine datasets</h2><p class="stats-note">Click datasets to combine them.</p>';
             return;
         }
-        const datasets = selected.map((d) => ({ name: d.title, tracks: d.facts.tracks, plots: d.plots }));
-        const slots = mirdataCombine.colourSlots(datasets);
+        const datasets = selected.map((d) => ({ name: d.title, slot: combine.colours.get(d), plots: d.plots }));
+        const slots = datasets.map((d) => d.slot);
         const chips = selected
             .map(
                 (d, i) =>
@@ -418,7 +430,7 @@ document.addEventListener("DOMContentLoaded", function () {
     combinedPanel.addEventListener("click", (e) => {
         const chip = e.target.closest(".combine-chip");
         if (!chip) return;
-        combine.selected.splice(Number(chip.dataset.index), 1);
+        leave(combine.selected[Number(chip.dataset.index)]);
         showCombination();
     });
 

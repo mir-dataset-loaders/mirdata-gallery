@@ -639,15 +639,16 @@ header img[alt="Logo"] {
 }
 
 /* Combine mode: a dataset's colour, for its pieces of the stacked bars and its
-   chip's dot (charts.js, combine.js). The five with the most tracks, in this
-   order, then grey for the rest; the order keeps neighbours in a stack apart
-   for colour-blind readers too. */
-.combine-c0 { fill: #2a78d6; background-color: #2a78d6; }
-.combine-c1 { fill: #eb6834; background-color: #eb6834; }
-.combine-c2 { fill: #1baf7a; background-color: #1baf7a; }
-.combine-c3 { fill: #eda100; background-color: #eda100; }
-.combine-c4 { fill: #e87ba4; background-color: #e87ba4; }
-.combine-other { fill: #78716c; background-color: #78716c; }
+   chip's dot (charts.js, combine.js). Given in this order as datasets join:
+   the first the single panel's purple, then four muted ones, then grey for
+   the rest. The order keeps neighbours in a stack apart for colour-blind
+   readers too. */
+.combine-c0 { fill: #a054d8; background-color: #a054d8; }
+.combine-c1 { fill: #34b59e; background-color: #34b59e; }
+.combine-c2 { fill: #d4a552; background-color: #d4a552; }
+.combine-c3 { fill: #2666a2; background-color: #2666a2; }
+.combine-c4 { fill: #c87062; background-color: #c87062; }
+.combine-other { fill: #57534e; background-color: #57534e; }
 
 /* A thin white gap between the pieces of a stacked bar */
 .plot-piece {

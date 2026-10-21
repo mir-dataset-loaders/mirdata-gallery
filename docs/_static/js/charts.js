@@ -82,7 +82,7 @@
     function withPieces(tip, pieces) {
         if (!pieces || pieces.length < 2) return tip;
         const named = pieces.filter((p) => p.count).map((p) => `${p.name} ${GROUPED.format(p.count)}`);
-        return `${tip} (${named.join(", ")})`;
+        return named.length ? `${tip} (${named.join(", ")})` : tip;
     }
 
     // The part every chart shares: one bar per count, the x axis, and the y ticks
