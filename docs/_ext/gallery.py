@@ -17,7 +17,6 @@ page on the next incremental build without needing ``-E``.
 """
 
 import html
-import itertools
 import json
 import os
 import textwrap
@@ -32,23 +31,6 @@ from sphinx.util.docutils import SphinxDirective
 from sphinx.util.nodes import nested_parse_with_titles
 
 logger = logging.getLogger(__name__)
-
-UNIT_LABELS = {"hz": "Hz", "midi": "MIDI"}  # how a unit is written; others as stored
-
-# Size of every chart, in SVG units (the chart scales to the width it gets).
-# The margins leave room for the x labels and unit (bottom), for the y numbers
-# (left), and for the last x label to stick out past the bars (right).
-WIDTH, HEIGHT = 120, 98
-LEFT, RIGHT, TOP, BOTTOM = 21, 12, 6, 32
-MAX_TICKS = 3  # edge values written under the x axis
-MAX_Y_TICKS = 4  # round numbers written left of the bars, each with a grid line
-MIN_SLOTS = (
-    8  # a chart with fewer bars keeps the bar width of this many, with wider gaps
-)
-MAX_LABELS = 10  # text labels plotted per counts field; the rest join "(other)"
-MAX_LABEL_CHARS = 7  # a longer label is cut under its bar; the hover text has it whole
-CHAR_WIDTH = 4.7  # about how wide one character of a plot label is, in SVG units
-OTHER = "(other)"
 
 MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest as "…"
 
@@ -371,153 +353,6 @@ def plot_grid(plots):
         for p in plots
     ]
     return f'<div class="plot-grid" data-plots="{html.escape(json.dumps(data))}"></div>'
-
-
-def number(x):
-    """An edge value as written on the axis: 1,000 or 12.5."""
-    return f"{int(x):,}" if float(x).is_integer() else f"{x:g}"
-
-
-def chart_svg(data, counted):
-    return (
-        histogram_svg(data, counted)
-        if is_histogram(data)
-        else counts_svg(data, counted)
-    )
-
-
-def y_ticks(highest):
-    """The y ticks under the tallest bar: multiples of the smallest 1, 2 or 5 × 10ⁿ step giving at most MAX_Y_TICKS, without 0."""
-    steps = (m * 10**e for e in itertools.count() for m in (1, 2, 5))
-    step = next(s for s in steps if highest // s <= MAX_Y_TICKS)
-    return [step * i for i in range(1, highest // step + 1)]
-
-
-def short_number(n):
-    """A y tick as written: 500, 1.5k, 20k, 1.5M."""
-    if n >= 1_000_000:
-        return f"{n / 1_000_000:g}M"
-    if n >= 1_000:
-        return f"{n / 1_000:g}k"
-    return str(n)
-
-
-def bars_svg(counts, tips):
-    """The part every chart shares: one bar per count, the x axis, and the y ticks (y_ticks), each a grid line behind the bars and a number; hovering shows the exact counts.
-
-    Each bar has an equal slot of the x axis and sits in its middle. With fewer
-    than MIN_SLOTS bars, a bar keeps the width it has in a chart of MIN_SLOTS
-    bars, so a few bars are spread out instead of filling the chart. The
-    tallest bar reaches the top.
-    Returns the SVG pieces (without the closing tag), the slot width and the y of the axis.
-    """
-    plot_width, plot_height = WIDTH - LEFT - RIGHT, HEIGHT - TOP - BOTTOM
-    slot = plot_width / len(counts)
-    bar_width = plot_width / max(len(counts), MIN_SLOTS)
-    highest = max(counts) or 1
-    base = TOP + plot_height
-
-    out = [f'<svg class="plot-svg" viewBox="0 0 {WIDTH} {HEIGHT}" role="img">']
-    for tick in y_ticks(max(counts)):
-        y = base - plot_height * tick / highest
-        out.append(
-            f'<line class="plot-gridline" x1="{LEFT}" y1="{y:.1f}" x2="{WIDTH - RIGHT}" y2="{y:.1f}"/>'
-            f'<text class="plot-label plot-y-label" x="{LEFT - 2}" y="{y:.1f}" text-anchor="end"'
-            f' dominant-baseline="middle">{short_number(tick)}</text>'
-        )
-    for i, (count, tip) in enumerate(zip(counts, tips)):
-        x = LEFT + i * slot
-        bar_x = x + (slot - bar_width) / 2
-        height = plot_height * count / highest
-        out.append(
-            f"<g><title>{html.escape(tip)}</title>"
-            f'<rect class="plot-hit" x="{x:.1f}" y="{TOP}" width="{slot:.1f}" height="{plot_height}"/>'
-            f'<rect class="plot-bar" x="{bar_x + 0.5:.1f}" y="{base - height:.1f}"'
-            f' width="{max(bar_width - 1, 0.5):.1f}" height="{height:.1f}"/></g>'
-        )
-    out.append(
-        f'<line class="plot-axis" x1="{LEFT}" y1="{base}" x2="{WIDTH - RIGHT}" y2="{base}"/>'
-    )
-    return out, slot, base
-
-
-def histogram_svg(hist, counted):
-    """One histogram {unit, edges, counts} as an SVG bar chart.
-
-    The x axis shows up to MAX_TICKS edge values and the unit. Hovering a bar
-    shows its range and count.
-    """
-    edges, counts = hist["edges"], hist["counts"]
-    unit = UNIT_LABELS.get(hist["unit"], hist["unit"])
-    plot_width = WIDTH - LEFT - RIGHT
-    tips = [
-        f"{number(edges[i])}–{number(edges[i + 1])} {unit}: {count:,} {counted}"
-        for i, count in enumerate(counts)
-    ]
-    out, slot, base = bars_svg(counts, tips)
-    step = -(
-        -len(counts) // (MAX_TICKS - 1)
-    )  # every step-th edge, so labels are evenly spaced
-    for i in range(0, len(edges), step):
-        out.append(
-            f'<text class="plot-label" x="{LEFT + i * slot:.1f}" y="{base + 10}"'
-            f' text-anchor="middle">{number(edges[i])}</text>'
-        )
-    out.append(
-        f'<text class="plot-unit" x="{LEFT + plot_width / 2:.1f}" y="{base + 20}"'
-        f' text-anchor="middle">{html.escape(unit)}</text>'
-    )
-    out.append("</svg>")
-    return "".join(out)
-
-
-def count_bars(counts):
-    """(label, count) per bar of a counts field.
-
-    Numbers (meter, polyphony) are all plotted, in order. Text labels are
-    plotted most common first, MAX_LABELS of them; the rest join "(other)".
-    """
-    if all(isinstance(k, int) for k in counts):
-        return sorted(counts.items())
-    named = sorted(
-        ((str(k), v) for k, v in counts.items() if k != OTHER), key=lambda kv: -kv[1]
-    )
-    rest = sum(v for _, v in named[MAX_LABELS:]) + counts.get(OTHER, 0)
-    return named[:MAX_LABELS] + ([(OTHER, rest)] if rest else [])
-
-
-def counts_svg(counts, counted):
-    """One counts field {label: count} as an SVG bar chart, the same chart as a histogram.
-
-    Every bar has its label under it: flat when every label fits under its
-    bar, else tilted, smaller and cut to MAX_LABEL_CHARS. Hovering a bar shows
-    the whole label and its count.
-    """
-    bars = count_bars(counts)
-    tips = [f"{label}: {count:,} {counted}" for label, count in bars]
-    out, slot, base = bars_svg([count for _, count in bars], tips)
-    labels = [str(label) for label, _ in bars]
-    flat = all(len(label) * CHAR_WIDTH <= slot for label in labels)
-    for i, label in enumerate(labels):
-        x = LEFT + (i + 0.5) * slot
-        if flat:
-            out.append(
-                f'<text class="plot-label" x="{x:.1f}" y="{base + 10}"'
-                f' text-anchor="middle">{html.escape(label)}</text>'
-            )
-            continue
-        text = (
-            label
-            if len(label) <= MAX_LABEL_CHARS
-            else label[: MAX_LABEL_CHARS - 1] + "…"
-        )
-        y = base + 3
-        out.append(
-            f'<text class="plot-label plot-label-tilted" x="{x:.1f}" y="{y}" text-anchor="end"'
-            f' dominant-baseline="middle" transform="rotate(-60 {x:.1f} {y})">{html.escape(text)}</text>'
-        )
-    out.append("</svg>")
-    return "".join(out)
 
 
 # --- Directive ---------------------------------------------------------------

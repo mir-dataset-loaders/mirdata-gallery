@@ -576,7 +576,7 @@ header img[alt="Logo"] {
     stroke-width: 1;
 }
 
-/* A y tick's line across the chart, behind the bars (gallery.py, bars_svg) */
+/* A y tick's line across the chart, behind the bars (charts.js, barsSvg) */
 .plot-gridline {
     stroke: #cbd5e1;
     stroke-width: 0.4;
@@ -588,7 +588,7 @@ header img[alt="Logo"] {
     fill: #64748b;
 }
 
-/* Counts labels too long to sit flat under their bars (gallery.py, counts_svg) */
+/* Counts labels too long to sit flat under their bars (charts.js, countsSvg) */
 .plot-label-tilted {
     font-size: 7px;
 }
