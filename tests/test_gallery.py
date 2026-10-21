@@ -1,5 +1,7 @@
 """The gallery (docs/_ext/gallery.py): the "At a glance" box, the plots (histograms and counts fields, one chart style), "Try it with mirdata", and the site's two pages."""
 
+import html
+import json
 import os
 import re
 import subprocess
@@ -85,11 +87,25 @@ def test_without_an_annotated_tempo_the_tempo_from_beats_is_plotted():
     assert "Tempo from beats" in titles(gallery.ordered_plots(no_values))
 
 
+def page_plots(box):
+    """The plots a Statistics box hands to charts.js (its data-plots)."""
+    return json.loads(html.unescape(re.search(r'data-plots="([^"]*)"', box).group(1)))
+
+
 def test_every_plot_is_shown_none_folded_away():
     chords = {"type": "ChordData", "n_tracks": 3, "n_annotations": 3, "labels": {"C:maj": 3}, "qualities": {"maj": 3}}
     box = gallery.statistics(stats(beats=entry(tempo_from_beats=HIST, meter={4: 3}), chords=chords))
-    assert box.count('<figure class="plot">') == 4
+    assert len(page_plots(box)) == 4
     assert "<details" not in box
+
+
+def test_the_page_gets_counts_as_pairs_with_number_labels_kept():
+    chords = {"type": "ChordData", "n_tracks": 3, "n_annotations": 3, "labels": {"C:maj": 2, "7": 1}}
+    box = gallery.statistics(stats(beats=entry(tempo_from_beats=HIST, meter={4: 3}), chords=chords))
+    tempo, meter, labels = page_plots(box)
+    assert tempo["data"] == HIST
+    assert meter == {"title": "Meter", "source": "beats · BeatData", "data": [[4, 3]], "counted": "tracks"}
+    assert labels["data"] == [["C:maj", 2], ["7", 1]]  # "7" is a text label: it stays a string
 
 
 def chords_entry(n_annotations):

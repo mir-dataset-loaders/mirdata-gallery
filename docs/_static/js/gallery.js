@@ -5,6 +5,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const cards = Array.from(gallery.querySelectorAll(":scope > section"));
     if (cards.length === 0) return;
 
+    // Draw each panel's plots (charts.js) from the data gallery.py put on its plot grid
+    gallery.querySelectorAll(".plot-grid[data-plots]").forEach((grid) => {
+        grid.innerHTML = mirdataCharts.plotGridHtml(JSON.parse(grid.dataset.plots));
+    });
+
     // Helper to group licenses into clean categories (like your brainstorm mockup)
     function normalizeLicense(raw) {
         if (!raw) return "Not specified";

@@ -56,4 +56,4 @@ html_sidebars = {"index": []}
 # Custom static files, copied after the theme's own so they can override it.
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
-html_js_files = ["js/light-mode.js", "js/gallery.js"]
+html_js_files = ["js/light-mode.js", "js/charts.js", "js/gallery.js"]

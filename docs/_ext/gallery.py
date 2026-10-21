@@ -6,9 +6,10 @@ Usage in an .rst file::
 
 The argument is the directory holding one YAML card per dataset, relative to
 the current document. Each card becomes a section, the dataset's panel: its
-title, an overview (the summary), an "At a glance" box, the statistics as SVG
-bar charts, and the BibTeX citation. gallery.js arranges the sections into
-the filterable gallery, custom.css styles them.
+title, an overview (the summary), an "At a glance" box, the statistics (the
+plots' data, which charts.js draws as SVG bar charts), and the BibTeX
+citation. gallery.js arranges the sections into the filterable gallery,
+custom.css styles them.
 
 Every card is registered as a dependency of the page, and the directory is
 snapshotted, so editing, adding or removing a card makes Sphinx re-read the
@@ -17,6 +18,7 @@ page on the next incremental build without needing ``-E``.
 
 import html
 import itertools
+import json
 import os
 import textwrap
 
@@ -356,13 +358,19 @@ def plot(field, data, source, n_tracks=None, n_annotations=None):
 
 
 def plot_grid(plots):
-    figures = "\n".join(
-        f'<figure class="plot"><figcaption><span class="plot-title">{html.escape(p["title"])}</span>'
-        f'<span class="plot-source">{html.escape(p["source"])}</span></figcaption>'
-        f'{chart_svg(p["data"], p["counted"])}</figure>'
+    """The grid of plots, empty: charts.js draws them in the page from its data-plots.
+
+    data-plots is the plots as JSON. A counts field goes as [label, count]
+    pairs, so number labels (meter, polyphony) stay numbers.
+    """
+    data = [
+        {
+            **p,
+            "data": p["data"] if is_histogram(p["data"]) else list(p["data"].items()),
+        }
         for p in plots
-    )
-    return f'<div class="plot-grid">\n{figures}\n</div>'
+    ]
+    return f'<div class="plot-grid" data-plots="{html.escape(json.dumps(data))}"></div>'
 
 
 def number(x):
