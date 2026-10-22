@@ -2,7 +2,8 @@
 
 One rule picks the width: the Freedman-Diaconis estimate rounded to 1, 2 or
 5 times a power of ten, but never so narrow that there are more than MAX_BINS
-bins. log=True gives log-spaced edges instead.
+bins. log=True gives log-spaced edges instead. Pitches have their own:
+note_histogram, one bin per note.
 """
 
 import math
@@ -93,6 +94,27 @@ def histogram(values, unit, log=False):
     return {
         "unit": unit,
         "edges": [_number(e) for e in edges],
+        "counts": [int(c) for c in counts],
+    }
+
+
+def note_histogram(midi):
+    """{"unit": "midi", "edges", "counts"}: one bin per note, or None when there are none.
+
+    Each MIDI pitch is counted under its nearest whole note, so the edges sit
+    between notes (59.5, 60.5, ...): a C5 read from 523.25 Hz (71.99996) and one
+    read as 72.0003 land in the same bin. Every note from the lowest to the
+    highest gets a bin, MAX_BINS or not: the gallery trims the rare extremes.
+    """
+    midi = np.asarray(midi, dtype=float)
+    notes = np.rint(midi[np.isfinite(midi)]).astype(int)
+    if not len(notes):
+        return None
+    lo = int(notes.min())
+    counts = np.bincount(notes - lo)
+    return {
+        "unit": "midi",
+        "edges": [_number(lo - 0.5 + i) for i in range(len(counts) + 1)],
         "counts": [int(c) for c in counts],
     }
 

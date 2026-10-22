@@ -3,7 +3,7 @@
 import numpy as np
 from mirdata import annotations
 
-from stats.annotation_types import F0, Beats, Events, Lyrics, MultiF0, Notes, Sections, bar_lengths, to_pitch_units
+from stats.annotation_types import F0, Beats, Events, Lyrics, MultiF0, Notes, Sections, bar_lengths, to_midi
 
 
 def beats(positions):
@@ -51,30 +51,29 @@ def test_f0_counts_every_voiced_frame():
     stat = F0()
     stat.add(f0([0, 220, 220, 220, 0], [0, 1, 1, 1, 0]))
     stat.add(f0([440, 440], [1, 1]))
-    result = stat.result()
-    assert [result[f"frequencies_{unit}"]["unit"] for unit in ("midi", "hz")] == ["midi", "hz"]
-    for unit in ("midi", "hz"):
-        assert sum(result[f"frequencies_{unit}"]["counts"]) == 5  # 3 + 2 voiced frames; the silent ones are left out
+    frequencies = stat.result()["frequencies"]
+    assert frequencies["unit"] == "midi"
+    assert sum(frequencies["counts"]) == 5  # 3 + 2 voiced frames; the silent ones are left out
 
 
 def test_f0_unvoiced_frames_are_left_out_even_with_a_frequency():
     stat = F0()
     stat.add(f0([220, 300, 220], [1, 0, 1]))
-    frequencies = stat.result()["frequencies_hz"]
+    frequencies = stat.result()["frequencies"]
     assert sum(frequencies["counts"]) == 2
-    assert frequencies["edges"][-1] <= 300  # 300 Hz was unvoiced
+    assert frequencies["edges"] == [56.5, 57.5]  # A3 (220 Hz) only: 300 Hz was unvoiced
 
 
 def test_f0_likelihood_voicing_is_voiced_from_one_half():
     stat = F0()
     stat.add(f0([220, 220, 220, 220], [0.1, 0.49, 0.5, 0.9], "likelihood"))
-    assert sum(stat.result()["frequencies_hz"]["counts"]) == 2
+    assert sum(stat.result()["frequencies"]["counts"]) == 2
 
 
 def test_f0_without_voiced_frames_has_no_histogram():
     stat = F0()
     stat.add(f0([0, 0], [0, 0]))
-    assert stat.result() == {"frequencies_midi": None, "frequencies_hz": None}
+    assert stat.result() == {"frequencies": None}
 
 
 def multif0(frequency_list):
@@ -85,10 +84,9 @@ def multif0(frequency_list):
 def test_multif0_counts_every_pitch_of_every_frame():
     stat = MultiF0()
     stat.add(multif0([[], [110.0, 220.0], [110.0, 220.0, 330.0]]))
-    result = stat.result()
-    for unit in ("midi", "hz"):
-        assert result[f"frequencies_{unit}"]["unit"] == unit
-        assert sum(result[f"frequencies_{unit}"]["counts"]) == 5
+    frequencies = stat.result()["frequencies"]
+    assert frequencies["unit"] == "midi"
+    assert sum(frequencies["counts"]) == 5
 
 
 def test_multif0_polyphony_counts_frames_and_leaves_out_silence():
@@ -101,7 +99,7 @@ def test_multif0_polyphony_counts_frames_and_leaves_out_silence():
 def test_multif0_without_pitches_has_no_histogram():
     stat = MultiF0()
     stat.add(multif0([[0.0], [0.0]]))
-    assert stat.result() == {"frequencies_midi": None, "frequencies_hz": None, "polyphony": {}}
+    assert stat.result() == {"frequencies": None, "polyphony": {}}
 
 
 def notes(pitches, unit):
@@ -109,41 +107,26 @@ def notes(pitches, unit):
     return annotations.NoteData(intervals, "s", np.array(pitches, dtype=float), unit)
 
 
-def count_at(hist, value):
-    """The count of the bar of hist that holds value."""
-    edges = hist["edges"]
-    return next(c for i, c in enumerate(hist["counts"]) if edges[i] <= value < edges[i + 1] or value == edges[-1] == edges[i + 1])
-
-
-def test_pitches_are_kept_in_midi_and_in_hz_whatever_unit_a_loader_gives():
+def test_pitches_are_counted_per_note_in_midi_whatever_unit_a_loader_gives():
     stat = Notes()
-    stat.add(notes([440.0, 440.0], "hz"))  # A4, as an Hz loader gives it
+    stat.add(notes([440.0, 523.25], "hz"))  # A4, and C5 as 71.99996: as an Hz loader gives them
     stat.add(notes([69], "midi"))  # A4, as a MIDI loader gives it
-    result = stat.result()
-    assert result["pitches_midi"]["unit"] == "midi" and count_at(result["pitches_midi"], 69) == 3
-    assert result["pitches_hz"]["unit"] == "hz" and count_at(result["pitches_hz"], 440) == 3
-
-
-def test_whole_midi_numbers_stay_whole():
-    # not through Hz and back: 60.000000001 would no longer be a whole pitch
-    assert to_pitch_units([60, 62], "midi")["midi"].tolist() == [60.0, 62.0]
+    assert stat.result() == {"pitches": {"unit": "midi", "edges": [68.5, 69.5, 70.5, 71.5, 72.5], "counts": [2, 0, 0, 1]}}
 
 
 def test_note_names_are_pitches_too():
-    converted = to_pitch_units(["A4"], "note_name")
-    assert converted["midi"].tolist() == [69.0]
-    assert converted["hz"].tolist() == [440.0]
+    assert to_midi(["A4"], "note_name").tolist() == [69.0]
 
 
 def test_no_pitch_and_pitch_classes_are_left_out():
-    assert to_pitch_units([0.0, -1.0, 440.0], "hz")["hz"].tolist() == [440.0]  # 0 Hz: no pitch
-    assert to_pitch_units(["C", "G#"], "pc") == {}  # no octave: no MIDI number, no Hz
+    assert to_midi([0.0, -1.0, 440.0], "hz").tolist() == [69.0]  # 0 Hz: no pitch
+    assert to_midi(["C", "G#"], "pc").tolist() == []  # no octave: no MIDI number
 
 
-def test_notes_without_pitches_have_no_histograms():
+def test_notes_without_pitches_have_no_histogram():
     stat = Notes()
     stat.add(notes([0.0], "hz"))
-    assert stat.result() == {"pitches_midi": None, "pitches_hz": None}
+    assert stat.result() == {"pitches": None}
 
 
 def test_sections_count_labels_and_interval_lengths():

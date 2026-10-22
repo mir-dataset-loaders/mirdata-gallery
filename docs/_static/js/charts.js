@@ -6,8 +6,6 @@
 // stacked by dataset, or shows one dataset in focus against the whole).
 // Every function returns SVG or HTML text, so tests/charts.test.js runs in Node.
 (function () {
-    const UNIT_LABELS = { hz: "Hz", midi: "MIDI" }; // how a unit is written; others as stored
-
     // Size of every chart, in SVG units (the chart scales to the width it gets).
     // The margins leave room for the x labels and unit (bottom), for the y numbers
     // (left), and for the last x label to stick out past the bars (right).
@@ -110,16 +108,18 @@
     // tallest bar reaches the top. With pieces (stacks), a bar is drawn as its
     // pieces, each in its dataset's colour (custom.css, combine-c0 to c4, grey
     // combine-other), the rest of a bar with a dataset in focus pale grey
-    // (combine-rest).
+    // (combine-rest). gapless bars touch, so many thin ones read as one shape
+    // (notesSvg).
     // Returns the SVG pieces (without the closing tag), the slot width and the y of the axis.
-    function barsSvg(counts, tips, pieces = null) {
+    function barsSvg(counts, tips, pieces = null, gapless = false) {
         const plotWidth = WIDTH - LEFT - RIGHT, plotHeight = HEIGHT - TOP - BOTTOM;
         const slot = plotWidth / counts.length;
         const barWidth = plotWidth / Math.max(counts.length, MIN_SLOTS);
         const highest = Math.max(...counts) || 1;
         const base = TOP + plotHeight;
+        const gap = gapless ? 0 : 1;
 
-        const out = [`<svg class="plot-svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img">`];
+        const out = [`<svg class="plot-svg${gapless ? " plot-notes" : ""}" viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img">`];
         for (const tick of yTicks(Math.max(...counts))) {
             const y = (base - (plotHeight * tick) / highest).toFixed(1);
             out.push(
@@ -132,8 +132,8 @@
             const x = LEFT + i * slot;
             const barX = x + (slot - barWidth) / 2;
             const rect = (cls, bottom, height) =>
-                `<rect class="${cls}" x="${(barX + 0.5).toFixed(1)}" y="${(bottom - height).toFixed(1)}"` +
-                ` width="${Math.max(barWidth - 1, 0.5).toFixed(1)}" height="${height.toFixed(1)}"/>`;
+                `<rect class="${cls}" x="${(barX + gap / 2).toFixed(2)}" y="${(bottom - height).toFixed(1)}"` +
+                ` width="${Math.max(barWidth - gap, 0.5).toFixed(2)}" height="${height.toFixed(1)}"/>`;
             let bar = rect("plot-bar", base, (plotHeight * count) / highest);
             if (pieces) {
                 let bottom = base;
@@ -160,9 +160,11 @@
     // The x axis shows up to MAX_TICKS edge values and the unit. Hovering a bar
     // shows its range and count. parts (combine.js, each on the same edges)
     // stack the bars by dataset, or show one dataset in focus (its name).
+    // Pitches, one bar per note, are drawn by notesSvg.
     function histogramSvg(hist, counted, parts = null, focus = null) {
+        if (isNotes(hist)) return notesSvg(hist, counted, parts, focus);
         const { edges, counts } = hist;
-        const unit = UNIT_LABELS[hist.unit] ?? hist.unit;
+        const { unit } = hist;
         const plotWidth = WIDTH - LEFT - RIGHT;
         const pieces = parts && stacks(parts, (data) => data.counts, counts, focus);
         const tips = counts.map((count, i) =>
@@ -181,6 +183,75 @@
                 ` text-anchor="middle">${escapeHtml(unit)}</text>`
         );
         out.push("</svg>");
+        return out.join("");
+    }
+
+    // --- Pitches: one bar per note ---------------------------------------------
+
+    const NOTE_NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+    const TAIL = 0.0005; // the share of the values on each side a pitch chart may fold into its end bars
+
+    // A pitch histogram from scripts/stats (note_histogram): MIDI, one bin per
+    // note, its edges at half notes (59.5, 60.5, ...)
+    function isNotes(hist) {
+        const { unit, edges } = hist;
+        return unit === "midi" && Math.abs(edges[0] - Math.floor(edges[0]) - 0.5) < 1e-9 && edges.every((e, i) => Math.abs(e - edges[0] - i) < 1e-9);
+    }
+
+    const noteName = (n) => `${NOTE_NAMES[n % 12]}${Math.floor(n / 12) - 1}`; // 60: C4
+    const noteHz = (n) => GROUPED.format(Math.round(440 * 2 ** ((n - 69) / 12))); // 69: 440
+
+    // The bars a pitch chart keeps, from..to: the rare extremes on each side,
+    // at most TAIL of the values, are counted in the end bars instead, so a few
+    // stray values (a pitch tracker's harmonics) do not stretch the axis
+    function keptBars(counts) {
+        const cut = counts.reduce((sum, count) => sum + count, 0) * TAIL;
+        let from = 0, to = counts.length - 1, low = 0, high = 0;
+        while (from < to && low + counts[from] <= cut) low += counts[from++];
+        while (to > from && high + counts[to] <= cut) high += counts[to--];
+        return { from, to };
+    }
+
+    // counts from..to, the ones before and after added to the first and last
+    function fold(counts, from, to) {
+        const kept = counts.slice(from, to + 1);
+        kept[0] += counts.slice(0, from).reduce((sum, count) => sum + count, 0);
+        kept[kept.length - 1] += counts.slice(to + 1).reduce((sum, count) => sum + count, 0);
+        return kept;
+    }
+
+    // A pitch histogram (isNotes) as one bar per note, the bars touching. The
+    // x axis names each C (C3, C4, ...), and an end bar that holds the folded
+    // extremes (keptBars) its note with "≤" or "≥". Hovering a bar shows its
+    // note, Hz and count: "A4 · 440 Hz: 120 values". parts and focus as in
+    // histogramSvg.
+    function notesSvg(hist, counted, parts = null, focus = null) {
+        const first = Math.round(hist.edges[0] + 0.5); // the note of the first bin
+        const { from, to } = keptBars(hist.counts);
+        const counts = fold(hist.counts, from, to);
+        const low = from > 0, high = to < hist.counts.length - 1; // extremes folded in
+        const folded = parts && parts.map((part) => ({ ...part, data: { counts: fold(part.data.counts, from, to) } }));
+        const pieces = folded && stacks(folded, (data) => data.counts, counts, focus);
+        const last = counts.length - 1;
+        const tips = counts.map((count, i) => {
+            const n = first + from + i;
+            let what = `${noteName(n)} · ${noteHz(n)} Hz`;
+            if (i === 0 && low) what = `${noteName(n)} and below · ${noteHz(n)} Hz and below`;
+            if (i === last && high) what = `${noteName(n)} and above · ${noteHz(n)} Hz and above`;
+            return barTip(what, count, counted, pieces && pieces[i]);
+        });
+        const { out, slot, base } = barsSvg(counts, tips, pieces, true);
+        const x = (i) => LEFT + (i + 0.5) * slot;
+        const label = (i, text) => `<text class="plot-label" x="${x(i).toFixed(1)}" y="${base + 10}" text-anchor="middle">${escapeHtml(text)}</text>`;
+        const ends = [...(low ? [[0, `≤${noteName(first + from)}`]] : []), ...(high ? [[last, `≥${noteName(first + to)}`]] : [])];
+        const wide = (text) => Array.from(text).length * 5.5; // about how wide an axis label is, a little generous
+        const clear = (i, text) => ends.every(([end, other]) => Math.abs(x(end) - x(i)) > (wide(text) + wide(other)) / 2 + 2);
+        counts.forEach((_, i) => {
+            const n = first + from + i;
+            if (n % 12 || !clear(i, noteName(n))) return; // a C, clear of the end labels
+            out.push(`<line class="plot-axis" x1="${x(i).toFixed(1)}" y1="${base}" x2="${x(i).toFixed(1)}" y2="${base + 2.5}"/>`, label(i, noteName(n)));
+        });
+        out.push(...ends.map(([i, text]) => label(i, text)), "</svg>");
         return out.join("");
     }
 
@@ -282,7 +353,7 @@
 
     const charts = {
         WIDTH, LEFT, RIGHT, TOP, MAX_LABELS, MAX_LABEL_CHARS, MIN_SLOTS,
-        escapeHtml, number, yTicks, shortNumber, histogramSvg, countBars, countsSvg, chartSvg, plotGridHtml,
+        escapeHtml, number, yTicks, shortNumber, isNotes, histogramSvg, countBars, countsSvg, chartSvg, plotGridHtml,
     };
     if (typeof module !== "undefined" && module.exports) {
         module.exports = charts; // Node, for the tests

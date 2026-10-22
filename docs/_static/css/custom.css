@@ -712,6 +712,12 @@ header img[alt="Logo"] {
     filter: brightness(0.85);
 }
 
+/* Pitch charts' bars touch, one per note (charts.js, notesSvg): no white gap
+   between their thin pieces either */
+.plot-notes .plot-piece {
+    stroke: none;
+}
+
 /* A y tick's line across the chart, behind the bars (charts.js, barsSvg) */
 .plot-gridline {
     stroke: #cbd5e1;

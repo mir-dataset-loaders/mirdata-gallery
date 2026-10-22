@@ -33,8 +33,6 @@ from sphinx.util.nodes import nested_parse_with_titles
 logger = logging.getLogger(__name__)
 
 MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest as "…"
-# Pitch fields come in both units (scripts/stats, to_pitch_units): "Pitches (MIDI)", "Pitches (Hz)"
-PITCH_UNIT_TITLES = {"_midi": "MIDI", "_hz": "Hz"}
 
 # --- Card rendering ----------------------------------------------------------
 
@@ -366,14 +364,13 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
         if total == n_tracks
         else "annotations" if total == n_annotations else "values"
     )
-    words = field.removesuffix("_histogram").removesuffix("_per_annotation")
-    in_unit = ""
-    for suffix, unit in PITCH_UNIT_TITLES.items():
-        if words.endswith(suffix):
-            words, in_unit = words.removesuffix(suffix), f" ({unit})"
-    words = words.replace("_", " ")
+    words = (
+        field.removesuffix("_histogram")
+        .removesuffix("_per_annotation")
+        .replace("_", " ")
+    )
     return {
-        "title": words[:1].upper() + words[1:] + in_unit,
+        "title": words[:1].upper() + words[1:],
         "source": source,
         "data": data,
         "counted": counted,

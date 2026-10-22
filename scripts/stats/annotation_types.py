@@ -12,7 +12,7 @@ import numpy as np
 from mirdata import annotations
 from mirdata.annotations import Annotation, MultiAnnotator
 
-from stats.histograms import histogram
+from stats.histograms import histogram, note_histogram
 
 TOP = 30  # how many labels to keep per label distribution (the gallery plots fewer)
 # The official mirdata annotation types (BeatData, ChordData, ... TempoData): the
@@ -42,36 +42,21 @@ def to_seconds(values, unit):
     return None
 
 
-PITCH_UNITS = ("midi", "hz")  # every pitch histogram is kept in both, MIDI first
+def to_midi(values, unit):
+    """Pitch values as MIDI note numbers, whatever unit a loader gives them in.
 
-
-def to_pitch_units(values, unit):
-    """Pitch values in MIDI and in Hz, {"midi": array, "hz": array}; {} for pitch classes (no octave).
-
-    Loaders give pitches in different units (mirdata's PITCH_UNITS), often just
-    the unit their files or their mirdata version used, so each annotation's
-    values are converted to both (mirdata's convert_pitch_units). Values with
-    no pitch (0 or less) are left out.
+    Loaders give pitches in Hz, MIDI or note names (mirdata's PITCH_UNITS),
+    often just the unit their files or their mirdata version used; they are
+    converted with mirdata's convert_pitch_units. Values with no pitch (0 or
+    less) are left out, and so are pitch classes (no octave): an empty array.
     """
-    if unit == "note_name":  # "A4": to Hz first
+    if unit == "note_name":  # "A4"
         values, unit = annotations.convert_pitch_units(np.asarray(values), unit, "hz"), "hz"
-    if unit not in PITCH_UNITS:
-        return {}
+    if unit not in ("hz", "midi"):
+        return np.array([])
     values = np.asarray(values, dtype=float)
     values = values[values > 0]
-    # the same unit as is: a round trip would turn whole MIDI numbers into 60.000000001
-    return {
-        target: values if target == unit else annotations.convert_pitch_units(values, unit, target)
-        for target in PITCH_UNITS
-    }
-
-
-def pitch_histograms(field, collected):
-    """{field_midi: histogram, field_hz: histogram} of collected ({unit: one array per annotation}), each None without values."""
-    return {
-        f"{field}_{unit}": histogram(np.concatenate(arrays) if arrays else [], unit)
-        for unit, arrays in collected.items()
-    }
+    return values if unit == "midi" else annotations.convert_pitch_units(values, unit, "midi")
 
 
 def interval_lengths(annotation):
@@ -252,7 +237,7 @@ class F0(Stat):
 
     def __init__(self):
         super().__init__()
-        self.frequencies = {unit: [] for unit in PITCH_UNITS}  # per unit, one array per annotation: its voiced frames
+        self.frequencies = []  # one array per annotation: its voiced frames, in MIDI
 
     def read(self, value):
         frequencies = np.asarray(value.frequencies, dtype=float)
@@ -262,11 +247,10 @@ class F0(Stat):
             voiced = np.asarray(value.voicing, dtype=float) >= 0.5
         else:
             voiced = np.asarray(value.voicing, dtype=float) > 0
-        for unit, values in to_pitch_units(frequencies[voiced], value.frequency_unit).items():
-            self.frequencies[unit].append(values)
+        self.frequencies.append(to_midi(frequencies[voiced], value.frequency_unit))
 
     def result(self):
-        return pitch_histograms("frequencies", self.frequencies)
+        return {"frequencies": note_histogram(np.concatenate(self.frequencies) if self.frequencies else [])}
 
 
 class MultiF0(Stat):
@@ -276,7 +260,7 @@ class MultiF0(Stat):
 
     def __init__(self):
         super().__init__()
-        self.frequencies = {unit: [] for unit in PITCH_UNITS}  # per unit, one array per annotation: every pitch of every frame
+        self.frequencies = []  # one array per annotation: every pitch of every frame, in MIDI
         self.polyphony = Counter()  # frames per number of pitches; silent frames left out
 
     def read(self, value):
@@ -288,12 +272,11 @@ class MultiF0(Stat):
                 sounding.append(pitches)
                 self.polyphony[len(pitches)] += 1
         if sounding:  # converted once per annotation, not frame by frame
-            for unit, values in to_pitch_units(np.concatenate(sounding), value.frequency_unit).items():
-                self.frequencies[unit].append(values)
+            self.frequencies.append(to_midi(np.concatenate(sounding), value.frequency_unit))
 
     def result(self):
         return {
-            **pitch_histograms("frequencies", self.frequencies),
+            "frequencies": note_histogram(np.concatenate(self.frequencies) if self.frequencies else []),
             "polyphony": dict(sorted(self.polyphony.items())),
         }
 
@@ -305,14 +288,13 @@ class Notes(Stat):
 
     def __init__(self):
         super().__init__()
-        self.pitches = {unit: [] for unit in PITCH_UNITS}  # per unit, one array per annotation
+        self.pitches = []  # one array per annotation, in MIDI
 
     def read(self, value):
-        for unit, values in to_pitch_units(value.pitches, value.pitch_unit).items():
-            self.pitches[unit].append(values)
+        self.pitches.append(to_midi(value.pitches, value.pitch_unit))
 
     def result(self):
-        return pitch_histograms("pitches", self.pitches)
+        return {"pitches": note_histogram(np.concatenate(self.pitches) if self.pitches else [])}
 
 
 class Sections(Stat):

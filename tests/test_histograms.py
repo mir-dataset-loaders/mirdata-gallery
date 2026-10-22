@@ -5,7 +5,7 @@ import math
 import numpy as np
 import pytest
 
-from stats.histograms import MAX_BINS, histogram, tidy_width
+from stats.histograms import MAX_BINS, histogram, note_histogram, tidy_width
 
 
 def width(hist):
@@ -39,17 +39,17 @@ def test_never_more_than_max_bins_and_always_tidy(seed):
 
 
 def test_whole_number_data_gets_whole_number_bins():
-    """MIDI-like pitches over 52 semitones: every bin holds the same number of whole pitches."""
-    hist = histogram(np.repeat(np.arange(38, 91), 100), "midi")
+    """Whole numbers from 38 to 90 (lyrics per track, say): every bin holds the same number of them."""
+    hist = histogram(np.repeat(np.arange(38, 91), 100), "words")
     assert width(hist) == 5
     assert all(isinstance(e, int) for e in hist["edges"])
     assert hist["counts"][1:-1] == [500] * (len(hist["counts"]) - 2)  # no 2-3-2-3 zigzag
 
 
 def test_the_narrowest_width_that_fits_max_bins_is_used():
-    """100.5 to 2599 Hz fits MAX_BINS (25) bins of 100 Hz exactly."""
+    """100.5 to 2599 fits MAX_BINS (25) bins of 100 exactly."""
     values = np.linspace(100.5, 2599, 100000)
-    hist = histogram(values, "hz")
+    hist = histogram(values, "x")
     assert width(hist) == 100
     assert len(hist["counts"]) == MAX_BINS
 
@@ -92,3 +92,19 @@ def test_log_edges_are_1_2_5_times_powers_of_ten():
     hist = histogram([1.5, 30, 150, 0, -1], "s", log=True)
     assert hist["edges"] == [1, 2, 5, 10, 20, 50, 100, 200]
     assert sum(hist["counts"]) == 3  # 0 and -1 cannot go on a log scale
+
+
+def test_pitches_get_one_bin_per_note_centred_on_it():
+    hist = note_histogram([60, 60.3, 59.7, 62, 71.99996])  # 59.7 and 60.3 are C4 too; 71.99996 is C5 (523.25 Hz)
+    assert hist["unit"] == "midi"
+    assert hist["edges"][:3] == [59.5, 60.5, 61.5] and hist["edges"][-1] == 72.5
+    assert hist["counts"] == [3, 0, 1] + [0] * 9 + [1]  # C4, C#4, D4, ..., C5: every note in between too
+
+
+def test_every_note_gets_a_bin_whatever_max_bins():
+    hist = note_histogram(np.arange(30, 100))
+    assert len(hist["counts"]) == 70 > MAX_BINS
+
+
+def test_no_pitches_no_note_histogram():
+    assert note_histogram([]) is None

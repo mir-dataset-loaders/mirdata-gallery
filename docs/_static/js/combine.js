@@ -5,6 +5,8 @@
 // function returns plain values, so tests/combine.test.js runs in Node.
 (function () {
     const GROUPED = new Intl.NumberFormat("en-US"); // 1,000
+    // whether a histogram is a pitch one, one bin per note: charts.js's, loaded before this file on the page
+    const { isNotes } = typeof module !== "undefined" && module.exports ? require("./charts.js") : window.mirdataCharts;
 
     // " (2 of 3 datasets)" when only some of the datasets know a value
     function coverage(known, total) {
@@ -133,10 +135,26 @@
         return { unit: "min", edges: bins.edges.map((e) => clean(e / 60)), each: bins.each };
     }
 
-    // Histograms on shared bars, {unit, edges, each}: of one unit, on sharedBins
-    // in that unit; of different time units, on timeBins. null when they cannot
-    // be pooled exactly.
+    // Pitch histograms (isNotes) on one bar per note, from the lowest note of
+    // them all to the highest: every note keeps its bar, MAX_BINS or not
+    function noteBins(hists) {
+        const lo = Math.min(...hists.map((h) => h.edges[0]));
+        const hi = Math.max(...hists.map((h) => h.edges.at(-1)));
+        const edges = Array.from({ length: Math.round(hi - lo) + 1 }, (_, i) => lo + i);
+        const each = hists.map((h) => {
+            const counts = edges.slice(1).map(() => 0);
+            const at = Math.round(h.edges[0] - lo);
+            h.counts.forEach((count, i) => (counts[at + i] = count));
+            return counts;
+        });
+        return { unit: "midi", edges, each };
+    }
+
+    // Histograms on shared bars, {unit, edges, each}: pitches on noteBins; of
+    // one unit, on sharedBins in that unit; of different time units, on
+    // timeBins. null when they cannot be pooled exactly.
     function pooledBins(hists) {
+        if (hists.every(isNotes)) return noteBins(hists);
         if (hists.every((h) => h.unit === hists[0].unit)) {
             const bins = sharedBins(hists);
             return bins && { unit: hists[0].unit, ...bins };
