@@ -42,6 +42,38 @@ def to_seconds(values, unit):
     return None
 
 
+PITCH_UNITS = ("midi", "hz")  # every pitch histogram is kept in both, MIDI first
+
+
+def to_pitch_units(values, unit):
+    """Pitch values in MIDI and in Hz, {"midi": array, "hz": array}; {} for pitch classes (no octave).
+
+    Loaders give pitches in different units (mirdata's PITCH_UNITS), often just
+    the unit their files or their mirdata version used, so each annotation's
+    values are converted to both (mirdata's convert_pitch_units). Values with
+    no pitch (0 or less) are left out.
+    """
+    if unit == "note_name":  # "A4": to Hz first
+        values, unit = annotations.convert_pitch_units(np.asarray(values), unit, "hz"), "hz"
+    if unit not in PITCH_UNITS:
+        return {}
+    values = np.asarray(values, dtype=float)
+    values = values[values > 0]
+    # the same unit as is: a round trip would turn whole MIDI numbers into 60.000000001
+    return {
+        target: values if target == unit else annotations.convert_pitch_units(values, unit, target)
+        for target in PITCH_UNITS
+    }
+
+
+def pitch_histograms(field, collected):
+    """{field_midi: histogram, field_hz: histogram} of collected ({unit: one array per annotation}), each None without values."""
+    return {
+        f"{field}_{unit}": histogram(np.concatenate(arrays) if arrays else [], unit)
+        for unit, arrays in collected.items()
+    }
+
+
 def interval_lengths(annotation):
     """Length in seconds of every interval of an interval-based annotation, or None."""
     intervals = np.asarray(annotation.intervals, dtype=float)
@@ -220,8 +252,7 @@ class F0(Stat):
 
     def __init__(self):
         super().__init__()
-        self.frequencies = []  # one array per annotation: the frequencies of its voiced frames
-        self.units = Counter()
+        self.frequencies = {unit: [] for unit in PITCH_UNITS}  # per unit, one array per annotation: its voiced frames
 
     def read(self, value):
         frequencies = np.asarray(value.frequencies, dtype=float)
@@ -231,13 +262,11 @@ class F0(Stat):
             voiced = np.asarray(value.voicing, dtype=float) >= 0.5
         else:
             voiced = np.asarray(value.voicing, dtype=float) > 0
-        self.frequencies.append(frequencies[voiced & (frequencies > 0)])
-        self.units[value.frequency_unit] += 1
+        for unit, values in to_pitch_units(frequencies[voiced], value.frequency_unit).items():
+            self.frequencies[unit].append(values)
 
     def result(self):
-        unit = max(self.units, key=self.units.get) if self.units else None
-        values = np.concatenate(self.frequencies) if self.frequencies else []
-        return {"frequencies": histogram(values, unit)}
+        return pitch_histograms("frequencies", self.frequencies)
 
 
 class MultiF0(Stat):
@@ -247,24 +276,24 @@ class MultiF0(Stat):
 
     def __init__(self):
         super().__init__()
-        self.frequencies = []  # one array per annotation: every pitch of every frame
+        self.frequencies = {unit: [] for unit in PITCH_UNITS}  # per unit, one array per annotation: every pitch of every frame
         self.polyphony = Counter()  # frames per number of pitches; silent frames left out
-        self.units = Counter()
 
     def read(self, value):
+        sounding = []
         for frame in value.frequency_list:
             pitches = np.asarray(frame, dtype=float)
             pitches = pitches[pitches > 0]
             if len(pitches):
-                self.frequencies.append(pitches)
+                sounding.append(pitches)
                 self.polyphony[len(pitches)] += 1
-        self.units[value.frequency_unit] += 1
+        if sounding:  # converted once per annotation, not frame by frame
+            for unit, values in to_pitch_units(np.concatenate(sounding), value.frequency_unit).items():
+                self.frequencies[unit].append(values)
 
     def result(self):
-        unit = max(self.units, key=self.units.get) if self.units else None
-        values = np.concatenate(self.frequencies) if self.frequencies else []
         return {
-            "frequencies": histogram(values, unit),
+            **pitch_histograms("frequencies", self.frequencies),
             "polyphony": dict(sorted(self.polyphony.items())),
         }
 
@@ -276,16 +305,14 @@ class Notes(Stat):
 
     def __init__(self):
         super().__init__()
-        self.pitches = []
-        self.units = Counter()
+        self.pitches = {unit: [] for unit in PITCH_UNITS}  # per unit, one array per annotation
 
     def read(self, value):
-        self.pitches.extend(np.asarray(value.pitches, dtype=float).tolist())
-        self.units[value.pitch_unit] += 1
+        for unit, values in to_pitch_units(value.pitches, value.pitch_unit).items():
+            self.pitches[unit].append(values)
 
     def result(self):
-        unit = max(self.units, key=self.units.get) if self.units else None
-        return {"pitches": histogram(self.pitches, unit)}
+        return pitch_histograms("pitches", self.pitches)
 
 
 class Sections(Stat):

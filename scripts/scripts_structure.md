@@ -276,24 +276,30 @@ own type.
 | | | `tempo_from_beats` | one value per annotation: 60 / median beat gap (not annotated) |
 | ChordData | `Chords` | `labels`, `qualities` | chord labels; their qualities (maj, min, 7, N...) |
 | EventData | `Events` | `events` | event labels |
-| F0Data | `F0` | `frequencies` | voiced frames: frequency > 0 and voicing > 0 (a likelihood from 0.5) |
+| F0Data | `F0` | `frequencies_midi`, `frequencies_hz` | voiced frames: frequency > 0 and voicing > 0 (a likelihood from 0.5) |
 | KeyData | `Keys` | `keys`, `modes` | key labels; their modes (after the ":") |
 | LyricData | `Lyrics` | `lyric_unit` | annotations per lyric unit (words, syllables...) |
 | | | `lyrics_per_track` | one value per track: its lyric entries over all its annotations |
-| MultiF0Data | `MultiF0` | `frequencies` | every pitch of every frame |
+| MultiF0Data | `MultiF0` | `frequencies_midi`, `frequencies_hz` | every pitch of every frame |
 | | | `polyphony` | frames per number of pitches at once; silent frames left out |
-| NoteData | `Notes` | `pitches` | every note's pitch |
+| NoteData | `Notes` | `pitches_midi`, `pitches_hz` | every note's pitch |
 | SectionData | `Sections` | `labels` | section labels |
 | | | `section_interval_seconds` | every section's length, in log-spaced bins |
 | TempoData | `Tempo` | `tempo` | annotated BPM values |
 
-  Histograms come from `histograms.histogram`. Label counts keep the `TOP`
-  (30) most common, with the rest under "(other)" (`top_counts`); `meter`,
-  `polyphony` and `lyric_unit` keep every value. The gallery plots fewer.
+  Histograms come from `histograms.histogram`. Pitches are kept twice, in
+  MIDI and in Hz (`to_pitch_units`, with mirdata's `convert_pitch_units`,
+  then `pitch_histograms`): loaders give them in either, often just the unit
+  their files or their mirdata version used, and a histogram cannot be
+  converted once binned. Label
+  counts keep the `TOP` (30) most common, with the rest under "(other)"
+  (`top_counts`); `meter`, `polyphony` and `lyric_unit` keep every value.
+  The gallery plots fewer.
 - `STATS`: maps each type name to its class, checked against mirdata's own
   list (`ANNOTATION_TYPES`).
 - Helpers: `unpack`, `is_empty`, `chord_quality`, `interval_lengths`,
-  `bar_lengths`, `to_seconds`, `top_counts`.
+  `bar_lengths`, `to_seconds`, `to_pitch_units`, `pitch_histograms`,
+  `top_counts`.
 
 ### `stats/remote.py`
 

@@ -38,6 +38,13 @@ def test_hover_text_says_what_the_bars_count():
     assert meter["counted"] == "tracks"  # 3 = n_tracks; charts.js writes it in the hover text
 
 
+def test_pitches_are_plotted_in_midi_then_in_hz():
+    notes = {"type": "NoteData", "n_tracks": 3, "n_annotations": 3, "pitches_hz": {**HIST, "unit": "hz"}, "pitches_midi": {**HIST, "unit": "midi"}}
+    plots = gallery.annotation_plots("notes", notes)
+    assert [p["title"] for p in plots] == ["Pitches (MIDI)", "Pitches (Hz)"]  # the schema's order, whatever the card's
+    assert [p["field"] for p in plots] == ["pitches_midi", "pitches_hz"]  # what Combine mode pools by
+
+
 def tempo_entry(tempo):
     return {"type": "TempoData", "n_tracks": 3, "n_annotations": 3, "tempo": tempo}
 

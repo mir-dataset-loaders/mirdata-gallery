@@ -145,7 +145,12 @@ stats:
         type: F0Data
         n_tracks: 100
         n_annotations: 100
-        frequencies:
+        frequencies_midi:
+          unit: midi
+          edges: [35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90]
+          counts: [125, 1201, 17599, 91669, 283892, 434438, 295726, 88832, 834, 20,
+            18]
+        frequencies_hz:
           unit: hz
           edges: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
             1300, 1400, 1500]
