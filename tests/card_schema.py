@@ -60,7 +60,7 @@ STATS_MODES = ["remote", "local"]
 # several annotations (dict keys or annotators), plus the fields of its type.
 # Field kinds:
 #   histogram  {unit, edges, counts}, or null when there were no values;
-#              pitches twice, in MIDI (_midi) and in Hz (_hz)
+#              pitches (frequencies, pitches) in MIDI, one bin per note
 #   counts     {label: count}, the 30 most common, the rest under "(other)";
 #              meter and polyphony have every count, keyed by number
 STATS_ANNOTATION_COMMON = ["type", "n_tracks", "n_annotations"]
@@ -68,11 +68,11 @@ STATS_ANNOTATION_FIELDS = {
     "BeatData": {"tempo_from_beats": "histogram", "meter": "counts"},
     "ChordData": {"labels": "counts", "qualities": "counts"},
     "EventData": {"events": "counts"},
-    "F0Data": {"frequencies_midi": "histogram", "frequencies_hz": "histogram"},
+    "F0Data": {"frequencies": "histogram"},
     "KeyData": {"keys": "counts", "modes": "counts"},
     "LyricData": {"lyric_unit": "counts", "lyrics_per_track": "histogram"},
-    "MultiF0Data": {"frequencies_midi": "histogram", "frequencies_hz": "histogram", "polyphony": "counts"},
-    "NoteData": {"pitches_midi": "histogram", "pitches_hz": "histogram"},
+    "MultiF0Data": {"frequencies": "histogram", "polyphony": "counts"},
+    "NoteData": {"pitches": "histogram"},
     "SectionData": {"labels": "counts", "section_interval_seconds": "histogram"},
     "TempoData": {"tempo": "histogram"},
 }
