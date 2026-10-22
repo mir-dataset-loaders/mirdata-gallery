@@ -49,7 +49,7 @@ ANNOTATION_TYPES = [
     "TempoData",
 ]
 
-# The "stats" field (written by scripts/generate_cards.py, see scripts/stats/card.py).
+# The "stats" field (written by scripts/generate_cards.py, see scripts/stats/to_card.py).
 STATS_PARTS = ["audio", "annotations"]
 STATS_STATUSES = ["ok", "incomplete", "needs_local", "error"]
 STATS_MODES = ["remote", "local"]

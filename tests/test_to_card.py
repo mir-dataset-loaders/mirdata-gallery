@@ -1,10 +1,10 @@
-"""Tests for scripts/stats/card.py (the card's stats field) and its YAML form (card_utils.py)."""
+"""Tests for scripts/stats/to_card.py (the card's stats field) and its YAML form and index checksum (card_utils.py)."""
 
 import pytest
 import yaml
 
 import card_utils
-from stats.card import result_to_card_stats, index_checksum
+from stats.to_card import result_to_card_stats
 
 HIST = {"unit": "s", "edges": [1, 2, 3], "counts": [4, 5]}
 
@@ -73,14 +73,14 @@ def test_index_checksum_is_the_published_checksum(tmp_path):
 
     remote = SimpleNamespace(checksum="c7f5f853768815885cea70d6c246895d")
     ds = SimpleNamespace(_index_data=SimpleNamespace(remote=remote), index_path=str(tmp_path / "missing.json"))
-    assert index_checksum(ds) == "c7f5f853768815885cea70d6c246895d"  # no download needed
+    assert card_utils.index_checksum(ds) == "c7f5f853768815885cea70d6c246895d"  # no download needed
 
 
 def test_real_checksum_does_not_download():
     import mirdata
 
     ds = mirdata.initialize("acousticbrainz_genre")  # its index is 334 MB, never fetched here
-    assert index_checksum(ds) == ds._index_data.remote.checksum
+    assert card_utils.index_checksum(ds) == ds._index_data.remote.checksum
 
 
 def test_number_lists_go_on_one_line_and_round_trip(tmp_path):

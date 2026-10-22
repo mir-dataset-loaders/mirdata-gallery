@@ -318,8 +318,8 @@ def test_invalid_stats_are_reported(change, message):
 
 
 def test_real_stats_from_card_py_pass_the_schema():
-    """The stats field card.py writes (here for a small fake result) is valid as is."""
-    from stats.card import result_to_card_stats
+    """The stats field to_card.py writes (here for a small fake result) is valid as is."""
+    from stats.to_card import result_to_card_stats
     from test_to_card import ANNOTATIONS, AUDIO
 
     stats = result_to_card_stats({"name": "fake", "audio": AUDIO, "annotations": ANNOTATIONS}, "local", "abc")

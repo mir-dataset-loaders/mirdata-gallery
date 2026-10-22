@@ -1,13 +1,16 @@
-"""Storing the cards (cards/*.yaml, the docstring hash), and what the commands share.
+"""Storing the cards (cards/*.yaml, the two checksums), and what the commands share.
 
 Every script that touches a card goes through here, so a card is formatted the
 same way no matter which script wrote it last. generate_cards.py and
-compute_stats.py also share the dataset choice and the closing to-do list.
+local/compute_stats_local.py also share the dataset choice and the closing
+to-do list.
 
 A card's docstring_hash is the SHA-256 of the loader docstring that produced
 its summary. generate_cards.py reruns the LLM only when the current docstring
 hashes differently, so unchanged datasets never cost model time and never get
-a slightly different summary.
+a slightly different summary. index_checksum is the checksum mirdata publishes
+with a dataset's index; the card keeps it in stats.computed.index, so the stats
+are recomputed only when the index changes.
 """
 
 import hashlib
@@ -60,12 +63,21 @@ _CardDumper.add_representer(str, _str_presenter)
 _CardDumper.add_representer(list, _list_presenter)
 
 
-# --- docstring hash -----------------------------------------------------------
+# --- docstring hash and index checksum ----------------------------------------
 
 
 def docstring_hash(text):
     """Hex SHA-256 of a string."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def index_checksum(ds):
+    """The MD5 checksum mirdata publishes with a dataset's index, without downloading it.
+
+    A new index version comes with a new checksum, so it changes exactly when
+    the index does.
+    """
+    return ds._index_data.remote.checksum
 
 
 # --- shared by the commands ---------------------------------------------------

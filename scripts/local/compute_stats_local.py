@@ -1,27 +1,31 @@
-"""Print the audio and annotation stats of mirdata datasets, to inspect them.
+"""Local tool: print the audio and annotation stats of mirdata datasets to inspect.
 
 Shows everything, including the logs and per-file errors a card leaves out,
 and writes nothing: generate_cards.py puts the stats into the cards. Each
 part ends with a status: ok, incomplete, or needs_local (rerun with --local).
 
 Usage:
-    python scripts/compute_stats.py --dataset rwc_popular                    # both parts
-    python scripts/compute_stats.py --dataset rwc_popular --only audio
-    python scripts/compute_stats.py --dataset rwc_popular --only annotations
-    python scripts/compute_stats.py --dataset rwc_popular --limit 5          # quick look
-    python scripts/compute_stats.py --dataset rwc_popular --json
-    python scripts/compute_stats.py --exclude acousticbrainz_genre           # every other dataset
-    python scripts/compute_stats.py --dataset rwc_popular --local            # ~/mir_datasets/<name>
-    python scripts/compute_stats.py --local --datasets-dir /path/to/mir_datasets
-    python scripts/compute_stats.py --dataset rwc_popular --fetch-dir /tmp/ann  # keep fetched files
+    python scripts/local/compute_stats_local.py --dataset rwc_popular            # both parts
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --only audio
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --only annotations
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --limit 5  # quick look
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --json
+    python scripts/local/compute_stats_local.py --exclude acousticbrainz_genre   # every other dataset
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --local    # ~/mir_datasets/<name>
+    python scripts/local/compute_stats_local.py --local --datasets-dir /path/to/mir_datasets
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --fetch-dir /tmp/ann  # keep fetched files
 """
 
 import argparse
 import json
 import os
+import sys
 import tempfile
 
 import mirdata
+
+# scripts/local/ -> scripts/, where the gallery code (card_utils, stats, llm) lives
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import card_utils
 import stats
@@ -218,7 +222,7 @@ def main(argv=None):
     names = card_utils.select_datasets(
         mirdata.list_datasets(), args.dataset, args.exclude
     )
-    with tempfile.TemporaryDirectory(prefix="compute_stats_") as tmp:
+    with tempfile.TemporaryDirectory(prefix="compute_stats_local_") as tmp:
         fetch_root = args.fetch_dir or tmp
         results = {name: compute(name, args, fetch_root) for name in names}
     if args.json:
@@ -227,7 +231,7 @@ def main(argv=None):
     if len(names) > 1:
         print_table(results)
     card_utils.print_to_do(
-        results, "python scripts/compute_stats.py --local --dataset <name>"
+        results, "python scripts/local/compute_stats_local.py --local --dataset <name>"
     )
 
 

@@ -6,8 +6,8 @@ into, then runs each part on its own: a part that fails holds
 {"status": "error", "error": ...} and does not stop the other. A remote run
 gets one Budget for the whole dataset, spent by the annotation downloads (the
 audio part reads only the index). Local runs have no limits.
-scripts/compute_stats.py prints the result, scripts/generate_cards.py turns
-it into the card's stats field (stats/card.py).
+scripts/local/compute_stats_local.py prints the result, scripts/generate_cards.py
+turns it into the card's stats field (stats/to_card.py).
 """
 
 import json

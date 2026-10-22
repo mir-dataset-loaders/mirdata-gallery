@@ -48,7 +48,7 @@ def test_big_zip_is_read_by_range(fake_remotes, tmp_path, monkeypatch):
 def test_only_annotation_files_are_saved(fake_remotes, tmp_path):
     """The fetch folder gets the 5 annotation files and no audio (the audio part reads only the index).
 
-    compute() leaves them there; the commands delete the folder after the run (test_compute_stats.py).
+    compute() leaves them there; the commands delete the folder after the run (test_compute_stats_local.py).
     """
     compute("fake_dataset", str(tmp_path))
     assert files_under(tmp_path) == [

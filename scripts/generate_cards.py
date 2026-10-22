@@ -1,5 +1,9 @@
 """Generate one YAML card per mirdata dataset.
 
+The gallery's pipeline: the update-cards workflow runs it, and it runs the
+same way from the command line on your machine (--local for stats from local
+copies of the datasets).
+
 Every run rebuilds the cheap fields (license, annotations, bibtex). The LLM
 summary and the stats are recomputed only when needed: when the loader
 docstring changed or the dataset index changed (both recorded in the card:
@@ -28,7 +32,7 @@ import card_builder
 import card_utils
 import llm
 import stats
-import stats.card
+import stats.to_card
 
 
 def update_stats(ds, old, options):
@@ -45,8 +49,8 @@ def update_stats(ds, old, options):
     ):
         status = "kept (no local copy)" if old_stats else "none (no local copy)"
         return old_stats, status
-    checksum = stats.card.index_checksum(ds)
-    if not (options["force_stats"] or options["local"]) and stats.card.is_current(
+    checksum = card_utils.index_checksum(ds)
+    if not (options["force_stats"] or options["local"]) and stats.to_card.is_current(
         old_stats, checksum
     ):
         return (
@@ -60,8 +64,8 @@ def update_stats(ds, old, options):
         local=options["local"],
     )
     mode = "local" if options["local"] else "remote"
-    new = stats.card.result_to_card_stats(result, mode, checksum)
-    chosen = stats.card.choose(old_stats, new, checksum)
+    new = stats.to_card.result_to_card_stats(result, mode, checksum)
+    chosen = stats.to_card.choose(old_stats, new, checksum)
     return chosen, "new" if chosen is new else "kept (more complete than the new run)"
 
 
@@ -133,7 +137,7 @@ def generate(names, output_dir, options):
         written.append(name)
         print(
             f"  [OK]    {name:30s} | annotations: {len(card['annotations'])}"
-            f" | summary: {summary_status} | stats: {stats_status}, {stats.card.status_line(stats_field)}"
+            f" | summary: {summary_status} | stats: {stats_status}, {stats.to_card.status_line(stats_field)}"
         )
         card_stats_by_name[name] = stats_field
 
