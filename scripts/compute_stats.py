@@ -14,7 +14,6 @@ Usage:
     python scripts/compute_stats.py --dataset rwc_popular --local            # ~/mir_datasets/<name>
     python scripts/compute_stats.py --local --datasets-dir /path/to/mir_datasets
     python scripts/compute_stats.py --dataset rwc_popular --fetch-dir /tmp/ann  # keep fetched files
-    python scripts/compute_stats.py --max-mb 2000 --max-minutes 30           # larger remote limits
 """
 
 import argparse
@@ -24,9 +23,9 @@ import tempfile
 
 import mirdata
 
+import card_utils
 import stats
 import stats.histograms
-import stats.utils
 
 # --------------------------------------------------------------- computing
 
@@ -43,8 +42,6 @@ def compute(name, args, fetch_root):
         limit=args.limit,
         workers=args.workers,
         verbose=args.verbose,
-        max_mb=args.max_mb,
-        max_minutes=args.max_minutes,
         on_part=(
             None
             if args.json
@@ -185,7 +182,7 @@ def parse_args(argv=None):
     )
     parser.add_argument(
         "--limit",
-        type=stats.utils.positive_int,
+        type=int,
         default=None,
         help="quick look: only the first N tracks (annotations)",
     )
@@ -196,7 +193,16 @@ def parse_args(argv=None):
         "--verbose", action="store_true", help="print one line per file or track"
     )
     parser.add_argument("--json", action="store_true", help="print the result as JSON")
-    stats.utils.add_stats_arguments(parser)
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        help="compute the stats from local copies of the datasets, not the remotes",
+    )
+    parser.add_argument(
+        "--datasets-dir",
+        default=card_utils.DEFAULT_DATASETS_DIR,
+        help="with --local: folder with one sub-folder per dataset (default: ~/mir_datasets)",
+    )
     parser.add_argument(
         "--fetch-dir",
         default=None,
@@ -209,7 +215,7 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    names = stats.utils.select_datasets(
+    names = card_utils.select_datasets(
         mirdata.list_datasets(), args.dataset, args.exclude
     )
     with tempfile.TemporaryDirectory(prefix="compute_stats_") as tmp:
@@ -220,7 +226,7 @@ def main(argv=None):
         return
     if len(names) > 1:
         print_table(results)
-    stats.utils.print_to_do(
+    card_utils.print_to_do(
         results, "python scripts/compute_stats.py --local --dataset <name>"
     )
 

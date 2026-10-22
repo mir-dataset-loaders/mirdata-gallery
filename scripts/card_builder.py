@@ -2,15 +2,15 @@
 
 Each field function takes an initialized mirdata Dataset (from ``mirdata.initialize``)
 and returns the value to store in the card. Function names match the card
-fields on purpose, so build_card reads like the card itself.
+fields on purpose, so build_card reads like the card itself. clean_text tidies
+mirdata's text (license, bibtex, the loader docstring) for the YAML.
 """
 
+import textwrap
 import typing
 
 import mirdata
 from mirdata.annotations import Annotation
-
-from card_utils import clean_text
 
 # FIXME: NEEDS FIX
 
@@ -120,3 +120,16 @@ def _annotation_class_name(attr_name, item):
         if keyword in attr_lower:
             return class_name
     return None
+
+
+def clean_text(text):
+    """Tidy a multi-line string from mirdata so it stores cleanly in YAML.
+
+    Drops trailing spaces on every line (PyYAML refuses the readable `|`
+    block style otherwise), removes common indentation, and strips blank
+    lines around the text. Non-strings (None) pass through unchanged.
+    """
+    if not isinstance(text, str):
+        return text
+    lines = [line.rstrip() for line in text.splitlines()]
+    return textwrap.dedent("\n".join(lines)).strip()

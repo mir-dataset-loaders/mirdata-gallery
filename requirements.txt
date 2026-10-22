@@ -1,7 +1,10 @@
-# Dependencies for the scripts and tests.
+# Dependencies for the scripts, the tests and building the docs.
 #   pip install -r requirements.txt
-# LLM summaries need extra, heavy packages: see requirements-llm.txt.
-# Building the docs: see docs/requirements.txt.
+# LLM summaries need llama-cpp-python and huggingface_hub: see requirements-llm.txt.
+
+# The docs packages (Sphinx): tests/test_gallery.py imports the gallery extension.
+# Read the Docs and pages.yml install only that file.
+-r docs/requirements.txt
 
 mirdata[cipi,compmusic_carnatic_rhythm,compmusic_hindustani_rhythm,dali,haydn_op20,multivox] @ git+https://github.com/mir-dataset-loaders/mirdata.git
 pyyaml>=6.0

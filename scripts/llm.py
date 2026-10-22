@@ -29,6 +29,7 @@ import time
 
 import mirdata
 
+import card_builder
 import card_utils
 
 SYSTEM_PROMPT = (
@@ -50,7 +51,7 @@ CONTEXT_TOKENS = 4096  # longest loader docstring is ~1500 tokens; this leaves r
 def loader_docstring(name):
     """The module docstring of mirdata's loader for `name`, tidied, or None."""
     doc = importlib.import_module(f"mirdata.datasets.{name}").__doc__
-    return card_utils.clean_text(doc) or None
+    return card_builder.clean_text(doc) or None
 
 
 def summary(name, docstring):

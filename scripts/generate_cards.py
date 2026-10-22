@@ -29,7 +29,6 @@ import card_utils
 import llm
 import stats
 import stats.card
-import stats.utils
 
 
 def update_stats(ds, old, options):
@@ -59,8 +58,6 @@ def update_stats(ds, old, options):
         ds.name,
         os.path.join(root, ds.name),
         local=options["local"],
-        max_mb=options["max_mb"],
-        max_minutes=options["max_minutes"],
     )
     mode = "local" if options["local"] else "remote"
     new = stats.card.result_to_card_stats(result, mode, checksum)
@@ -101,9 +98,9 @@ def generate(names, output_dir, options):
         hash is new or changed (or for all of them with force_summary). With
         summary False it never runs and each card keeps the summary it
         already has (or gets null).
-      stats, force_stats, local, datasets_dir, fetch_root, max_mb,
-        max_minutes: see update_stats(); stats False keeps every card's stats
-        as they are.
+      stats, force_stats, local, datasets_dir, fetch_root: see update_stats();
+        stats False keeps every card's stats as they are. Remote runs use the
+        limits in stats/remote.py.
     """
     os.makedirs(output_dir, exist_ok=True)
     written = []
@@ -141,7 +138,7 @@ def generate(names, output_dir, options):
         card_stats_by_name[name] = stats_field
 
     print(f"\nDone. Written: {len(written)}, skipped: {len(skipped)}")
-    stats.utils.print_to_do(
+    card_utils.print_to_do(
         card_stats_by_name, "python scripts/generate_cards.py --local --dataset <name>"
     )
     return written, skipped
@@ -184,10 +181,19 @@ def main():
         action="store_true",
         help="Recompute the stats even if the dataset index is unchanged",
     )
-    stats.utils.add_stats_arguments(parser)
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        help="compute the stats from local copies of the datasets, not the remotes",
+    )
+    parser.add_argument(
+        "--datasets-dir",
+        default=card_utils.DEFAULT_DATASETS_DIR,
+        help="with --local: folder with one sub-folder per dataset (default: ~/mir_datasets)",
+    )
     args = parser.parse_args()
 
-    names = stats.utils.select_datasets(mirdata.list_datasets(), args.dataset)
+    names = card_utils.select_datasets(mirdata.list_datasets(), args.dataset)
     if args.missing and not args.dataset:
         names = [
             n for n in names if not os.path.exists(card_utils.card_path(args.output, n))
@@ -206,8 +212,6 @@ def main():
             "local": args.local,
             "datasets_dir": args.datasets_dir,
             "fetch_root": fetch_root,
-            "max_mb": args.max_mb,
-            "max_minutes": args.max_minutes,
         }
         generate(names, args.output, options)
 

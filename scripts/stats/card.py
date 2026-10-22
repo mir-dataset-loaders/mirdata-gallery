@@ -65,7 +65,7 @@ def annotations_to_card(part):
 
 
 def result_to_card_stats(result, mode, checksum):
-    """The "stats" field for one compute_stats result ({"name", "audio", "annotations"}).
+    """The "stats" field for one stats.compute result ({"name", "audio", "annotations"}).
 
     mode: "remote" or "local"; checksum: index_checksum of the dataset.
     """
