@@ -51,6 +51,7 @@ bibtex: |-
 summary: The dataset includes 100 popular songs, 20 with English lyrics and 80 with
   Japanese lyrics, from the 1980s and 1990s. Annotations provide information for music
   information retrieval tasks focusing on genre, tempo, and key.
+docstring_hash: 62127bff07e83da34957ff26a3d3dab19e967272694220e205e2faebdbc268e2
 stats:
   computed:
     mode: remote

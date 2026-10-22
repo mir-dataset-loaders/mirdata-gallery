@@ -4,9 +4,9 @@ The text comes straight from mirdata (`mirdata.datasets.<name>.__doc__`) and
 is never stored in the card. The model is Qwen2.5-7B-Instruct as a 4-bit GGUF
 file, run with llama.cpp on the CPU, so no GPU is needed.
 
-`summary(ds)` takes an initialized dataset like the functions in
-card_builder.py; generate_cards.py calls it for each card. The model is loaded
-on the first call and reused.
+`summary(name, docstring)` takes the text from `loader_docstring(name)`;
+generate_cards.py calls it for each card whose docstring is new or changed.
+The model is loaded on the first call and reused.
 
 Usage (standalone, to fill or redo summaries in existing cards):
     python scripts/llm.py --dataset beatles --force --dry-run
@@ -53,16 +53,13 @@ def loader_docstring(name):
     return card_utils.clean_text(doc) or None
 
 
-def summary(ds):
-    """LLM summary of the loader docstring, or None if the loader has none."""
-    docstring = loader_docstring(ds.name)
-    if not docstring:
-        return None
+def summary(name, docstring):
+    """LLM summary of a loader docstring (from loader_docstring(name))."""
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {
             "role": "user",
-            "content": f"Dataset name: {ds.name}\n\nDataset description:\n{docstring}",
+            "content": f"Dataset name: {name}\n\nDataset description:\n{docstring}",
         },
     ]
     out = get_model().create_chat_completion(
@@ -187,7 +184,8 @@ def main():
         print(f"\n[{name}]")
         start = time.time()
         try:
-            new = summary(mirdata.initialize(name))
+            docstring = loader_docstring(name)
+            new = summary(name, docstring) if docstring else None
         except ModuleNotFoundError as e:
             print(f"  SKIP: loader needs an extra library ({e.name})")
             continue
@@ -205,6 +203,7 @@ def main():
             continue
 
         card["summary"] = new
+        card["docstring_hash"] = card_utils.docstring_hash(docstring)
         card_utils.write_card(path, card)
         written += 1
 

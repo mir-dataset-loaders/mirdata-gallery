@@ -1,16 +1,15 @@
-"""Storing the cards: cards/*.yaml, the docstring hashes, and text tidying.
+"""Storing the cards: cards/*.yaml, the docstring hash, and text tidying.
 
 Every script that touches a card goes through here, so a card is formatted the
 same way no matter which script wrote it last.
 
-cards/docstring_hashes.json maps dataset name -> SHA-256 of the loader
-docstring that produced the card's summary. generate_cards.py reruns the LLM
-only when the current docstring hashes differently, so unchanged datasets
-never cost model time and never get a slightly different summary.
+A card's docstring_hash is the SHA-256 of the loader docstring that produced
+its summary. generate_cards.py reruns the LLM only when the current docstring
+hashes differently, so unchanged datasets never cost model time and never get
+a slightly different summary.
 """
 
 import hashlib
-import json
 import os
 import textwrap
 
@@ -59,34 +58,12 @@ _CardDumper.add_representer(str, _str_presenter)
 _CardDumper.add_representer(list, _list_presenter)
 
 
-# --- docstring hashes ---------------------------------------------------------
-
-HASHES_FILENAME = "docstring_hashes.json"
+# --- docstring hash -----------------------------------------------------------
 
 
 def docstring_hash(text):
     """Hex SHA-256 of a string."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
-def hashes_path(cards_dir):
-    return os.path.join(cards_dir, HASHES_FILENAME)
-
-
-def read_hashes(cards_dir):
-    """The name -> hash map, or {} if the file doesn't exist."""
-    p = hashes_path(cards_dir)
-    if not os.path.exists(p):
-        return {}
-    with open(p, encoding="utf-8") as f:
-        return json.load(f)
-
-
-def write_hashes(cards_dir, mapping):
-    """Save the map with sorted keys so the git diff stays readable."""
-    with open(hashes_path(cards_dir), "w", encoding="utf-8") as f:
-        json.dump(mapping, f, indent=2, sort_keys=True)
-        f.write("\n")
 
 
 # --- text ---------------------------------------------------------------------

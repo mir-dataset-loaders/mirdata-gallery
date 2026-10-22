@@ -105,6 +105,12 @@ SCHEMA = {
         "type": (str, NoneType),
         "min_length": 1,
     },
+    # SHA-256 of the loader docstring the summary was made from; the LLM
+    # reruns only when the docstring hashes differently
+    "docstring_hash": {
+        "type": (str, NoneType),
+        "pattern": "[0-9a-f]{64}",
+    },
     # Audio and annotation statistics; null until computed
     "stats": {
         "type": (dict, NoneType),

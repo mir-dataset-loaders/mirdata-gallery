@@ -1,13 +1,17 @@
-"""generate_cards.py on the fake dataset: the card it writes, and when its stats are recomputed or kept.
+"""generate_cards.py on the fake dataset: the card it writes, and when its stats and summary are recomputed or kept.
 
 The rules (scripts/scripts_structure.md, "Stats in the cards"):
   - stats are computed when the card has none, the index changed, or with
     --force-stats or --local; otherwise the card keeps its stats;
   - for the same index, the more complete stats win (ok, incomplete,
     needs_local, error, judged by the worst part).
-Each test runs the command line as a user would, with --no-summary (no LLM).
+  - the summary is redone only when the loader docstring hashes differently
+    from the card's docstring_hash (or the card has no summary, or --force).
+Each test runs the command line as a user would, with --no-summary (no LLM),
+except the summary tests, which replace llm.summary with a stand-in.
 """
 
+import hashlib
 import sys
 import tempfile
 
@@ -16,6 +20,7 @@ import pytest
 import card_utils
 import fake_dataset
 import generate_cards
+import llm
 from conftest import files_under
 from fake_dataset import RESOURCES
 from test_cards_schema import validate_card
@@ -29,12 +34,15 @@ def run(fake_remotes, tmp_path, monkeypatch, capsys):
 
     The test fails unless the run reports the card as written ([OK]): a run that
     fails leaves the previous card on disk, which would pass for "stats kept".
-    run.out holds what the run printed.
+    run.out holds what the run printed. summary=True leaves out --no-summary
+    (use it with llm_calls, or the real model is loaded).
     """
     cards = str(tmp_path / "cards")
 
-    def run(*flags):
-        argv = ["generate_cards.py", "--dataset", "fake_dataset", "--output", cards, "--no-summary"]
+    def run(*flags, summary=False):
+        argv = ["generate_cards.py", "--dataset", "fake_dataset", "--output", cards]
+        if not summary:
+            argv.append("--no-summary")
         monkeypatch.setattr(sys, "argv", [*argv, *flags])
         fake_remotes.requests.clear()
         generate_cards.main()
@@ -43,6 +51,23 @@ def run(fake_remotes, tmp_path, monkeypatch, capsys):
         return card_utils.read_card(card_utils.card_path(cards, "fake_dataset"))
 
     return run
+
+
+@pytest.fixture
+def llm_calls(monkeypatch):
+    """llm.summary replaced with a stand-in; the list holds the (name, docstring) of each call."""
+    calls = []
+
+    def summary(name, docstring):
+        calls.append((name, docstring))
+        return f"Summary {len(calls)} of {name}."
+
+    monkeypatch.setattr(llm, "summary", summary)
+    return calls
+
+
+def sha256(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def change_index(monkeypatch):
@@ -136,3 +161,31 @@ def test_fetched_files_deleted_after_the_run(run, tmp_path, monkeypatch):
     card = run()
     assert card["stats"]["annotations"]["status"] == "ok"  # the files were fetched and read...
     assert files_under(temp) == []  # ...and nothing is left of them
+
+
+def test_new_card_gets_summary_and_docstring_hash(run, llm_calls):
+    card = run(summary=True)
+    assert len(llm_calls) == 1
+    name, docstring = llm_calls[0]
+    assert name == "fake_dataset"
+    assert docstring.startswith("A tiny mirdata loader for the tests")
+    assert card["summary"] == "Summary 1 of fake_dataset."
+    assert card["docstring_hash"] == sha256(docstring)  # the text the summary was made from
+    assert validate_card(card, "fake_dataset.yaml") == []
+
+
+def test_summary_kept_when_docstring_is_unchanged(run, llm_calls):
+    first = run(summary=True)
+    second = run(summary=True)
+    assert len(llm_calls) == 1  # no second LLM call
+    assert second["summary"] == first["summary"]
+    assert second["docstring_hash"] == first["docstring_hash"]
+
+
+def test_summary_redone_when_docstring_changes(run, llm_calls, monkeypatch):
+    run(summary=True)
+    monkeypatch.setattr(fake_dataset, "__doc__", "A new description of the fake dataset.")
+    second = run(summary=True)
+    assert llm_calls[1:] == [("fake_dataset", "A new description of the fake dataset.")]
+    assert second["summary"] == "Summary 2 of fake_dataset."
+    assert second["docstring_hash"] == sha256("A new description of the fake dataset.")

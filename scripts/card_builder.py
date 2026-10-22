@@ -39,12 +39,12 @@ FALLBACK_MAP = {
 }
 
 
-def build_card(ds, summary=None, stats=None):
+def build_card(ds, summary=None, docstring_hash=None, stats=None):
     """The card dict for one initialized dataset; keys in card order.
 
-    summary and stats are the card's summary and stats fields, from
-    generate_cards.update_summary() and update_stats() (new, kept from the
-    old card, or None).
+    summary, docstring_hash and stats are the card's summary, docstring_hash
+    and stats fields, from generate_cards.update_summary() and update_stats()
+    (new, kept from the old card, or None).
     """
     return {
         "name": ds.name,
@@ -52,6 +52,7 @@ def build_card(ds, summary=None, stats=None):
         "annotations": annotations(ds),
         "bibtex": bibtex(ds),
         "summary": summary,
+        "docstring_hash": docstring_hash,
         "stats": stats,
     }
 

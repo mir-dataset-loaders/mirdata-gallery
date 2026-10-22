@@ -2,9 +2,9 @@
 
 Every run rebuilds the cheap fields (license, annotations, bibtex). The LLM
 summary and the stats are recomputed only when needed: when the loader
-docstring changed (cards/docstring_hashes.json) or the dataset index changed
-(stored in the card). Datasets whose stats need a local run are listed at
-the end.
+docstring changed or the dataset index changed (both recorded in the card:
+docstring_hash and stats.computed.index). Datasets whose stats need a local
+run are listed at the end.
 
 Usage:
     python scripts/generate_cards.py                     # every dataset -> cards/
@@ -35,21 +35,23 @@ import stats.utils
 def update_stats(ds, old, options):
     """(stats field, "new" or "kept" or "none") for one dataset.
 
-    options: None to keep the old stats as they are (--no-stats), else a dict
-    with local, datasets_dir, fetch_root, max_mb, max_minutes, force.
+    old is the old card ({} if none); options see generate(). With stats
+    False the old stats are kept as they are (--no-stats).
     """
-    if options is None:
-        return old, "kept" if old else "none"
+    old_stats = old.get("stats")
+    if not options["stats"]:
+        return old_stats, "kept" if old_stats else "none"
     if options["local"] and not os.path.isdir(
         os.path.join(options["datasets_dir"], ds.name)
     ):
-        return old, "kept (no local copy)" if old else "none (no local copy)"
+        status = "kept (no local copy)" if old_stats else "none (no local copy)"
+        return old_stats, status
     checksum = stats.card.index_checksum(ds)
-    if not (options["force"] or options["local"]) and stats.card.is_current(
-        old, checksum
+    if not (options["force_stats"] or options["local"]) and stats.card.is_current(
+        old_stats, checksum
     ):
         return (
-            old,
+            old_stats,
             "kept",
         )  # computed from this same index, and no flag asks for a rerun
     root = options["datasets_dir"] if options["local"] else options["fetch_root"]
@@ -62,39 +64,48 @@ def update_stats(ds, old, options):
     )
     mode = "local" if options["local"] else "remote"
     new = stats.card.result_to_card_stats(result, mode, checksum)
-    chosen = stats.card.choose(old, new, checksum)
+    chosen = stats.card.choose(old_stats, new, checksum)
     return chosen, "new" if chosen is new else "kept (more complete than the new run)"
 
 
-def update_summary(ds, old, stored_hash, summarize=True, force=False):
+def update_summary(ds, old, options):
     """(summary, docstring hash, "new" or "kept" or "none") for one card.
 
     The LLM runs only when summaries are on and the loader has a docstring
-    that is new or changed (or with force, or when the card has no summary
-    yet); otherwise the old summary is kept. old is the old card's summary,
-    stored_hash the hash recorded for it. The hash is None when the loader
-    has no docstring.
+    that is new or changed (or with force_summary, or when the card has no
+    summary yet); otherwise the old summary and its hash are kept. old is the
+    old card ({} if none), whose docstring_hash is the hash of the docstring
+    its summary was made from; options see generate(). The hash is None when
+    the loader has no docstring.
     """
+    summarize = options["summary"]
+    old_summary, stored_hash = old.get("summary"), old.get("docstring_hash")
     docstring = llm.loader_docstring(ds.name)
     current = card_utils.docstring_hash(docstring) if docstring else None
-    if summarize and docstring and (force or current != stored_hash or not old):
-        return llm.summary(ds), current, "new"
+    if (
+        summarize
+        and docstring
+        and (options["force_summary"] or current != stored_hash or not old_summary)
+    ):
+        return llm.summary(ds.name, docstring), current, "new"
     if docstring or not summarize:
-        return old, stored_hash, "kept"
+        return old_summary, stored_hash, "kept"
     return None, None, "none"  # the loader has no docstring (any more)
 
 
-def generate(names, output_dir, summarize=True, force=False, stats_options=None):
+def generate(names, output_dir, options):
     """Write a card for each dataset name. Returns (written, skipped).
 
-    The LLM runs only for datasets whose docstring hash is new or changed
-    (or for all of them with force=True). With summarize=False it never runs
-    and each card keeps the summary it already has (or gets null).
-    stats_options: see update_stats(); None keeps every card's stats as they are.
+    options is a dict with:
+      summary, force_summary: the LLM runs only for datasets whose docstring
+        hash is new or changed (or for all of them with force_summary). With
+        summary False it never runs and each card keeps the summary it
+        already has (or gets null).
+      stats, force_stats, local, datasets_dir, fetch_root, max_mb,
+        max_minutes: see update_stats(); stats False keeps every card's stats
+        as they are.
     """
     os.makedirs(output_dir, exist_ok=True)
-    stored = card_utils.read_hashes(output_dir)
-    updated = dict(stored)
     written = []
     skipped = {}
     card_stats_by_name = {}  # name -> the card's stats, for the closing to-do list
@@ -106,13 +117,11 @@ def generate(names, output_dir, summarize=True, force=False, stats_options=None)
         try:
             ds = mirdata.initialize(name)
             # Stats first: if they fail, the LLM has not been run for nothing.
-            stats_field, stats_status = update_stats(
-                ds, old.get("stats"), stats_options
+            stats_field, stats_status = update_stats(ds, old, options)
+            summary, summary_hash, summary_status = update_summary(ds, old, options)
+            card = card_builder.build_card(
+                ds, summary=summary, docstring_hash=summary_hash, stats=stats_field
             )
-            summary, summary_hash, summary_status = update_summary(
-                ds, old.get("summary"), stored.get(name), summarize, force
-            )
-            card = card_builder.build_card(ds, summary=summary, stats=stats_field)
         except ModuleNotFoundError as e:
             missing = str(e).replace("No module named ", "").strip("'")
             skipped[name] = f"missing library: {missing}"
@@ -123,11 +132,6 @@ def generate(names, output_dir, summarize=True, force=False, stats_options=None)
             print(f"  [ERROR] {name:30s} | {e}")
             continue
 
-        if summary_hash:
-            updated[name] = summary_hash
-        else:  # loader has no docstring: no hash to remember
-            updated.pop(name, None)
-
         card_utils.write_card(path, card)
         written.append(name)
         print(
@@ -136,8 +140,6 @@ def generate(names, output_dir, summarize=True, force=False, stats_options=None)
         )
         card_stats_by_name[name] = stats_field
 
-    if updated != stored:
-        card_utils.write_hashes(output_dir, updated)
     print(f"\nDone. Written: {len(written)}, skipped: {len(skipped)}")
     stats.utils.print_to_do(
         card_stats_by_name, "python scripts/generate_cards.py --local --dataset <name>"
@@ -196,25 +198,18 @@ def main():
         print(f"Datasets without a card: {', '.join(names)}")
 
     with tempfile.TemporaryDirectory(prefix="generate_cards_") as fetch_root:
-        stats_options = (
-            None
-            if args.no_stats
-            else {
-                "local": args.local,
-                "datasets_dir": args.datasets_dir,
-                "fetch_root": fetch_root,
-                "max_mb": args.max_mb,
-                "max_minutes": args.max_minutes,
-                "force": args.force_stats,
-            }
-        )
-        generate(
-            names,
-            args.output,
-            summarize=not args.no_summary,
-            force=args.force,
-            stats_options=stats_options,
-        )
+        options = {
+            "summary": not args.no_summary,
+            "force_summary": args.force,
+            "stats": not args.no_stats,
+            "force_stats": args.force_stats,
+            "local": args.local,
+            "datasets_dir": args.datasets_dir,
+            "fetch_root": fetch_root,
+            "max_mb": args.max_mb,
+            "max_minutes": args.max_minutes,
+        }
+        generate(names, args.output, options)
 
 
 if __name__ == "__main__":

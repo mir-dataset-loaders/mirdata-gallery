@@ -18,6 +18,7 @@ summary: GuitarSet includes 360 close-to-30-second acoustic guitar recordings ac
   various styles, tempi, and versions, with annotations for pitch, beats, tempo, and
   chords. The primary MIR tasks involve analyzing these recordings to extract musical
   features and annotations.
+docstring_hash: eeb443ef36e3780b2127b1579fc3890c1784d6d564fc7059f66cf6b7d49d09dc
 stats:
   computed:
     mode: local
