@@ -12,7 +12,6 @@ Usage:
     python scripts/generate_cards.py --missing           # only datasets with no card yet
     python scripts/generate_cards.py --no-summary        # skip the LLM, keep old summaries
     python scripts/generate_cards.py --force             # redo every summary
-    python scripts/generate_cards.py --init-hashes       # one-time: record hashes, no LLM
     python scripts/generate_cards.py --output some/dir
     python scripts/generate_cards.py --no-stats          # skip the stats, keep old ones
     python scripts/generate_cards.py --force-stats       # recompute every dataset's stats
@@ -146,30 +145,6 @@ def generate(names, output_dir, summarize=True, force=False, stats_options=None)
     return written, skipped
 
 
-def init_hashes(names, output_dir):
-    """Record the current docstring hash for every card that has a summary.
-
-    Run once before the first workflow run so existing summaries count as
-    up to date; otherwise the LLM would redo all of them.
-    """
-    updated = card_utils.read_hashes(output_dir)
-    count = 0
-    for name in names:
-        card = card_utils.read_card(card_utils.card_path(output_dir, name)) or {}
-        if not card.get("summary"):
-            continue
-        try:
-            docstring = llm.loader_docstring(name)
-        except ModuleNotFoundError as e:
-            print(f"  [SKIP]  {name:30s} | needs: {e.name}")
-            continue
-        if docstring:
-            updated[name] = card_utils.docstring_hash(docstring)
-            count += 1
-    card_utils.write_hashes(output_dir, updated)
-    print(f"Recorded {count} hash(es) in {card_utils.hashes_path(output_dir)}")
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Generate dataset cards for the mirdata gallery."
@@ -208,11 +183,6 @@ def main():
         help="Recompute the stats even if the dataset index is unchanged",
     )
     stats.utils.add_stats_arguments(parser)
-    parser.add_argument(
-        "--init-hashes",
-        action="store_true",
-        help="Only record docstring hashes for cards that have a summary; no LLM",
-    )
     args = parser.parse_args()
 
     names = stats.utils.select_datasets(mirdata.list_datasets(), args.dataset)
@@ -224,10 +194,6 @@ def main():
             print("Every mirdata dataset already has a card.")
             return
         print(f"Datasets without a card: {', '.join(names)}")
-
-    if args.init_hashes:
-        init_hashes(names, args.output)
-        return
 
     with tempfile.TemporaryDirectory(prefix="generate_cards_") as fetch_root:
         stats_options = (
