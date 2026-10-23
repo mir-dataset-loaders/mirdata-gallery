@@ -1,0 +1,51 @@
+name: candombe
+license: Creative Commons Attribution 4.0 International
+annotations:
+- BeatData
+bibtex: |-
+  @inproceedings{Nunes2015,
+      author = {Leonardo Nunes and Martín Rocamora and Luis Jure and Luiz W. P. Biscainho},
+      title = {{Beat and Downbeat Tracking Based on Rhythmic Patterns Applied to the Uruguayan Candombe Drumming}},
+      booktitle = {Proceedings of the 16th International Society for Music Information Retrieval Conference (ISMIR 2015)},
+      month = {Oct.},
+      address = {Málaga, Spain},
+      pages = {264--270},
+      year = {2015}
+  }
+summary: null
+stats:
+  computed:
+    mode: local
+    index: 691dccb80d2638823bfc7f196baf1d6d
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 35
+    n_audio_files: 35
+    total_audio_duration_seconds: 8862.374
+    sample_rate_counts:
+      '44100': 35
+    channel_counts:
+      '2': 35
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 35
+    n_tracks_loaded: 35
+    tracks_with:
+      BeatData: 35
+    annotations:
+      beats:
+        type: BeatData
+        n_tracks: 35
+        n_annotations: 35
+        meter:
+          4: 35
+        tempo_from_beats:
+          unit: bpm
+          edges: [95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145]
+          counts: [1, 0, 0, 0, 0, 1, 6, 16, 9, 2]
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
