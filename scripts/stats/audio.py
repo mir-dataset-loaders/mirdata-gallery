@@ -22,10 +22,20 @@ def track_audio_paths(index):
 def summarize(index):
     """The per-dataset counts: tracks in the index, and distinct audio files they list."""
     tracks = track_audio_paths(index)
-    return {
+    summary = index.get("summary", {}) #for updated indexes
+    result =  {
         "n_tracks": len(index.get("tracks", {})),
         "n_audio_files": len({p for paths in tracks.values() for p in paths}),
     }
+    if summary: 
+        result.update({
+            "total_audio_duration_minutes": summary.get("total_audio_duration_minutes"),
+            "sample_rate_counts": summary.get("sample_rate_counts", {}),
+            "channel_counts": summary.get("channel_counts", {}),
+        })
+    return result
+            
+
 
 
 def dataset_stats(name, index):
