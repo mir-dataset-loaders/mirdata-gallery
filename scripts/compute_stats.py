@@ -93,6 +93,9 @@ def print_audio(part_stats, limit):
     """The terminal block for one dataset's audio, counted from its index (limit does not apply)."""
     print(f"  tracks in index:        {part_stats['n_tracks']}")
     print(f"  audio files in index:   {part_stats['n_audio_files']}")
+    print(f"  total audio duration in minutes: {part_stats['total_audio_duration_minutes']}")
+    print(f"  sample rate counts: {part_stats['sample_rate_counts']}")
+    print(f"  channel counts: {part_stats['channel_counts']}")
 
 
 def print_annotations(part_stats, limit):
