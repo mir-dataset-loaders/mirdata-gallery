@@ -28,9 +28,8 @@ def summarize(index):
         "n_audio_files": len({p for paths in tracks.values() for p in paths}),
     }
     if audio_information:
-        sec = audio_information.get("total_audio_duration_seconds")
         result.update({
-            "total_audio_duration_seconds": sec,
+            "total_audio_duration_seconds": audio_information.get("total_audio_duration_seconds"),
             "sample_rate_counts": audio_information.get("sample_rate_counts", {}),
             "channel_counts": audio_information.get("channel_counts", {}),
         })
