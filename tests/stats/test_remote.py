@@ -1,6 +1,7 @@
-"""Remote mode when something goes wrong: the server, the zips, the limits, broken files.
+"""stats/remote.py through compute(): what goes wrong (the server, the zips, the limits,
+broken files), and how the zips are read when nothing does (section 4).
 
-Each test breaks one thing and checks the status the docs promise
+Each test in sections 1 to 3 breaks one thing and checks the status the docs promise
 (scripts/scripts_structure.md, "Status of each part"):
     needs_local   the remotes cannot give a complete answer; problems say why
     incomplete    some files are broken in a way a local copy would not fix
@@ -18,7 +19,7 @@ import zipfile
 import pytest
 
 import fake_dataset
-from conftest import dataset_files, zip_bytes
+from conftest import dataset_files, files_under, zip_bytes
 from fake_dataset import DATA_HOME
 from stats import compute
 
@@ -245,3 +246,37 @@ def test_incomplete_when_an_annotation_file_is_corrupt(fake_remotes, tmp_path, m
     assert ann["annotations"]["beats"]["n_tracks"] == 2
     assert ann["annotations"]["chords"]["n_tracks"] == 2  # the chords are not affected
     assert result["audio"]["status"] == "ok"
+
+
+# ------------------------------------------------------- 4. reading the zips (nothing broken)
+
+
+def test_small_zip_is_downloaded_whole(fake_remotes, tmp_path):
+    """A zip up to 200 MB comes in one piece: fewer requests than the 5 files it holds."""
+    compute("fake_dataset", str(tmp_path), parts=["annotations"])
+    assert len(fake_remotes.gets("annotations.zip")) < 5
+
+
+def test_big_zip_is_read_by_range(fake_remotes, tmp_path, monkeypatch):
+    monkeypatch.setattr("stats.remote.MAX_ARCHIVE_MB", 0)  # every zip counts as big
+    remote = compute("fake_dataset", str(tmp_path), parts=["annotations"])
+    local = compute("fake_dataset", DATA_HOME, local=True, parts=["annotations"])
+    assert remote["annotations"]["status"] == "ok"
+    assert without_sources(remote["annotations"]) == without_sources(local["annotations"])
+    assert len(fake_remotes.gets("annotations.zip")) > 1
+    assert all(fake_remotes.gets("annotations.zip"))  # every request is a range
+
+
+def test_only_annotation_files_are_saved(fake_remotes, tmp_path):
+    """The fetch folder gets the 5 annotation files and no audio (the audio part reads only the index).
+
+    compute() leaves them there; generate_cards.py deletes the folder after the run (test_generate_cards.py).
+    """
+    compute("fake_dataset", str(tmp_path))
+    assert files_under(tmp_path) == [
+        "annotations/beats/track1.txt",
+        "annotations/beats/track2.txt",
+        "annotations/beats/track3.txt",
+        "annotations/chords/track1.lab",
+        "annotations/chords/track2.lab",
+    ]
