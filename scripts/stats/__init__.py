@@ -3,13 +3,12 @@
 compute() is the one place that runs both parts for one dataset. It
 initializes the dataset with the folder its files are read from or fetched
 into, then runs each part on its own: a part that fails holds
-{"status": "error", "error": ...} and does not stop the other. A remote run
-gets one Budget for the whole dataset, spent by the annotation downloads (the
-audio part reads only the index). Local runs have no limits.
+{"status": "error", "error": ...} and does not stop the other.
 scripts/local/compute_stats_local.py prints the result, scripts/generate_cards.py
 turns it into the card's stats field (stats/to_card.py).
 """
 
+import functools
 import json
 import os
 import time
@@ -18,7 +17,6 @@ import mirdata
 from mirdata import download_utils
 
 from stats import annotations, audio
-from stats.remote import MAX_REMOTE_MB, MAX_REMOTE_MINUTES, Budget
 
 PARTS = ("audio", "annotations")
 
@@ -42,11 +40,8 @@ def compute(
     data_home,
     local=False,
     parts=PARTS,
-    limit=None,
     workers=4,
     verbose=False,
-    max_mb=MAX_REMOTE_MB,
-    max_minutes=MAX_REMOTE_MINUTES,
     on_part=None,
 ):
     """{"name", "audio", "annotations"} for one dataset.
@@ -67,35 +62,21 @@ def compute(
         result["error"] = f"{type(e).__name__}: {e}"
         return result
 
-    loaded = {}
-
-    def index():
-        """The dataset index, loaded once and shared by both parts (or its error, raised again)."""
-        if "index" not in loaded:
-            try:
-                loaded["index"] = load_index(ds)
-            except Exception as e:
-                loaded["index"] = e
-        if isinstance(loaded["index"], Exception):
-            raise loaded["index"]
-        return loaded["index"]
-
-    budget = None if local else Budget(max_mb, max_minutes)  # one for the whole dataset
+    index = functools.cache(lambda: load_index(ds))  # loaded once, by the first part that needs it
     for part in parts:
         t0 = time.time()
         try:
-            if part == "audio":  # counted from the index, whatever the mode or limit
-                part_stats = audio.dataset_stats(name, index())
-            elif local:  # reads the files on disk: no index needed
-                part_stats = annotations.local_stats(
-                    name, ds, data_home, limit, verbose
+            if part == "audio":  # counted from the index, whatever the mode
+                result[part] = audio.dataset_stats(index())
+            else:  # a local run reads the files on disk: no index needed
+                result[part] = annotations.dataset_stats(
+                    ds,
+                    data_home,
+                    index=None if local else index(),
+                    local=local,
+                    workers=workers,
+                    verbose=verbose,
                 )
-            else:
-                part_stats = annotations.remote_stats(
-                    name, ds, data_home, index(), limit, workers, verbose, budget
-                )
-            part_stats.pop("name", None)
-            result[part] = part_stats
         except Exception as e:  # one broken part must not stop the other
             result[part] = {"status": "error", "error": f"{type(e).__name__}: {e}"}
         if on_part:

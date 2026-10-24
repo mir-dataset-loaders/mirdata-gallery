@@ -272,32 +272,21 @@ def _entry_path(value):
     return None
 
 
-def annotation_paths(index, track_ids=None):
+def annotation_paths(index):
     """Relative paths of every non-audio file in the index.
 
     Track and multitrack entries whose key contains "audio" are left out;
     the index's "metadata" files are always included, since many loaders
     need them to build a track. A multitrack's "tracks" entry lists its
-    track ids and is not a file. track_ids limits the track entries to those
-    tracks and the multitracks to those containing one of them.
+    track ids and is not a file.
     """
     paths = set()
-    tracks = index.get("tracks") or {}
-    for track_id in tracks if track_ids is None else track_ids:
-        for key, value in (tracks.get(track_id) or {}).items():
+    for track in (index.get("tracks") or {}).values():
+        for key, value in (track or {}).items():
             if "audio" not in key.lower() and _entry_path(value):
                 paths.add(_entry_path(value))
-    selected = None if track_ids is None else set(track_ids)
     for mtrack in (index.get("multitracks") or {}).values():
-        mtrack = mtrack or {}
-        members = mtrack.get("tracks")  # the multitrack's track ids, not a file entry
-        if (
-            selected is not None
-            and isinstance(members, list)
-            and not selected & set(members)
-        ):
-            continue  # with a limit, only multitracks of the selected tracks
-        for key, value in mtrack.items():
+        for key, value in (mtrack or {}).items():
             if key != "tracks" and "audio" not in key.lower() and _entry_path(value):
                 paths.add(_entry_path(value))
     for value in (index.get("metadata") or {}).values():
@@ -316,12 +305,15 @@ def _write(data_home, path, data):
 def download_whole(url, session, budget=None):
     """The bytes behind url, streamed.
 
-    budget (a Budget) is checked and charged chunk by chunk, so
-    the remote limit stops a download that would pass it.
+    budget (a Budget) is checked against the size the server announces before
+    anything is read, then chunk by chunk, so the remote limit stops a download
+    that would pass it.
     """
     r = session.request("GET", url, timeout=60, stream=True)
     try:
         r.raise_for_status()
+        if budget and "Content-Length" in r.headers:
+            budget.check(int(r.headers["Content-Length"]))  # too big: refused unread
         chunks = []
         for chunk in r.iter_content(1 << 20):
             if budget:
@@ -334,13 +326,12 @@ def download_whole(url, session, budget=None):
 
 
 def whole_zip(data):
-    """(ZipFile, read(info) -> bytes, None) for a zip downloaded whole."""
-    zf = zipfile.ZipFile(io.BytesIO(data))
-    return zf, zf.read, None  # ZipFile.read checks the CRC itself
+    """A ZipFile over a zip downloaded whole, in memory."""
+    return zipfile.ZipFile(io.BytesIO(data))
 
 
 def open_zip(url, session, budget=None):
-    """(ZipFile, read(info) -> bytes, http) for a remote zip, of which only the file list is read.
+    """(ZipFile, http) for a remote zip, of which only the file list is read.
 
     http is the HTTPFile the members are read from by range, None when the
     server has no range support and the zip had to be downloaded whole (only
@@ -349,14 +340,125 @@ def open_zip(url, session, budget=None):
     try:
         http = HTTPFile(url, session, budget)
     except IOError:  # no size, no range support: GitHub archives, some web servers
-        return whole_zip(download_whole(url, session, budget=budget))
+        return whole_zip(download_whole(url, session, budget=budget)), None
     try:
         zf = zipfile.ZipFile(http)  # the file list only, read from the end of the zip
     except Exception:  # zipfile reports a failed read as BadZipFile, hence the flag
         if not http.ranges_ignored or http.size > MAX_ARCHIVE_MB * 1e6:
             raise
-        return whole_zip(download_whole(http.url, session, budget=budget))
-    return zf, lambda info: member_bytes(http, info), http
+        return whole_zip(download_whole(http.url, session, budget=budget)), None
+    return zf, http
+
+
+def source_line(key, remote, text):
+    """One line of the fetch log: which remote, then what happened to it."""
+    return f"  {key:22s} {remote.filename}: {text}"
+
+
+def write_members(members, read, data_home, workers=1, verbose=False):
+    """Write each zip member to data_home/<index path>; members is {index path: ZipInfo}.
+
+    read(info) gives one member's bytes. Returns (written, failed, limit_hit):
+    the paths now on disk, {path: why it failed}, and the RemoteLimit message
+    if the budget ran out (those paths are not in failed: the limit is
+    reported once).
+    """
+
+    def write(item):
+        path, info = item
+        try:
+            _write(data_home, path, read(info))
+            return path, None
+        except RemoteLimit as e:
+            return path, e
+        except Exception as e:
+            return path, f"{type(e).__name__}: {e}"
+
+    written, failed, limit_hit = set(), {}, None
+    with ThreadPoolExecutor(workers) as pool:
+        for i, (path, error) in enumerate(pool.map(write, members.items()), 1):
+            if isinstance(error, RemoteLimit):
+                limit_hit = limit_hit or str(error)
+                continue
+            if error:
+                failed[path] = error
+            else:
+                written.add(path)
+            if verbose:
+                print(f"    {path}: {error or 'ok'}", file=sys.stderr)
+            if i % 200 == 0 and i < len(members):
+                print(f"    ... {i}/{len(members)} files", file=sys.stderr)
+    return written, failed, limit_hit
+
+
+def fetch_zip(remote, todo, data_home, session, budget=None, workers=4, verbose=False):
+    """The todo paths a zip remote holds: (held, written, failed, limit_hit, log text).
+
+    Only the zip's file list is read first. A zip holding todo paths is then
+    downloaded whole up to MAX_ARCHIVE_MB, and read file by file by range when
+    bigger. held is every todo path the zip holds, written or not.
+    """
+    t0 = time.time()
+    zf, http = open_zip(remote.url, session, budget)
+    members = match_members(
+        zf, todo, remote.destination_dir, getattr(remote, "unpack_directories", None)
+    )
+    if not members:
+        return set(), set(), {}, None, "no annotation files from the index"
+    if http and http.size <= MAX_ARCHIVE_MB * 1e6:
+        # Small: one download instead of a request per file. It is the same zip,
+        # so the members found above fit it.
+        zf, http = whole_zip(download_whole(http.url, session, budget)), None
+    if http:
+        read = lambda info: member_bytes(http, info)  # noqa: E731
+        written, failed, limit_hit = write_members(
+            members, read, data_home, workers, verbose
+        )
+        how = f"{http.requests} requests, {http.bytes / 1e6:.1f} MB"
+        size = f"{http.size / 1e9:.2f} GB"
+    else:  # in memory: no threads needed
+        written, failed, limit_hit = write_members(
+            members, zf.read, data_home, 1, verbose
+        )
+        how = "downloaded whole"
+        size = f"{sum(i.compress_size for i in zf.infolist()) / 1e9:.2f} GB"
+    text = (
+        f"{size}  {len(members)} matched, {len(written)} fetched  "
+        f"({how}, {time.time() - t0:.1f} s)"
+    )
+    return set(members), written, failed, limit_hit, text
+
+
+def fetch_file(remote, todo, data_home, session, budget=None):
+    """A plain-file remote, downloaded whole when it is a todo path: (held, written, failed, limit_hit, log text)."""
+    path = (
+        f"{remote.destination_dir}/{remote.filename}"
+        if remote.destination_dir
+        else remote.filename
+    )
+    if path not in todo:
+        return set(), set(), {}, None, "not an annotation file of the index"
+    data = download_whole(remote.url, session, budget)
+    _write(data_home, path, data)
+    return {path}, {path}, {}, None, f"{len(data) / 1e6:.1f} MB downloaded"
+
+
+def closing_problems(remotes, unmatched, unreadable, limit_hit):
+    """The reason to run locally once every remote is done, if any (a list of at most one).
+
+    After the limit, the unread remotes explain the unmatched files, so only
+    the limit is reported.
+    """
+    if not remotes:
+        return ["no remotes: the annotations have to be downloaded manually"]
+    if limit_hit:
+        return [f"remote limit: {limit_hit}"]
+    if unmatched:
+        why = f"; not readable: {'; '.join(unreadable)}" if unreadable else ""
+        return [
+            f"{len(unmatched)} annotation files not found in the readable remotes{why}"
+        ]
+    return []
 
 
 def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
@@ -366,13 +468,11 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
     others are missing, one log line per remote, and the reasons to run locally.
     """
     present = {p for p in wanted if os.path.isfile(os.path.join(data_home, p))}
-    fetched, errors, sources, problems = set(present), {}, [], []
+    fetched, errors, sources = set(present), {}, []
     if present:
         sources.append(f"  {'cached':22s} {len(present)} files already in {data_home}")
     if not remotes:
-        reason = "no remotes: the annotations have to be downloaded manually"
-        sources.append(f"  ({reason})")
-        problems.append(reason)
+        sources.append("  (no remotes: the annotations have to be downloaded manually)")
     session = http_session(workers)
     matched = set(present)  # every wanted path some remote holds, fetched or not
     unreadable = []  # "remote: why" for remotes that cannot be read
@@ -383,130 +483,35 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
         if not todo:
             break
         name = remote.filename.lower()
-        t0 = time.time()
         if limit_hit:
-            sources.append(f"  {key:22s} {remote.filename}: not read, {limit_hit}")
+            sources.append(source_line(key, remote, f"not read, {limit_hit}"))
             continue
-        if name.endswith(".zip"):
-            try:
-                zf, read_member, http = open_zip(remote.url, session, budget)
-                members = match_members(
-                    zf,
-                    todo,
-                    remote.destination_dir,
-                    getattr(remote, "unpack_directories", None),
-                )
-                if members and http and http.size <= MAX_ARCHIVE_MB * 1e6:
-                    # Small and holding annotation files: one download instead of a request per
-                    # file. It is the same zip, so the members found above fit it.
-                    zf, read_member, http = whole_zip(
-                        download_whole(http.url, session, budget)
-                    )
-            except RemoteLimit as e:
-                limit_hit = str(e)
-                sources.append(f"  {key:22s} {remote.filename}: {e}")
-                continue
-            except Exception as e:  # no access, no range support, not a zip...
-                sources.append(
-                    f"  {key:22s} {remote.filename}: {type(e).__name__}: {e}"
-                )
-                unreadable.append(f"{remote.filename}: {type(e).__name__}: {e}")
-                continue
-            matched.update(members)
-            if not members:
-                sources.append(
-                    f"  {key:22s} {remote.filename}: no annotation files from the index"
-                )
-                continue
-            items = list(members.items())
-
-            def read(item):
-                path, info = item
-                try:
-                    _write(data_home, path, read_member(info))
-                    return path, None
-                except RemoteLimit as e:
-                    return path, e
-                except Exception as e:
-                    return path, f"{type(e).__name__}: {e}"
-
-            n_ok = 0
-            with ThreadPoolExecutor(
-                workers if http else 1
-            ) as pool:  # in memory: no need
-                for i, (path, error) in enumerate(pool.map(read, items), 1):
-                    if isinstance(error, RemoteLimit):
-                        limit_hit = limit_hit or str(error)
-                        continue  # not fetched; reported once as a problem
-                    if error:
-                        errors[path] = error
-                    else:
-                        fetched.add(path)
-                        n_ok += 1
-                    if verbose:
-                        print(f"    {path}: {error or 'ok'}", file=sys.stderr)
-                    if i % 200 == 0 and i < len(items):
-                        print(f"    ... {i}/{len(items)} files", file=sys.stderr)
-            if http:
-                how = f"{http.requests} requests, {http.bytes / 1e6:.1f} MB"
-                size = f"{http.size / 1e9:.2f} GB"
-            else:
-                how = "downloaded whole"
-                size = f"{sum(i.compress_size for i in zf.infolist()) / 1e9:.2f} GB"
-            sources.append(
-                f"  {key:22s} {remote.filename}  {size}  {len(members)} matched, {n_ok} fetched  "
-                f"({how}, {time.time() - t0:.1f} s)"
-            )
-        elif name.endswith(ARCHIVE_EXTENSIONS):
-            sources.append(f"  {key:22s} {remote.filename}: not a zip, skipped")
+        if name.endswith(ARCHIVE_EXTENSIONS):
+            sources.append(source_line(key, remote, "not a zip, skipped"))
             unreadable.append(f"{remote.filename} cannot be read remotely (not a zip)")
-        else:  # a plain file: fetched whole if the index lists it
-            path = (
-                f"{remote.destination_dir}/{remote.filename}"
-                if remote.destination_dir
-                else remote.filename
-            )
-            if path not in todo:
-                sources.append(
-                    f"  {key:22s} {remote.filename}: not an annotation file of the index"
+            continue
+        try:
+            if name.endswith(".zip"):
+                held, written, failed, limit_hit, text = fetch_zip(
+                    remote, todo, data_home, session, budget, workers, verbose
                 )
-                continue
-            matched.add(path)
-            try:
-                try:
-                    http = HTTPFile(remote.url, session, budget)
-                except IOError:  # no size, no range support: stream it whole, capped
-                    data = download_whole(remote.url, session, budget)
-                    how = "no range support, downloaded whole"
-                else:
-                    data = http.read_at(0, http.size)
-                    how = "fetched"
-                _write(data_home, path, data)
-                fetched.add(path)
-                sources.append(
-                    f"  {key:22s} {remote.filename}  {len(data) / 1e6:.1f} MB {how}"
+            else:
+                held, written, failed, limit_hit, text = fetch_file(
+                    remote, todo, data_home, session, budget
                 )
-            except RemoteLimit as e:
-                limit_hit = str(e)
-                sources.append(f"  {key:22s} {remote.filename}: {e}")
-            except Exception as e:
-                errors[path] = f"{type(e).__name__}: {e}"
-                sources.append(f"  {key:22s} {remote.filename}: {errors[path]}")
-                unreadable.append(f"{remote.filename}: {errors[path]}")
+        except RemoteLimit as e:
+            limit_hit = text = str(e)
+        except Exception as e:  # no access, no range support, not a zip...
+            text = f"{type(e).__name__}: {e}"
+            unreadable.append(f"{remote.filename}: {text}")
+        else:
+            matched |= held
+            fetched |= written
+            errors.update(failed)
+        sources.append(source_line(key, remote, text))
 
     unmatched = sorted(wanted - matched)
     for path in unmatched:
         errors[path] = "not in any readable remote"
-    # The closing problems. After the limit, the unread remotes explain the unmatched
-    # files, so only the limit is reported; without remotes, "no remotes" above already
-    # explains them.
-    if limit_hit:
-        problems.append(f"remote limit: {limit_hit}")
-    elif unmatched and remotes:
-        why = f"; not readable: {'; '.join(unreadable)}" if unreadable else ""
-        problems.append(
-            f"{len(unmatched)} annotation files not found in the readable remotes{why}"
-        )
-    elif not unmatched and unreadable and wanted - fetched:
-        problems.append("; ".join(unreadable))  # matched files that failed to download
+    problems = closing_problems(remotes, unmatched, unreadable, limit_hit)
     return fetched, errors, sources, problems

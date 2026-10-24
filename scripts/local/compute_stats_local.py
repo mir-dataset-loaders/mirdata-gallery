@@ -8,7 +8,6 @@ Usage:
     python scripts/local/compute_stats_local.py --dataset rwc_popular            # both parts
     python scripts/local/compute_stats_local.py --dataset rwc_popular --only audio
     python scripts/local/compute_stats_local.py --dataset rwc_popular --only annotations
-    python scripts/local/compute_stats_local.py --dataset rwc_popular --limit 5  # quick look
     python scripts/local/compute_stats_local.py --dataset rwc_popular --json
     python scripts/local/compute_stats_local.py --exclude acousticbrainz_genre   # every other dataset
     python scripts/local/compute_stats_local.py --dataset rwc_popular --local    # ~/mir_datasets/<name>
@@ -43,13 +42,12 @@ def compute(name, args, fetch_root):
         os.path.join(args.datasets_dir if args.local else fetch_root, name),
         local=args.local,
         parts=args.only,
-        limit=args.limit,
         workers=args.workers,
         verbose=args.verbose,
         on_part=(
             None
             if args.json
-            else lambda part, part_stats, s: print_part(part, part_stats, args.limit, s)
+            else lambda part, part_stats, s: print_part(part, part_stats, s)
         ),
     )
     if "error" in result and not args.json:
@@ -78,25 +76,25 @@ def fmt(value):
     return str(value)
 
 
-def print_part(part, part_stats, limit, elapsed):
+def print_part(part, part_stats, elapsed):
     print(f"  [{part}]")
     if "error" in part_stats:
         print(f"  error: {part_stats['error']}")
         return
-    (print_audio if part == "audio" else print_annotations)(part_stats, limit)
+    (print_audio if part == "audio" else print_annotations)(part_stats)
     print(f"  status:                 {part_stats['status']}")
     for problem in part_stats["problems"]:
         print(f"    {problem}")
     print(f"  elapsed:                {elapsed:.1f} s")
 
 
-def print_audio(part_stats, limit):
-    """The terminal block for one dataset's audio, counted from its index (limit does not apply)."""
+def print_audio(part_stats):
+    """The terminal block for one dataset's audio, counted from its index."""
     print(f"  tracks in index:        {part_stats['n_tracks']}")
     print(f"  audio files in index:   {part_stats['n_audio_files']}")
 
 
-def print_annotations(part_stats, limit):
+def print_annotations(part_stats):
     """The terminal block for one dataset's annotations."""
     print("\n".join(part_stats.get("sources", [])))
     brief = (
@@ -132,8 +130,6 @@ def print_annotations(part_stats, limit):
         print(f"  errors:                 {len(part_stats['errors'])}")
         for track_id, error in list(part_stats["errors"].items())[: 0 if brief else 5]:
             print(f"    {track_id}: {error}")
-    if limit:
-        print(f"  (only the first {limit} tracks were read)")
 
 
 def print_table(results):
@@ -183,12 +179,6 @@ def parse_args(argv=None):
         choices=stats.PARTS,
         default=None,
         help="compute only the audio or only the annotations",
-    )
-    parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="quick look: only the first N tracks (annotations)",
     )
     parser.add_argument(
         "--workers", type=int, default=4, help="parallel range requests"

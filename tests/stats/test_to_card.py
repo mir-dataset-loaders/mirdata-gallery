@@ -5,7 +5,7 @@ from stats.to_card import result_to_card_stats
 
 HIST = {"unit": "s", "edges": [1, 2, 3], "counts": [4, 5]}
 
-AUDIO = {"name": "fake", "status": "ok", "problems": [], "n_tracks": 2, "n_audio_files": 4}
+AUDIO = {"status": "ok", "problems": [], "n_tracks": 2, "n_audio_files": 4}
 ANNOTATIONS = {
     "status": "incomplete",
     "problems": [],
