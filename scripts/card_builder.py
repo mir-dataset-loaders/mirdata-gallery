@@ -74,11 +74,12 @@ def annotations(ds):
     return sorted(found)
 
 
-def annotation_properties(ds):
+def annotation_properties(ds, guess=True):
     """{property name: annotation type} for every annotation property of the dataset's Track class.
 
     The card's annotations field lists the types; the stats read the
-    properties of the official mirdata types.
+    properties of the official mirdata types. guess=False keeps only the
+    properties whose return hint names the type (none guessed from FALLBACK_MAP).
     """
     found = {}
     track_class = getattr(ds, "_track_class", None)
@@ -87,13 +88,13 @@ def annotation_properties(ds):
             continue
         item = getattr(track_class, attr, None)
         if isinstance(item, (property, mirdata.core.cached_property)):
-            ann_cls = _annotation_class_name(attr, item)
+            ann_cls = _annotation_class_name(attr, item, guess)
             if ann_cls:
                 found[attr] = ann_cls
     return found
 
 
-def _annotation_class_name(attr_name, item):
+def _annotation_class_name(attr_name, item, guess=True):
     """Annotation class name a property returns, or None if it isn't one."""
     # @property stores the getter as .fget, @cached_property as .func
     func = getattr(item, "func", None) or getattr(item, "fget", None)
@@ -113,6 +114,8 @@ def _annotation_class_name(attr_name, item):
             and ret is not Annotation
         ):
             return ret.__name__
+    if not guess:
+        return None
 
     # 2. Keyword in the property name
     attr_lower = attr_name.lower()

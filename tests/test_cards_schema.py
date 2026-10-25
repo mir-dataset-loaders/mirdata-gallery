@@ -1,326 +1,217 @@
-"""Check every cards/*.yaml against the schema in card_schema.py.
+"""What every card in cards/ must look like: the format the gallery page is built from.
 
-One test per card, so a failure names the card and lists every rule it breaks.
+check_card() and check_stats() hold the rules, one assert each, and run on every
+committed card. Edit this file when the format changes.
 """
 
 import os
 import re
-from types import NoneType
 
 import pytest
-import yaml
 
-from card_schema import (
-    SCHEMA,
-    STATS_ANNOTATION_COMMON,
-    STATS_ANNOTATION_FIELDS,
-    STATS_MODES,
-    STATS_PARTS,
-    STATS_STATUSES,
-)
+import card_utils
 
 CARDS_DIR = os.path.join(os.path.dirname(__file__), "..", "cards")
 CARD_FILES = sorted(f for f in os.listdir(CARDS_DIR) if f.endswith(".yaml"))
 
-
-# =============================================================================
-# Validation — applies the rule keywords documented in card_schema.py
-# =============================================================================
-
-
-def validate_card(card, filename=None):
-    """Return a list of problems with `card` (a loaded YAML dict). Empty = valid.
-
-    `filename` is the card's file name (e.g. "beatles.yaml"); when given, the
-    `name` field must match it.
-    """
-    if not isinstance(card, dict):
-        return [f"card is not a mapping (got {type(card).__name__})"]
-
-    errors = []
-
-    missing = [k for k in SCHEMA if k not in card]
-    extra = [k for k in card if k not in SCHEMA]
-    if missing:
-        errors.append(f"missing keys: {', '.join(missing)}")
-    if extra:
-        errors.append(f"unknown keys: {', '.join(extra)}")
-
-    for key, rules in SCHEMA.items():
-        if key in card:
-            errors.extend(f"{key}: {msg}" for msg in _check_field(card[key], rules))
-
-    if filename is not None and isinstance(card.get("name"), str):
-        expected = filename.removesuffix(".yaml")
-        if card["name"] != expected:
-            errors.append(
-                f"name: '{card['name']}' does not match file name '{filename}'"
-            )
-
-    for key, value in card.items():
-        if isinstance(value, str) and any(
-            line != line.rstrip() for line in value.splitlines()
-        ):
-            errors.append(f"{key}: trailing whitespace at end of line")
-
-    return errors
-
-
-def _check_field(value, rules):
-    """Apply the rules of one field to its value; yield messages for failures."""
-    allowed = rules["type"]
-    if not isinstance(value, allowed):
-        yield f"expected {_type_names(allowed)}, got {type(value).__name__}"
-        return  # the remaining rules assume the right type
-    if value is None:
-        return  # null is allowed by `type`; nothing else to check
-
-    if isinstance(value, str):
-        if "min_length" in rules and len(value.strip()) < rules["min_length"]:
-            yield f"shorter than {rules['min_length']} character(s) (or only whitespace)"
-        if rules.get("single_line") and "\n" in value.strip():
-            yield "must be a single line"
-        if "starts_with" in rules and not value.lstrip().startswith(
-            rules["starts_with"]
-        ):
-            yield f"must start with {rules['starts_with']!r}"
-        if "pattern" in rules and not re.fullmatch(rules["pattern"], value):
-            yield f"does not match pattern {rules['pattern']!r}"
-
-    if isinstance(value, list):
-        if "items" in rules:
-            bad = [v for v in value if not isinstance(v, rules["items"])]
-            if bad:
-                yield f"every element must be {_type_names(rules['items'])}; got {bad}"
-        if "min_items" in rules and len(value) < rules["min_items"]:
-            yield f"needs at least {rules['min_items']} element(s), got {len(value)}"
-        if rules.get("unique") and len(value) != len(set(map(str, value))):
-            yield "contains duplicates"
-        if rules.get("sorted") and value != sorted(value, key=str):
-            yield f"not sorted (expected {sorted(value, key=str)})"
-
-    if "choices" in rules:
-        values = value if isinstance(value, list) else [value]
-        unknown = [v for v in values if v not in rules["choices"]]
-        if unknown:
-            yield f"unknown value(s) {unknown}; allowed: {rules['choices']}"
-
-    if rules.get("stats") and isinstance(value, dict):
-        yield from _check_stats(value)
-
-
-def _check_stats(stats):
-    """The structure of the "stats" field; see STATS_* in card_schema.py."""
-    extra = [k for k in stats if k not in ["computed", "error", *STATS_PARTS]]
-    if extra:
-        yield f"unknown keys: {', '.join(map(str, extra))}"
-
-    computed = stats.get("computed")
-    if not isinstance(computed, dict):
-        yield "computed: missing (needs mode, index)"
-    else:
-        if computed.get("mode") not in STATS_MODES:
-            yield f"computed.mode: must be one of {STATS_MODES}, got {computed.get('mode')!r}"
-        if not isinstance(computed.get("index"), str) or not computed.get("index"):
-            yield "computed.index: must be the index checksum (a string)"
-
-    if "error" in stats:
-        if not isinstance(stats["error"], str):
-            yield "error: must be a string"
-    elif not any(part in stats for part in STATS_PARTS):
-        yield f"needs at least one of {STATS_PARTS} (or an error)"
-
-    for part in STATS_PARTS:
-        if part not in stats:
-            continue
-        value = stats[part]
-        if not isinstance(value, dict):
-            yield f"{part}: expected dict, got {type(value).__name__}"
-            continue
-        status = value.get("status")
-        if status not in STATS_STATUSES:
-            yield f"{part}.status: must be one of {STATS_STATUSES}, got {status!r}"
-        if status == "error":
-            if not isinstance(value.get("error"), str):
-                yield f"{part}.error: an error part needs its message"
-        elif not isinstance(value.get("problems"), list) or not all(
-            isinstance(p, str) for p in value["problems"]
-        ):
-            yield f"{part}.problems: must be a list of strings"
-        elif status == "needs_local" and not value["problems"]:
-            yield f"{part}.problems: needs_local must say why"
-        yield from _check_histograms(value, part)
-        if part == "annotations":
-            yield from _check_annotation_entries(value.get("annotations") or {})
-
-
-def _check_annotation_entries(entries):
-    """Each entry under stats.annotations.annotations: its type's fields, nothing else."""
-    for prop, entry in entries.items():
-        where = f"annotations.annotations.{prop}"
-        if not isinstance(entry, dict):
-            yield f"{where}: expected dict, got {type(entry).__name__}"
-            continue
-        fields = STATS_ANNOTATION_FIELDS.get(entry.get("type"))
-        if fields is None:
-            yield f"{where}.type: must be one of {sorted(STATS_ANNOTATION_FIELDS)}, got {entry.get('type')!r}"
-            continue
-        missing = [k for k in [*STATS_ANNOTATION_COMMON, *fields] if k not in entry]
-        if missing:
-            yield f"{where}: missing keys: {', '.join(missing)}"
-        allowed = [*STATS_ANNOTATION_COMMON, "parts", *fields]
-        extra = [k for k in entry if k not in allowed]
-        if extra:
-            yield f"{where}: unknown keys: {', '.join(map(str, extra))}"
-        for key in ["n_tracks", "n_annotations"]:
-            if key in entry and (not isinstance(entry[key], int) or entry[key] < 0):
-                yield f"{where}.{key}: must be a non-negative integer"
-        for key, kind in fields.items():
-            value = entry.get(key)
-            if key not in entry:
-                continue
-            if kind == "histogram" and value is not None and (
-                not isinstance(value, dict) or set(value) != {"unit", "edges", "counts"}
-            ):
-                yield f"{where}.{key}: must be a histogram {{unit, edges, counts}} or null"
-            if kind == "counts" and (
-                not isinstance(value, dict)
-                or not all(isinstance(c, int) and c >= 0 for c in value.values())
-            ):
-                yield f"{where}.{key}: must be {{label: count}} with non-negative integer counts"
-
-
-def _check_histograms(value, where):
-    """Every {unit, edges, counts} under value: one more edge than counts, rising edges."""
-    if isinstance(value, dict):
-        if set(value) == {"unit", "edges", "counts"}:
-            edges, counts = value["edges"], value["counts"]
-            if not isinstance(edges, list) or not isinstance(counts, list):
-                yield f"{where}: edges and counts must be lists"
-            elif len(edges) != len(counts) + 1:
-                yield f"{where}: {len(edges)} edges for {len(counts)} counts (needs one more edge)"
-            elif any(b <= a for a, b in zip(edges, edges[1:])):
-                yield f"{where}: edges must rise"
-            elif any(not isinstance(c, int) or c < 0 for c in counts):
-                yield f"{where}: counts must be non-negative integers"
-            return
-        for key, item in value.items():
-            yield from _check_histograms(item, f"{where}.{key}")
-
-
-def _type_names(allowed):
-    types = allowed if isinstance(allowed, tuple) else (allowed,)
-    return " or ".join("null" if t is NoneType else t.__name__ for t in types)
-
-
-# =============================================================================
-# Tests
-# =============================================================================
-
-
-@pytest.mark.parametrize("filename", CARD_FILES, ids=lambda f: f.removesuffix(".yaml"))
-def test_card_matches_schema(filename):
-    with open(os.path.join(CARDS_DIR, filename), encoding="utf-8") as f:
-        card = yaml.safe_load(f)
-
-    errors = validate_card(card, filename)
-    assert not errors, f"cards/{filename}:\n" + "\n".join(f"  - {e}" for e in errors)
-
-
-def test_validator_reports_every_problem():
-    """Guard for the validator itself: wrong types, extra and missing keys."""
-    errors = validate_card({"name": 5, "annotations": "BeatData", "bogus": 1}, "x.yaml")
-    assert any(e.startswith("missing keys") for e in errors)
-    assert any(e.startswith("unknown keys") for e in errors)
-    assert "name: expected str, got int" in errors
-    assert "annotations: expected list, got str" in errors
-
-
-# =============================================================================
-# The stats field
-# =============================================================================
-
-
-def _stats_errors(stats):
-    return list(_check_field(stats, SCHEMA["stats"]))
-
-
-def BEATS(stats):
-    """The beats entry of a stats dict, for the cases below."""
-    return stats["annotations"]["annotations"]["beats"]
-
-
-VALID_STATS = {
-    "computed": {"mode": "remote", "index": "cb3998bcae39d9c1"},
-    "audio": {"status": "ok", "problems": [], "n_tracks": 3, "n_audio_files": 3},
-    "annotations": {
-        "status": "needs_local",
-        "problems": ["no remotes: the annotations have to be downloaded manually"],
-        "annotations": {
-            "beats": {
-                "type": "BeatData",
-                "n_tracks": 3,
-                "n_annotations": 3,
-                "meter": {4: 3},
-                "tempo_from_beats": {"unit": "bpm", "edges": [60, 80], "counts": [3]},
-            }
-        },
-    },
+FIELDS = [
+    "name",
+    "license",
+    "annotations",
+    "bibtex",
+    "summary",
+    "docstring_hash",
+    "stats",
+]
+# The card's annotations field: mirdata's annotation types plus a few labels
+# that are not classes. Each one has a colour in docs/_static/css/custom.css.
+CARD_TYPES = {
+    "BeatData",
+    "ChordData",
+    "EventData",
+    "EventDataExtended",
+    "F0Data",
+    "Genre",
+    "Instrument",
+    "KeyData",
+    "LyricData",
+    "MultiF0Data",
+    "NoteData",
+    "SectionData",
+    "TempoData",
+}
+STATUSES = {"ok", "incomplete", "needs_local", "error"}
+MODES = {"remote", "local"}
+NAME = re.compile(r"[a-z0-9_]+")
+SHA256 = re.compile(r"[0-9a-f]{64}")
+HISTOGRAM_KEYS = {"unit", "edges", "counts"}
+CRASHED_PART = {"status", "error"}
+DATASET_ERROR = {"computed", "error"}
+STATS_KEYS = {"computed", "audio", "annotations"}
+AUDIO_FIELDS = {
+    "status",
+    "problems",
+    "n_tracks",
+    "n_audio_files",
+    "total_seconds",
+    "sample_rate",
+    "duration_histogram",
+}
+ANNOTATION_FIELDS = {
+    "status",
+    "problems",
+    "n_tracks",
+    "n_tracks_loaded",
+    "tracks_with",
+    "annotations",
+    "skipped",
+    "n_missing_files",
+    "n_track_errors",
+    "annotation_errors",
+}
+# The fields of an annotation entry, by type, besides type, n_tracks,
+# n_annotations and the optional parts.
+HISTOGRAM, COUNTS = "histogram", "counts"
+ENTRY_FIELDS = {
+    "BeatData": {"tempo_from_beats": HISTOGRAM, "meter": COUNTS},
+    "ChordData": {"labels": COUNTS, "qualities": COUNTS},
+    "EventData": {"events": COUNTS},
+    "F0Data": {"frequencies": HISTOGRAM},
+    "KeyData": {"keys": COUNTS, "modes": COUNTS},
+    "LyricData": {"lyric_unit": COUNTS, "lyrics_per_track": HISTOGRAM},
+    "MultiF0Data": {"frequencies": HISTOGRAM, "polyphony": COUNTS},
+    "NoteData": {"pitches": HISTOGRAM},
+    "SectionData": {"labels": COUNTS, "section_interval_seconds": HISTOGRAM},
+    "TempoData": {"tempo": HISTOGRAM},
 }
 
 
-def test_valid_stats_and_null_pass():
-    assert _stats_errors(VALID_STATS) == []
-    assert _stats_errors(None) == []
-    assert _stats_errors({"computed": VALID_STATS["computed"], "error": "ImportError: x"}) == []
-    error_part = {"computed": VALID_STATS["computed"], "audio": {"status": "error", "error": "RuntimeError: x"}}
-    assert _stats_errors(error_part) == []
+def is_count(value):
+    """A whole number >= 0 (and not True or False, which are ints in Python)."""
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
-def test_annotation_entries_may_have_parts_and_null_histograms():
-    import copy
-
-    stats = copy.deepcopy(VALID_STATS)
-    BEATS(stats).update(parts={"annotator_1": 3}, tempo_from_beats=None)
-    assert _stats_errors(stats) == []
+def check_text(text, field):
+    assert isinstance(text, str) and text.strip(), f"{field} should be non-empty text"
+    trailing = [line for line in text.splitlines() if line != line.rstrip()]
+    assert not trailing, f"{field}: no line should end in spaces (breaks the | style)"
 
 
-@pytest.mark.parametrize(
-    ("change", "message"),
-    [
-        (lambda s: s.pop("computed"), "computed: missing"),
-        (lambda s: s["computed"].update(mode="cloud"), "computed.mode"),
-        (lambda s: s["computed"].update(index=""), "computed.index"),
-        (lambda s: s.update(extra=1), "unknown keys: extra"),
-        (lambda s: s["audio"].update(status="fine"), "audio.status"),
-        (lambda s: s["audio"].pop("problems"), "audio.problems: must be a list"),
-        (lambda s: s["annotations"].update(problems=[]), "needs_local must say why"),
-        (lambda s: BEATS(s)["tempo_from_beats"].update(counts=[1, 2]), "2 edges for 2 counts"),
-        (lambda s: BEATS(s)["tempo_from_beats"].update(edges=[80, 60]), "edges must rise"),
-        (lambda s: BEATS(s)["tempo_from_beats"].update(counts=[-3]), "non-negative integers"),
-        (lambda s: (s.pop("audio"), s.pop("annotations")), "needs at least one of"),
-        (lambda s: BEATS(s).update(type="Beats"), "beats.type: must be one of"),
-        (lambda s: BEATS(s).pop("meter"), "beats: missing keys: meter"),
-        (lambda s: BEATS(s).pop("n_tracks"), "beats: missing keys: n_tracks"),
-        (lambda s: BEATS(s).update(beats_per_annotation={}), "beats: unknown keys: beats_per_annotation"),
-        (lambda s: BEATS(s).update(n_tracks=-1), "beats.n_tracks: must be a non-negative integer"),
-        (lambda s: BEATS(s).update(tempo_from_beats=[60, 80]), "beats.tempo_from_beats: must be a histogram"),
-        (lambda s: BEATS(s).update(meter={4: "three"}), "beats.meter: must be {label: count}"),
-    ],
-)
-def test_invalid_stats_are_reported(change, message):
-    import copy
-
-    stats = copy.deepcopy(VALID_STATS)
-    change(stats)
-    errors = _stats_errors(stats)
-    assert any(message in e for e in errors), errors
+def check_counts(value, where):
+    assert isinstance(value, dict), f"{where} should be {{label: count}}"
+    whole = all(is_count(n) for n in value.values())
+    assert whole, f"{where} should count whole numbers >= 0"
 
 
-def test_real_stats_from_card_py_pass_the_schema():
-    """The stats field to_card.py writes (here for a small fake result) is valid as is."""
-    from stats.to_card import result_to_card_stats
-    from test_to_card import ANNOTATIONS, AUDIO
+def check_histogram(value, where):
+    if value is None:
+        return  # no values to bin, e.g. no track with two beats
+    assert set(value) == HISTOGRAM_KEYS, f"{where} should be {{unit, edges, counts}}"
+    edges, counts = value["edges"], value["counts"]
+    assert isinstance(value["unit"], str), f"{where} unit should be text"
+    one_more = len(edges) == len(counts) + 1
+    assert one_more, f"{where} should have one more edge than counts"
+    increasing = all(a < b for a, b in zip(edges, edges[1:]))
+    assert increasing, f"{where} edges should increase"
+    whole = all(is_count(n) for n in counts)
+    assert whole, f"{where} counts should be whole numbers >= 0"
 
-    stats = result_to_card_stats({"name": "fake", "audio": AUDIO, "annotations": ANNOTATIONS}, "local", "abc")
-    assert _stats_errors(stats) == []
+
+def check_entry(prop, entry):
+    where = f"annotations.{prop}"
+    ann_type = entry.get("type")
+    assert ann_type in ENTRY_FIELDS, f"{where} type should be a mirdata annotation type"
+    fields = ENTRY_FIELDS[ann_type]
+    expected = {"type", "n_tracks", "n_annotations", *fields}
+    has_fields = set(entry) - {"parts"} == expected
+    assert has_fields, f"{where} should have the fields of {ann_type}"
+    assert is_count(entry["n_tracks"]), f"{where} n_tracks should be a count"
+    enough = entry["n_annotations"] >= entry["n_tracks"]
+    assert enough, f"{where} should have at least one annotation per track"
+    if "parts" in entry:
+        check_counts(entry["parts"], f"{where}.parts")
+    for field, kind in fields.items():
+        check = check_histogram if kind == HISTOGRAM else check_counts
+        check(entry[field], f"{where}.{field}")
+
+
+def check_part(part, value, fields):
+    assert value.get("status") in STATUSES, f"{part} status should be one of {STATUSES}"
+    if value["status"] == "error":
+        only_error = set(value) == CRASHED_PART
+        assert only_error, f"a crashed {part} should hold only status and error"
+        return False
+    assert set(value) == fields, f"{part} should have exactly its fields"
+    problems = value["problems"]
+    assert isinstance(problems, list), f"{part} problems should be a list"
+    needs_local = value["status"] == "needs_local"
+    matches = needs_local == bool(problems)
+    assert matches, f"{part} should be needs_local exactly when it has problems"
+    return True
+
+
+def check_card(card, name):
+    """The rules for the card's fields; check_stats() has those of its stats field."""
+    assert list(card) == FIELDS, f"a card should have exactly {FIELDS}, in this order"
+    assert card["name"] == name, "name should be the file name without .yaml"
+    assert NAME.fullmatch(name), "name should be lowercase letters, digits and _"
+    check_text(card["license"], "license")
+    assert "\n" not in card["license"], "license should be one line"
+    types = card["annotations"]
+    assert types, "annotations should list at least one type"
+    unknown = set(types) - CARD_TYPES
+    assert not unknown, f"annotations should only use known types, not {unknown}"
+    in_order = types == sorted(set(types))
+    assert in_order, "annotations should be sorted, without duplicates"
+    check_text(card["bibtex"], "bibtex")
+    assert card["bibtex"].lstrip().startswith("@"), "bibtex should be a BibTeX entry"
+    check_text(card["summary"], "summary")
+    hashed = str(card["docstring_hash"])
+    assert SHA256.fullmatch(hashed), "docstring_hash should be a SHA-256"
+    assert isinstance(card["stats"], dict), "stats should be computed"
+
+
+def check_stats(stats):
+    computed = stats.get("computed") or {}
+    assert computed.get("mode") in MODES, f"computed.mode should be one of {MODES}"
+    index = computed.get("index")
+    assert isinstance(index, str), "computed.index should be the index checksum"
+    if "error" in stats:
+        only_error = set(stats) == DATASET_ERROR
+        assert only_error, "a dataset error should hold only computed and the error"
+        return
+    assert set(stats) == STATS_KEYS, "stats should hold computed, audio and annotations"
+
+    audio = stats["audio"]
+    if check_part("audio", audio, AUDIO_FIELDS):
+        assert is_count(audio["n_tracks"]), "audio n_tracks should be a count"
+        assert is_count(audio["n_audio_files"]), "audio n_audio_files should be a count"
+        seconds = audio["total_seconds"]
+        positive = isinstance(seconds, (int, float)) and seconds >= 0
+        assert positive, "total_seconds should be a number >= 0"
+        assert is_count(audio["sample_rate"]), "sample_rate should be a whole number"
+        check_histogram(audio["duration_histogram"], "duration_histogram")
+
+    ann = stats["annotations"]
+    if check_part("annotations", ann, ANNOTATION_FIELDS):
+        for key in ("n_tracks", "n_tracks_loaded", "n_missing_files", "n_track_errors"):
+            assert is_count(ann[key]), f"annotations {key} should be a count"
+        loaded = ann["n_tracks_loaded"] <= ann["n_tracks"]
+        assert loaded, "no more tracks should load than there are"
+        check_counts(ann["tracks_with"], "tracks_with")
+        check_counts(ann["annotation_errors"], "annotation_errors")
+        assert isinstance(ann["skipped"], dict), "skipped should be {property: why}"
+        for prop, entry in ann["annotations"].items():
+            check_entry(prop, entry)
+
+
+@pytest.mark.parametrize("filename", CARD_FILES)
+def test_card(filename):
+    card = card_utils.read_card(os.path.join(CARDS_DIR, filename))
+    check_card(card, filename.removesuffix(".yaml"))
+
+
+@pytest.mark.parametrize("filename", CARD_FILES)
+def test_card_stats(filename):
+    card = card_utils.read_card(os.path.join(CARDS_DIR, filename))
+    check_stats(card["stats"])

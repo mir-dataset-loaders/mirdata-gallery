@@ -22,7 +22,7 @@
       ],
       "beats": [
         "annotations/beats/track2.txt",
-        "019804dff0e16ed8e8ef08297b9a9a8c"
+        "c1e7cbd3aeffc43c5e604c4b348683f6"
       ],
       "chords": [
         "annotations/chords/track2.lab",
@@ -43,5 +43,11 @@
         null
       ]
     }
+  },
+  "metadata": {
+    "metadata": [
+      "metadata.csv",
+      "f9fc01e670e7ff64fe71982540ee6b99"
+    ]
   }
 }

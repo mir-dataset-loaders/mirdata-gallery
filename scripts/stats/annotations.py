@@ -46,11 +46,13 @@ def read_tracks(ds, verbose=False):
         for prop, ann_type in card_builder.annotation_properties(ds).items()
         if ann_type in ANNOTATION_TYPES
     }
+    # typed by their return hint: a value of another type is an error, not a wrong guess
+    declared = card_builder.annotation_properties(ds, guess=False)
     track_ids = ds.track_ids
     stats = {prop: STATS[ann_type]() for prop, ann_type in properties.items()}
     # annotation type -> ids of tracks with at least one such annotation
     tracks_with = {}
-    skipped = {}  # property -> why its values could not be used
+    skipped = {}  # guessed property -> why its values could not be used
     # track_id -> error while creating the track (none of its annotations read)
     errors = {}
     annotation_errors = {}  # property -> {track_id: error} while loading or reading it
@@ -79,10 +81,12 @@ def read_tracks(ds, verbose=False):
                 continue
             if used:
                 tracks_with.setdefault(ann_type, set()).add(track_id)
+                continue
+            why = f"not a mirdata {ann_type} object (got {type(value).__name__})"
+            if prop in declared:
+                annotation_errors.setdefault(prop, {})[track_id] = why
             else:
-                skipped[prop] = (
-                    f"not a mirdata {ann_type} object (got {type(value).__name__})"
-                )
+                skipped[prop] = why
         if verbose:
             print(f"    {track_id}: ok", file=sys.stderr)
 
