@@ -142,9 +142,10 @@ header img[alt="Logo"] {
     margin: 0;
 }
 
+/* 8px at the sides: room for "ANNOTATION TYPES" and its AND / OR switch on one line */
 .gallery-filter-sidebar {
     width: 100%;
-    padding: 16px;
+    padding: 16px 8px;
     box-sizing: border-box;
     border: none;
     box-shadow: none;
@@ -161,6 +162,46 @@ header img[alt="Logo"] {
 
 .gallery-filter-sidebar h4:first-of-type {
     margin-top: 0;
+}
+
+/* A section title with its AND / OR switch on the right (gallery.js); the
+   switch goes under the title if a browser's wider text leaves no room */
+.filter-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.gallery-filter-sidebar .filter-section-head h4 {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.match-options {
+    display: inline-flex;
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.match-options button {
+    background: #ffffff;
+    border: none;
+    padding: 1px 4px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+}
+
+/* The purple of the active Combine button */
+.match-options button[aria-pressed="true"] {
+    background: #a054d8;
+    color: #ffffff;
 }
 
 .filter-search {
@@ -241,11 +282,6 @@ header img[alt="Logo"] {
     background: #475569;
     border-color: #475569;
     color: #ffffff;
-}
-
-.filter-pill .count {
-    font-size: 0.72rem;
-    opacity: 0.8;
 }
 
 /* Column 2: the dataset list, names and track counts. 350px to 687px; it

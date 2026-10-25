@@ -74,7 +74,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const plots = grid ? JSON.parse(grid.dataset.plots) : [];
         if (grid) grid.innerHTML = mirdataCharts.plotGridHtml(plots.filter((p) => !p.combined_only));
 
-        return { card, title, annotations, license, tracksText, tracks: isNaN(tracks) ? null : tracks, facts, plots };
+        // a list, for datasets with several licenses (the label above gives one for now)
+        const licenses = [license];
+        return { card, title, annotations, licenses, tracksText, tracks: isNaN(tracks) ? null : tracks, facts, plots };
     });
 
 
@@ -84,13 +86,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const licenseCounts = {};
     cardData.forEach((d) => {
         d.annotations.forEach((a) => (annCounts[a] = (annCounts[a] || 0) + 1));
-        licenseCounts[d.license] = (licenseCounts[d.license] || 0) + 1;
+        d.licenses.forEach((l) => (licenseCounts[l] = (licenseCounts[l] || 0) + 1));
     });
 
     // 3. State tracking
     const state = {
         selectedAnnotations: new Set(),
-        selectedLicense: null,
+        annMatch: "all", // a dataset needs "all" of the selected types (AND), or "any" of them (OR)
+        selectedLicenses: new Set(),
+        licMatch: "any", // the same for the selected licenses (OR: a dataset has one license for now)
         searchQuery: "",
     };
 
@@ -131,7 +135,7 @@ document.addEventListener("DOMContentLoaded", function () {
     resetBtn.className = "filter-reset-btn";
     resetBtn.addEventListener("click", () => {
         state.selectedAnnotations.clear();
-        state.selectedLicense = null;
+        state.selectedLicenses.clear();
         state.searchQuery = "";
         search.value = "";
         sidebar.querySelectorAll(".filter-pill.active").forEach((p) => p.classList.remove("active"));
@@ -141,10 +145,37 @@ document.addEventListener("DOMContentLoaded", function () {
     headerBar.appendChild(resetBtn);
     sidebar.appendChild(headerBar);
 
+    // A filter section's title, with an AND / OR switch beside it that sets
+    // state[matchKey]: a dataset needs all of the selected pills, or any
+    function filterHead(title, matchKey, what) {
+        const head = document.createElement("div");
+        head.className = "filter-section-head";
+        const h4 = document.createElement("h4");
+        h4.textContent = title;
+        const options = document.createElement("div");
+        options.className = "match-options";
+        [
+            ["all", "AND", `Intersection: datasets with all the selected ${what}`],
+            ["any", "OR", `Union: datasets with at least one of the selected ${what}`],
+        ].forEach(([mode, text, hint]) => {
+            const btn = document.createElement("button");
+            btn.textContent = text;
+            btn.dataset.tip = hint; // shown at once on hover, as the plot bars' (6. below)
+            btn.setAttribute("aria-label", `${text}: ${hint}`);
+            btn.setAttribute("aria-pressed", String(mode === state[matchKey]));
+            btn.addEventListener("click", () => {
+                state[matchKey] = mode;
+                options.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+                applyFilters();
+            });
+            options.appendChild(btn);
+        });
+        head.append(h4, options);
+        return head;
+    }
+
     // Annotation Filters Section
-    const annTitle = document.createElement("h4");
-    annTitle.textContent = "ANNOTATION TYPES";
-    sidebar.appendChild(annTitle);
+    sidebar.appendChild(filterHead("ANNOTATION TYPES", "annMatch", "types"));
 
     const annContainer = document.createElement("div");
     annContainer.className = "filter-pills-group";
@@ -171,10 +202,9 @@ document.addEventListener("DOMContentLoaded", function () {
     sidebar.appendChild(annContainer);
 
     // License Filters Section
-    const licTitle = document.createElement("h4");
-    licTitle.textContent = "LICENSES";
-    licTitle.style.marginTop = "20px";
-    sidebar.appendChild(licTitle);
+    const licHead = filterHead("LICENSES", "licMatch", "licenses");
+    licHead.style.marginTop = "20px";
+    sidebar.appendChild(licHead);
 
     const licContainer = document.createElement("div");
     licContainer.className = "filter-pills-group";
@@ -184,14 +214,13 @@ document.addEventListener("DOMContentLoaded", function () {
         .forEach((lic) => {
             const pill = document.createElement("button");
             pill.className = "filter-pill";
-            pill.innerHTML = `${lic} <span class="count">${licenseCounts[lic]}</span>`;
+            pill.textContent = lic;
             pill.addEventListener("click", () => {
-                if (state.selectedLicense === lic) {
-                    state.selectedLicense = null;
+                if (state.selectedLicenses.has(lic)) {
+                    state.selectedLicenses.delete(lic);
                     pill.classList.remove("active");
                 } else {
-                    licContainer.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
-                    state.selectedLicense = lic;
+                    state.selectedLicenses.add(lic);
                     pill.classList.add("active");
                 }
                 applyFilters();
@@ -463,6 +492,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // 5. Apply filtering logic
+    // Whether a dataset passes one pill filter: nothing selected, or any / all
+    // of the selected pills (mode) among its own values
+    function matchesPills(selected, values, mode) {
+        const has = (v) => values.includes(v);
+        return selected.size === 0 || (mode === "all" ? [...selected].every(has) : [...selected].some(has));
+    }
+
     function applyFilters() {
         let visibleCount = 0;
         let firstVisibleItem = null;
@@ -472,10 +508,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 !state.searchQuery ||
                 item.title.toLowerCase().includes(state.searchQuery) ||
                 item.annotations.some((a) => a.toLowerCase().includes(state.searchQuery));
-            const matchesAnn =
-                state.selectedAnnotations.size === 0 ||
-                Array.from(state.selectedAnnotations).some((a) => item.annotations.includes(a));
-            const matchesLic = !state.selectedLicense || item.license === state.selectedLicense;
+            const matchesAnn = matchesPills(state.selectedAnnotations, item.annotations, state.annMatch);
+            const matchesLic = matchesPills(state.selectedLicenses, item.licenses, state.licMatch);
             const isVisible = matchesSearch && matchesAnn && matchesLic;
             item.btn.style.display = isVisible ? "" : "none";
             if (isVisible) {
@@ -496,9 +530,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     applyFilters();
 
-    // 6. Plot bars: show their hover text at once, in a box above the cursor.
-    // The browser's own <title> tooltip waits about a second, so the text moves
-    // from each bar's <title> to data-tip.
+    // 6. Plot bars and the filters' AND / OR buttons: show their hover text at
+    // once, in a box above the cursor. The browser's own <title> tooltip waits
+    // about a second, so the text moves from each bar's <title> to data-tip.
     const tip = document.createElement("div");
     tip.className = "plot-tip";
     document.body.appendChild(tip);
@@ -514,7 +548,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     moveTips(infoColumn);
     function showTip(e) {
-        const bar = e.target.closest(".plot-svg g[data-tip]");
+        const bar = e.target.closest("[data-tip]");
         if (!bar) {
             tip.style.display = "none";
             return;
@@ -527,8 +561,10 @@ document.addEventListener("DOMContentLoaded", function () {
         tip.style.top = `${e.clientY - tip.offsetHeight - 10}px`;
     }
     const hideTip = () => (tip.style.display = "none");
-    infoColumn.addEventListener("pointermove", showTip);
-    infoColumn.addEventListener("pointerdown", showTip); // a tap on a touch screen
-    infoColumn.addEventListener("pointerleave", hideTip);
+    [infoColumn, sidebar].forEach((el) => {
+        el.addEventListener("pointermove", showTip);
+        el.addEventListener("pointerdown", showTip); // a tap on a touch screen
+        el.addEventListener("pointerleave", hideTip);
+    });
     infoColumn.addEventListener("scroll", hideTip);
 });
