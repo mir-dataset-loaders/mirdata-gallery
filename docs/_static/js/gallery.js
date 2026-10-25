@@ -339,7 +339,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // change the list: a dataset they hide stays in the combination.
     // colours: each selected dataset's colour, given when it joins (combine.js, nextColour)
     // focus: the dataset whose part of each plot is shown (its chip's name clicked), or null: stacked
-    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null };
+    // typeFocus: the annotation type whose plots alone are shown (7. below), or null: all
+    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null, typeFocus: null };
     const combineBar = document.createElement("div");
     combineBar.className = "combine-bar";
     const combineBtn = document.createElement("button");
@@ -365,6 +366,7 @@ document.addEventListener("DOMContentLoaded", function () {
         combine.selected = [];
         combine.colours.clear();
         combine.focus = null;
+        combine.typeFocus = null;
         if (combine.on) {
             // the dataset on show is the first one of the combination, purple as in its panel
             if (activeItem && activeItem.card.style.display !== "none") join(activeItem);
@@ -429,11 +431,12 @@ document.addEventListener("DOMContentLoaded", function () {
         cardData.forEach((d) => d.btn.classList.toggle("active", selected.includes(d)));
     }
 
-    // The combined panel: its title and datasets (a chip each: a click on its
-    // name focuses it, one more shows them all again, and × removes it; its dot
-    // is the dataset's colour in the plots, so the chips are the legend), At a
-    // glance, and Statistics: each dataset's notes, and the plots pooled from
-    // theirs (combine.js), stacked by dataset or showing the focused one's part
+    // The combined panel: its title and the datasets' names, At a glance, and
+    // Statistics: the datasets again (a chip each: a click on its name focuses
+    // it, one more shows them all again, and × removes it; its dot is the
+    // dataset's colour in the plots, so the chips are the legend), each
+    // dataset's notes, and the plots pooled from theirs (combine.js), stacked
+    // by dataset or showing the focused one's part
     function fillCombinedPanel(selected) {
         const escape = mirdataCharts.escapeHtml;
         const datasets = selected.map((d) => ({ name: d.title, slot: combine.colours.get(d), plots: d.plots }));
@@ -466,17 +469,20 @@ document.addEventListener("DOMContentLoaded", function () {
         const plots = mirdataCombine.combinedPlots(datasets);
         if (!plots.length) notes.push("Nothing to plot yet.");
         combinedPanel.innerHTML =
-            `<h2>${selected.length} datasets combined</h2>` +
-            `<div class="combine-chips">${chips}</div>` +
-            '<p class="combine-chips-hint">Click a name to focus it in the plots</p>' +
+            `<h2>${selected.length} Datasets Combined</h2>` +
+            `<p class="combine-names">${selected.map((d) => escape(d.title)).join(", ")}</p>` +
             '<div class="panel-box"><div class="box-title">At a glance</div>' +
             `<div class="glance-grid">${rows}</div>` +
             `<div class="box-title">Annotation types</div><div class="glance-tags">${tags || "—"}</div></div>` +
             '<div class="panel-box"><div class="box-title">Statistics</div>' +
+            `<div class="combine-chips">${chips}</div>` +
+            '<p class="combine-chips-hint">Click a name to focus it in the plots</p>' +
             notes.map((text) => `<p class="stats-note">${escape(text)}</p>`).join("") +
             (plots.length ? `<div class="plot-grid">${mirdataCharts.plotGridHtml(plots, combine.focus && combine.focus.title)}</div>` : "") +
             "</div>";
         moveTips(combinedPanel);
+        if (!types.includes(combine.typeFocus)) combine.typeFocus = null; // its datasets all removed
+        focusType(combinedPanel, combine.typeFocus);
     }
 
     combinedPanel.addEventListener("click", (e) => {
@@ -567,4 +573,61 @@ document.addEventListener("DOMContentLoaded", function () {
         el.addEventListener("pointerleave", hideTip);
     });
     infoColumn.addEventListener("scroll", hideTip);
+
+    // 7. Annotation type focus: a click on a type in a panel's At a glance (a
+    // dataset's or the combination's) shows only that type's plots in its
+    // Statistics and dims the other types; one more click shows them all again.
+    // The combination's is kept in combine.typeFocus, as its panel is redrawn.
+    // The "Annotation types" title gets a hint saying so.
+    function focusType(panel, type) {
+        panel.querySelectorAll(".glance-tags [data-ann]").forEach((tag) => {
+            tag.setAttribute("role", "button");
+            tag.tabIndex = 0;
+            tag.setAttribute("aria-pressed", String(tag.dataset.ann === type));
+        });
+        const tags = panel.querySelector(".glance-tags");
+        if (tags && tags.querySelector("[data-ann]")) {
+            tags.classList.toggle("has-focus", Boolean(type));
+            const title = tags.previousElementSibling;
+            if (!title.querySelector(".box-hint")) {
+                title.insertAdjacentHTML("beforeend", '<span class="box-hint">Click a type to focus it in the plots</span>');
+            }
+        }
+        const grid = panel.querySelector(".plot-grid");
+        if (!grid) return;
+        let shown = 0;
+        grid.querySelectorAll(".plot").forEach((fig) => {
+            const show = !type || fig.dataset.type === type;
+            fig.style.display = show ? "" : "none";
+            shown += show;
+        });
+        // a type without plots: a note instead
+        let empty = panel.querySelector(".type-empty");
+        if (type && !shown) {
+            if (!empty) {
+                empty = document.createElement("p");
+                empty.className = "stats-note type-empty";
+                grid.before(empty);
+            }
+            empty.textContent = `No ${type} plots yet.`;
+        } else if (empty) {
+            empty.remove();
+        }
+    }
+    cards.forEach((card) => focusType(card, null));
+    infoColumn.addEventListener("click", (e) => {
+        const tag = e.target.closest(".glance-tags [data-ann]");
+        if (!tag) return;
+        const panel = tag.closest(".gallery-cards-information > section");
+        const type = tag.getAttribute("aria-pressed") === "true" ? null : tag.dataset.ann;
+        if (panel === combinedPanel) combine.typeFocus = type;
+        focusType(panel, type);
+    });
+    // Enter or Space on a focused type clicks it
+    infoColumn.addEventListener("keydown", (e) => {
+        if ((e.key === "Enter" || e.key === " ") && e.target.matches(".glance-tags [data-ann]")) {
+            e.preventDefault();
+            e.target.click();
+        }
+    });
 });

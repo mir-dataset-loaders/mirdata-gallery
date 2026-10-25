@@ -518,7 +518,15 @@ header img[alt="Logo"] {
     margin: 0 0 8px;
 }
 
-/* The combined panel's datasets, under its title, and a hint under them */
+/* The combined panel's dataset names, under its title */
+#content .gallery-cards-information .combine-names {
+    color: #334155;
+    font-size: 1.03rem;
+    margin: 0 0 14px;
+}
+
+/* The combined panel's datasets again, under the Statistics title (focus a
+   dataset in the plots, or remove it), and a hint under them */
 .combine-chips {
     display: flex;
     flex-wrap: wrap;
@@ -654,6 +662,29 @@ header img[alt="Logo"] {
     display: inline-block;
     vertical-align: middle;
     margin: 2px 3px;
+}
+
+/* A type is a button: a click shows only its plots in Statistics and dims
+   the other types (gallery.js, focusType); a hint beside the title says so,
+   as the combined panel's chips hint does */
+.box-hint {
+    margin-left: 8px;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #64748b;
+}
+
+.glance-tags [data-ann] {
+    cursor: pointer;
+}
+
+.glance-tags [data-ann]:hover,
+.glance-tags [data-ann][aria-pressed="true"] {
+    box-shadow: 0 0 0 1px currentColor;
+}
+
+.glance-tags.has-focus [data-ann]:not([aria-pressed="true"]) {
+    opacity: 0.4;
 }
 
 /* Statistics: three small plots in a row, every plot the same size */

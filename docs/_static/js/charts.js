@@ -344,7 +344,9 @@
         return plots
             .map(
                 (p) =>
-                    `<figure class="plot"><figcaption><span class="plot-title">${escapeHtml(p.title)}</span>` +
+                    // data-type: the annotation type ("" for the audio's), for gallery.js's type focus
+                    `<figure class="plot" data-type="${escapeHtml(p.type || "")}">` +
+                    `<figcaption><span class="plot-title">${escapeHtml(p.title)}</span>` +
                     `<span class="plot-source">${escapeHtml(p.source)}</span></figcaption>` +
                     `${chartSvg(p.data, p.counted, p.atLeast, p.parts, focus)}</figure>`
             )
