@@ -8,8 +8,6 @@ import sys
 
 # Local extensions (the dataset-gallery directive lives in _ext/gallery.py)
 sys.path.insert(0, os.path.abspath("_ext"))
-# tests/card_schema.py: the card format, read by _ext/gallery.py for the order of the plots
-sys.path.insert(0, os.path.abspath("../tests"))
 
 # -- Project information -----------------------------------------------------
 
