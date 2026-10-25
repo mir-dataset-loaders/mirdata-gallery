@@ -248,10 +248,12 @@ header img[alt="Logo"] {
     opacity: 0.8;
 }
 
-/* Column 2: the dataset list, a slim column of names and track counts; the
-   panel takes the rest of the width. */
+/* Column 2: the dataset list, names and track counts. 350px to 687px; it
+   takes the width the panel leaves once the panel is at its 850px (687px is
+   what a 27" monitor leaves; wider windows keep a blank on the right). */
 .gallery-datasets-list {
-    flex: 0 0 350px;
+    flex: 1 0 350px;
+    max-width: 687px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -394,10 +396,11 @@ header img[alt="Logo"] {
     color: #ffffff;
 }
 
-/* Column 3: the panel, the rest of the width. It sticks below the theme's
-   56px header. */
+/* Column 3: the panel, 850px, narrower (down to 400px) when the window has
+   no room for it (wider, the charts and their text grow too big). It sticks
+   below the theme's 56px header. */
 .gallery-cards-information {
-    flex: 1 1 0;
+    flex: 0 1 850px;
     min-width: 400px;
     position: sticky;
     top: 72px;
