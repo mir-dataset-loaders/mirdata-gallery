@@ -245,11 +245,16 @@ document.addEventListener("DOMContentLoaded", function () {
         container.appendChild(sidebar);
     }
     container.appendChild(listColumn);
+    // the bar between them, dragged to widen the list (after 5. below)
+    const splitter = document.createElement("div");
+    splitter.className = "gallery-splitter";
+    container.appendChild(splitter);
     container.appendChild(infoColumn);
     gallery.appendChild(container);
     // Selection helper function
     let activeItem = null;
     function selectCard(item) {
+        const shown = activeItem && activeItem.card.style.display !== "none" ? activeItem : null;
         if (activeItem) {
             activeItem.btn.classList.remove("active");
             activeItem.card.style.display = "none";
@@ -258,10 +263,11 @@ document.addEventListener("DOMContentLoaded", function () {
             activeItem = item;
             item.btn.classList.add("active");
             item.card.style.display = "flex";
+            if (item !== shown) flashScrollbar(infoColumn); // another dataset on show (8. below)
         }
     }
-    // The middle column: the number of datasets and a sort menu, above a table
-    // with one row per dataset (Dataset, Tracks)
+    // The middle column: the number of datasets, a sort menu and the list / icon
+    // switch, above a table with one row per dataset (or a tile, as icons)
     const toolbar = document.createElement("div");
     toolbar.className = "list-toolbar";
     const listCount = document.createElement("span");
@@ -286,31 +292,69 @@ document.addEventListener("DOMContentLoaded", function () {
         applyFilters();
     });
     sortLabel.appendChild(sortSelect);
-    toolbar.append(listCount, sortLabel);
+    const tools = document.createElement("div"); // the sort menu, then the view switch
+    tools.className = "list-tools";
+    tools.appendChild(sortLabel);
+    toolbar.append(listCount, tools);
     listColumn.appendChild(toolbar);
 
+    // The table: Dataset, Types (a dot per annotation type, its colour), Tracks,
+    // License; custom.css wraps the dots, then drops License, as the list gets
+    // narrower
     const table = document.createElement("div");
     table.className = "list-table";
     const header = document.createElement("div");
     header.className = "list-row list-header";
-    ["Dataset", "Tracks"].forEach((label) => {
+    [
+        ["Dataset", "list-name"],
+        ["Types", "list-types"],
+        ["Tracks", "list-tracks"],
+        ["License", "list-license"],
+    ].forEach(([label, cls]) => {
         const cell = document.createElement("span");
+        cell.className = cls;
         cell.textContent = label;
         header.appendChild(cell);
     });
     table.appendChild(header);
     listColumn.appendChild(table);
 
+    // The dots' order: the coloured types by family, the darker shade first
+    // (custom.css), then the silver ones A–Z
+    const TYPE_ORDER = ["BeatData", "TempoData", "ChordData", "KeyData", "NoteData", "F0Data", "MultiF0Data",
+        "SectionData", "LyricData", "EventData", "EventDataExtended"];
+    const typeRank = (t) => (TYPE_ORDER.includes(t) ? TYPE_ORDER.indexOf(t) : TYPE_ORDER.length);
+
     cardData.forEach((item) => {
         const btn = document.createElement("button");
         btn.className = "dataset-item-btn list-row";
         const name = document.createElement("span");
-        name.className = "dataset-item-title";
+        name.className = "dataset-item-title list-name";
         name.textContent = item.title;
+        const types = document.createElement("span");
+        types.className = "list-types";
+        const sorted = [...item.annotations].sort((a, b) => typeRank(a) - typeRank(b) || a.localeCompare(b));
+        sorted.forEach((t) => {
+            const dot = document.createElement("span");
+            dot.className = "ann-dot";
+            dot.dataset.ann = t;
+            types.appendChild(dot);
+        });
+        if (sorted.length) types.dataset.tip = sorted.join(", "); // shown at once on hover (6. below)
         const tracks = document.createElement("span");
-        tracks.className = "list-cell";
+        tracks.className = "list-cell list-tracks";
         tracks.textContent = item.tracksText;
-        btn.append(name, tracks);
+        if (item.tracks !== null) {
+            // "360 tracks" on an icon; the list's column header says it
+            const unit = document.createElement("span");
+            unit.className = "tracks-unit";
+            unit.textContent = item.tracks === 1 ? " track" : " tracks";
+            tracks.appendChild(unit);
+        }
+        const license = document.createElement("span");
+        license.className = "list-cell list-license";
+        license.textContent = license.title = item.licenses.join(", ");
+        btn.append(name, types, tracks, license);
         btn.addEventListener("click", (e) => {
             // Cmd-click (Mac) or Ctrl-click: Combine mode's click, switching it on first
             if ((e.metaKey || e.ctrlKey) && !combine.on) {
@@ -329,6 +373,48 @@ document.addEventListener("DOMContentLoaded", function () {
         cardData.forEach((item) => table.appendChild(item.btn));
     }
     sortRows();
+
+    // The list / icon switch: the same rows, laid out as tiles by custom.css
+    // (title, type dots, tracks, license). The browser remembers the choice;
+    // without storage it starts as the list.
+    const VIEW_KEY = "mirdata-gallery-view";
+    const VIEWS = [
+        ["list", "List view", '<path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'],
+        ["icon", "Icon view", '<g fill="currentColor"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/>' +
+            '<rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></g>'],
+    ];
+    const viewToggle = document.createElement("div");
+    viewToggle.className = "view-toggle";
+    VIEWS.forEach(([view, label, icon]) => {
+        const btn = document.createElement("button");
+        btn.dataset.view = view;
+        btn.dataset.tip = label;
+        btn.setAttribute("aria-label", label);
+        btn.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">${icon}</svg>`;
+        btn.addEventListener("click", () => {
+            setView(view);
+            showPage(); // another view fits another number (5. below)
+        });
+        viewToggle.appendChild(btn);
+    });
+    tools.appendChild(viewToggle);
+
+    function setView(view) {
+        table.classList.toggle("icon-view", view === "icon");
+        viewToggle.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === view)));
+        try {
+            localStorage.setItem(VIEW_KEY, view);
+        } catch (e) {
+            // no storage (private window, blocked): the choice lasts this visit
+        }
+    }
+    let savedView = null;
+    try {
+        savedView = localStorage.getItem(VIEW_KEY);
+    } catch (e) {
+        // no storage: the list
+    }
+    setView(savedView === "icon" ? "icon" : "list");
 
     // Combine mode: the Combine button switches what a click on a dataset does.
     // Off, the click shows that dataset; on, it adds the dataset to the
@@ -378,7 +464,7 @@ document.addEventListener("DOMContentLoaded", function () {
             combinedPanel.style.display = "none";
             cardData.forEach((d) => d.btn.classList.remove("active"));
             selectCard(last);
-            applyFilters(); // the first visible one instead, if the filters hide it
+            applyFilters(false); // the first visible one instead, if the filters hide it
         }
     });
 
@@ -481,6 +567,7 @@ document.addEventListener("DOMContentLoaded", function () {
             (plots.length ? `<div class="plot-grid">${mirdataCharts.plotGridHtml(plots, combine.focus && combine.focus.title)}</div>` : "") +
             "</div>";
         moveTips(combinedPanel);
+        flashScrollbar(infoColumn);
         if (!types.includes(combine.typeFocus)) combine.typeFocus = null; // its datasets all removed
         focusType(combinedPanel, combine.typeFocus);
     }
@@ -505,39 +592,264 @@ document.addEventListener("DOMContentLoaded", function () {
         return selected.size === 0 || (mode === "all" ? [...selected].every(has) : [...selected].some(has));
     }
 
-    function applyFilters() {
-        let visibleCount = 0;
-        let firstVisibleItem = null;
-        let currentActiveStillVisible = false;
-        cardData.forEach((item) => {
+    // The list shows the datasets the filters let through a page at a time: as
+    // many as fit its height without scrolling (paginate), so the pages follow
+    // the window and the view. A change of filters or sort goes back to the
+    // first page; the pager under the list moves between them.
+    let pageStarts = [0]; // where each page starts in matched
+    let page = 0;
+    let matched = []; // the datasets the filters let through, in the list's order
+    const pager = document.createElement("nav");
+    pager.className = "list-pager";
+    pager.setAttribute("aria-label", "Pages of datasets");
+    listColumn.appendChild(pager);
+
+    // Which datasets are on show ("Showing 1–8 of 23 datasets", without the
+    // words if the line is too long), then ‹, the page numbers and ›: the first,
+    // the last and the ones beside this one (the first three or the last three
+    // near an end), … for the rest; a … for a single page shows its number
+    const CHEVRON = (d) =>
+        `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${d}" fill="none" ` +
+        'stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    function drawPager(pages) {
+        const start = pageStarts[page];
+        const end = pageStarts[page + 1] ?? matched.length;
+        const words = (text) => `<span class="pager-words">${text}</span>`;
+        const range = end - start === 1 ? `${end}` : `${start + 1}–${end}`;
+        const info = matched.length
+            ? `${words("Showing ")}${range} of ${matched.length}${words(matched.length === 1 ? " dataset" : " datasets")}`
+            : "No datasets match the filters";
+        const parts = [];
+        if (pages > 1) {
+            const shown = (i) =>
+                i === 0 || i === pages - 1 || Math.abs(i - page) <= 1 || (page <= 1 && i <= 2) || (page >= pages - 2 && i >= pages - 3);
+            parts.push(`<button data-page="${page - 1}" aria-label="Previous page"${page === 0 ? " disabled" : ""}>${CHEVRON("M10 3 5 8l5 5")}</button>`);
+            for (let i = 0; i < pages; i++) {
+                if (shown(i) || (shown(i - 1) && shown(i + 1))) {
+                    parts.push(`<button data-page="${i}"${i === page ? ' aria-current="page"' : ""}>${i + 1}</button>`);
+                } else if (!parts.at(-1).includes("pager-gap")) {
+                    parts.push('<span class="pager-gap">…</span>');
+                }
+            }
+            parts.push(`<button data-page="${page + 1}" aria-label="Next page"${page === pages - 1 ? " disabled" : ""}>${CHEVRON("M6 3l5 5-5 5")}</button>`);
+        }
+        pager.innerHTML = `<span class="pager-info">${info}</span><span class="pager-pages">${parts.join("")}</span>`;
+        // too long for one line: "1–8 of 23"
+        pager.classList.remove("compact");
+        if (pager.scrollWidth > pager.clientWidth) pager.classList.add("compact");
+    }
+
+    function renderPage() {
+        page = Math.min(page, pageStarts.length - 1);
+        const onPage = new Set(matched.slice(pageStarts[page], pageStarts[page + 1] ?? matched.length));
+        cardData.forEach((item) => (item.btn.style.display = onPage.has(item) ? "" : "none"));
+        drawPager(pageStarts.length);
+        flashScrollbar(listColumn);
+    }
+
+    // Splits matched into pages that fit the list's height (the window's under
+    // the header, or its max-height above the panel in the narrow layout; less
+    // the toolbar, the Combine bar and the pager's room): list rows by their own
+    // heights (a long name takes two lines), or whole lines of icons (all as
+    // tall as the tallest); at least one row or line a page. Every dataset is
+    // shown meanwhile, to be measured, with no scrollbar (as on a page).
+    function paginate() {
+        listColumn.style.overflowY = "hidden";
+        cardData.forEach((item) => (item.btn.style.display = matched.includes(item) ? "" : "none"));
+        const heights = matched.map((item) => item.btn.offsetHeight);
+        const style = getComputedStyle(listColumn);
+        const gap = parseFloat(style.rowGap) || 0;
+        const PAGER = pager.offsetHeight;
+        const height = style.maxHeight === "none" ? listColumn.clientHeight : parseFloat(style.maxHeight);
+        let room = height - parseFloat(style.paddingBottom) - PAGER - gap;
+        [toolbar, combineBar].forEach((el) => (room -= el.offsetHeight + gap));
+        listColumn.style.overflowY = "";
+        pageStarts = [0];
+        if (table.classList.contains("icon-view")) {
+            const tableStyle = getComputedStyle(table);
+            const tileGap = parseFloat(tableStyle.rowGap) || 0;
+            const perLine = tableStyle.gridTemplateColumns.split(" ").length;
+            const lines = Math.max(1, Math.floor((room + tileGap) / (Math.max(0, ...heights) + tileGap)));
+            for (let i = lines * perLine; i < matched.length; i += lines * perLine) pageStarts.push(i);
+        } else {
+            const rowsRoom = room - (table.offsetHeight - table.clientHeight) - header.offsetHeight;
+            let used = 0;
+            heights.forEach((h, i) => {
+                if (used > 0 && used + h > rowsRoom) {
+                    pageStarts.push(i);
+                    used = 0;
+                }
+                used += h;
+            });
+        }
+    }
+
+    // The pages again (another window height, view or set of datasets), on the
+    // page holding the dataset that was first on show
+    function showPage() {
+        const first = pageStarts[Math.min(page, pageStarts.length - 1)];
+        paginate();
+        page = Math.max(0, pageStarts.findLastIndex((start) => start <= first));
+        renderPage();
+    }
+    let resizing = 0;
+    window.addEventListener("resize", () => {
+        cancelAnimationFrame(resizing);
+        resizing = requestAnimationFrame(() => {
+            applyShare(); // the list's width dragged (the splitter, below), for the new width
+            showPage();
+        });
+    });
+    window.addEventListener("load", showPage); // again with the web fonts in
+
+    pager.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-page]");
+        if (!btn || btn.disabled) return;
+        page = Number(btn.dataset.page);
+        renderPage();
+        listColumn.scrollTop = 0;
+    });
+
+    // firstPage: false keeps the page on show (Combine switching off)
+    function applyFilters(firstPage = true) {
+        matched = cardData.filter((item) => {
             const matchesSearch =
                 !state.searchQuery ||
                 item.title.toLowerCase().includes(state.searchQuery) ||
                 item.annotations.some((a) => a.toLowerCase().includes(state.searchQuery));
             const matchesAnn = matchesPills(state.selectedAnnotations, item.annotations, state.annMatch);
             const matchesLic = matchesPills(state.selectedLicenses, item.licenses, state.licMatch);
-            const isVisible = matchesSearch && matchesAnn && matchesLic;
-            item.btn.style.display = isVisible ? "" : "none";
-            if (isVisible) {
-                visibleCount++;
-                if (!firstVisibleItem) firstVisibleItem = item;
-                if (activeItem === item) currentActiveStillVisible = true;
-            }
+            return matchesSearch && matchesAnn && matchesLic;
         });
-        counter.textContent = `Showing ${visibleCount} of ${cardData.length}`;
-        listCount.textContent = visibleCount === 1 ? "1 dataset" : `${visibleCount} datasets`;
+        if (firstPage) page = 0;
+        showPage();
+        counter.textContent = `Showing ${matched.length} of ${cardData.length}`;
+        listCount.textContent = matched.length === 1 ? "1 Dataset" : `${matched.length} Datasets`;
         if (combine.on) return; // Combine mode: the filters only change the list
-        // Keep current selection if visible, otherwise select first visible dataset
-        if (currentActiveStillVisible && activeItem) {
-            selectCard(activeItem);
-        } else {
-            selectCard(firstVisibleItem);
-        }
+        // Keep the dataset on show if the filters let it through (on whatever
+        // page), otherwise show the first one
+        selectCard(activeItem && matched.includes(activeItem) ? activeItem : matched[0] || null);
     }
     applyFilters();
 
-    // 6. Plot bars and the filters' AND / OR buttons: show their hover text at
-    // once, in a box above the cursor. The browser's own <title> tooltip waits
+    // The splitter between the list and the panel (custom.css, shown on hover):
+    // dragging it, or the arrow keys on it, set the list's width, from its
+    // default (350px, or what the panel's 850px leaves it) up to the share of
+    // the width a 27" monitor gives it (687px of 687 + 850): the list takes
+    // width from the panel, and gives it back, but never leaves a blank. So a
+    // laptop's list can widen enough to show License; a window where both are
+    // at their widest has nothing to drag (the splitter idle). A double-click
+    // goes back to the default widths. The browser remembers the share;
+    // without storage it lasts this visit. Not in the narrow layout (no
+    // splitter there).
+    const SHARE_KEY = "mirdata-gallery-list-share";
+    const MIN_LIST = 350;
+    const MAX_LIST = 687;
+    const MAX_SHARE = MAX_LIST / (MAX_LIST + 850);
+    let share = null; // the list's share of the list and the panel's width, or null: the default
+    try {
+        share = parseFloat(localStorage.getItem(SHARE_KEY)) || null;
+    } catch (e) {
+        // no storage: the default
+    }
+    splitter.setAttribute("role", "separator");
+    splitter.setAttribute("aria-orientation", "vertical");
+    splitter.setAttribute("aria-label", "Drag to resize the dataset list; double-click to reset");
+    splitter.tabIndex = 0;
+
+    const listRoom = () => container.clientWidth - splitter.offsetWidth; // the list's and the panel's
+
+    // The list's narrowest and widest: its default, and the 27" share
+    function listBounds() {
+        const room = listRoom();
+        const panel = parseFloat(getComputedStyle(infoColumn).flexBasis) || 850; // its widest (custom.css)
+        const min = Math.max(MIN_LIST, Math.min(MAX_LIST, room - panel));
+        return [min, Math.max(min, Math.min(MAX_LIST, room * MAX_SHARE))];
+    }
+
+    // The list at its share, within its bounds; the default flex without one,
+    // with nothing to drag (the splitter idle), or in the narrow layout
+    function applyShare() {
+        const [min, max] = listBounds();
+        const idle = getComputedStyle(splitter).display === "none" || max - min < 1;
+        splitter.classList.toggle("idle", idle);
+        splitter.tabIndex = idle ? -1 : 0;
+        if (share === null || idle) {
+            listColumn.style.flex = "";
+            return;
+        }
+        listColumn.style.flex = `0 0 ${Math.min(max, Math.max(min, share * listRoom()))}px`;
+    }
+
+    function saveShare() {
+        try {
+            if (share === null) localStorage.removeItem(SHARE_KEY);
+            else localStorage.setItem(SHARE_KEY, String(share));
+        } catch (e) {
+            // no storage: this visit only
+        }
+    }
+
+    // A new width for the list: its share, kept within bounds, and its pages again
+    function resizeList(width) {
+        share = width / listRoom();
+        applyShare();
+        share = listColumn.offsetWidth / listRoom(); // as it came out, within bounds
+        cancelAnimationFrame(resizing);
+        resizing = requestAnimationFrame(showPage);
+    }
+
+    // A drag: from a press on the splitter to the button's release, wherever
+    // that is told: the release itself (on the splitter, which holds the
+    // pointer, or anywhere in the window), the pointer lost or cancelled, the
+    // window left, or a move with no button down (a release outside the window
+    // the browser never told of)
+    splitter.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault(); // no text selection or native drag starting
+        try {
+            splitter.setPointerCapture(e.pointerId);
+        } catch (err) {
+            // not capturable: the window's events below still end the drag
+        }
+        splitter.classList.add("dragging");
+        document.body.style.userSelect = "none";
+    });
+    splitter.addEventListener("pointermove", (e) => {
+        if (!splitter.classList.contains("dragging")) return;
+        if (e.buttons === 0) {
+            endDrag();
+            return;
+        }
+        resizeList(e.clientX - listColumn.getBoundingClientRect().left - splitter.offsetWidth / 2);
+    });
+    function endDrag() {
+        if (!splitter.classList.contains("dragging")) return;
+        splitter.classList.remove("dragging");
+        document.body.style.userSelect = "";
+        saveShare();
+    }
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach((type) => splitter.addEventListener(type, endDrag));
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("blur", endDrag);
+    splitter.addEventListener("dblclick", () => {
+        share = null;
+        applyShare();
+        saveShare();
+        showPage();
+    });
+    splitter.addEventListener("keydown", (e) => {
+        const step = { ArrowLeft: -20, ArrowRight: 20 }[e.key];
+        if (!step) return;
+        e.preventDefault();
+        resizeList(listColumn.offsetWidth + step);
+        saveShare();
+    });
+    applyShare();
+    if (share !== null) showPage();
+
+    // 6. Plot bars, the filters' AND / OR buttons and the list's type dots: show
+    // their hover text at once, in a box above the cursor. The browser's own <title> tooltip waits
     // about a second, so the text moves from each bar's <title> to data-tip.
     const tip = document.createElement("div");
     tip.className = "plot-tip";
@@ -567,12 +879,13 @@ document.addEventListener("DOMContentLoaded", function () {
         tip.style.top = `${e.clientY - tip.offsetHeight - 10}px`;
     }
     const hideTip = () => (tip.style.display = "none");
-    [infoColumn, sidebar].forEach((el) => {
+    [infoColumn, sidebar, listColumn].forEach((el) => {
         el.addEventListener("pointermove", showTip);
         el.addEventListener("pointerdown", showTip); // a tap on a touch screen
         el.addEventListener("pointerleave", hideTip);
     });
     infoColumn.addEventListener("scroll", hideTip);
+    listColumn.addEventListener("scroll", hideTip);
 
     // 7. Annotation type focus: a click on a type in a panel's At a glance (a
     // dataset's or the combination's) shows only that type's plots in its
@@ -630,4 +943,17 @@ document.addEventListener("DOMContentLoaded", function () {
             e.target.click();
         }
     });
+
+    // 8. Scrollbars: custom.css hides the filters', the list's and the panel's
+    // until the pointer is over them; they also show for a moment when their
+    // content changes (another dataset, a combination, a page of the list),
+    // when they scroll, and when the page has loaded
+    function flashScrollbar(el) {
+        el.classList.add("scrollbar-shown");
+        clearTimeout(el.scrollbarTimer);
+        el.scrollbarTimer = setTimeout(() => el.classList.remove("scrollbar-shown"), 1200);
+    }
+    const scrollers = [document.getElementById("left-sidebar"), listColumn, infoColumn].filter(Boolean);
+    scrollers.forEach((el) => el.addEventListener("scroll", () => flashScrollbar(el), { passive: true }));
+    window.addEventListener("load", () => scrollers.forEach(flashScrollbar));
 });

@@ -6,14 +6,19 @@
    Page
    ========================================================================== */
 
-/* Larger base size: everything set in rem (theme and gallery) grows with it */
+/* The base size: everything set in rem (theme and gallery) follows it */
 html {
-    font-size: 16px;
+    font-size: 15px;
 }
 
-/* The gallery uses the full window width */
+/* The page (header, content, footer) at most as wide as the gallery at its
+   widest: the theme's sidebar (240px) and gap (2.5rem), the list (687px), the
+   splitter (24px) and the panel (850px), in the container's padding (2rem
+   each side). A wider window has equal margins either side. */
 .container {
-    max-width: none;
+    max-width: calc(240px + 2.5rem + 687px + 24px + 850px + 4rem);
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* No "On this page" column, and no grid column kept for it */
@@ -130,9 +135,127 @@ header img[alt="Logo"] {
 /* Container holding the list and the panel */
 .gallery-layout {
     display: flex;
-    gap: 24px;
-    align-items: flex-start;
+    align-items: stretch;
     width: 100%;
+    /* The window less the theme's header (57px), the page's padding (32px
+       above, 12px below) and the one-line footer (29px): the page itself does
+       not scroll; the list and the panel, each this full height, scroll inside */
+    height: calc(100vh - 130px);
+}
+
+/* The splitter between the list and the panel (gallery.js): 24px of room
+   between them, a line with a grip in its middle shown on hover, purple while
+   dragged */
+.gallery-splitter {
+    flex: 0 0 24px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: col-resize;
+    touch-action: none;
+    outline: none;
+}
+
+.gallery-splitter::before {
+    content: "";
+    position: absolute;
+    top: 25%; /* half the gallery's height, around the grip */
+    bottom: 25%;
+    left: 50%;
+    width: 2px;
+    transform: translateX(-50%);
+    border-radius: 1px;
+    background: #e2e8f0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+/* The grip: as wide and round as the scrollbars (8px) */
+.gallery-splitter::after {
+    content: "";
+    position: relative;
+    width: 8px;
+    height: 40px;
+    border-radius: 4px;
+    background: #cbd5e1;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.gallery-splitter:hover::before,
+.gallery-splitter:hover::after,
+.gallery-splitter:focus-visible::before,
+.gallery-splitter:focus-visible::after,
+.gallery-splitter.dragging::before,
+.gallery-splitter.dragging::after {
+    opacity: 1;
+}
+
+.gallery-splitter.dragging::before,
+.gallery-splitter.dragging::after {
+    background: #a054d8;
+}
+
+/* Nothing to drag (a wide window: the list and the panel both at their
+   widest): only the room between them */
+.gallery-splitter.idle {
+    cursor: default;
+    pointer-events: none;
+}
+
+/* The scrollbars of the filters, the list and the panel: thin, and hidden
+   until the pointer is over them, or for a moment (scrollbar-shown) when their
+   content changes or they scroll (gallery.js, flashScrollbar); scrollbar-color
+   for Chrome and Firefox, the ::-webkit-scrollbar rules for Safari */
+:is(#left-sidebar, .gallery-datasets-list, .gallery-cards-information) {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+
+:is(#left-sidebar, .gallery-datasets-list, .gallery-cards-information):is(:hover, .scrollbar-shown) {
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+:is(#left-sidebar, .gallery-datasets-list, .gallery-cards-information)::-webkit-scrollbar {
+    width: 8px;
+}
+
+:is(#left-sidebar, .gallery-datasets-list, .gallery-cards-information)::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: transparent;
+}
+
+:is(#left-sidebar, .gallery-datasets-list, .gallery-cards-information):is(:hover, .scrollbar-shown)::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+}
+
+/* The gallery page's footer: one small line (28px and its 1px border; the
+   theme's is 96px), 12px under the gallery */
+body:has(#mirdata-gallery) main {
+    padding-bottom: 12px;
+}
+
+body:has(#mirdata-gallery) footer {
+    padding: 0;
+}
+
+body:has(#mirdata-gallery) footer > .container {
+    height: 28px;
+}
+
+body:has(#mirdata-gallery) footer p {
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+/* The theme's left sidebar (md and up) runs from the header to the window's
+   bottom (and 1px past it: the header is 57px with its border); on the gallery
+   page it stops at the footer */
+@media (min-width: 768px) {
+    body:has(#mirdata-gallery) #left-sidebar {
+        height: calc(100vh - 86px);
+    }
 }
 
 /* Column 1: the filters, in the theme's left sidebar (its last nav, see
@@ -188,20 +311,23 @@ header img[alt="Logo"] {
     overflow: hidden;
 }
 
+/* AND and OR the same width */
 .match-options button {
+    width: 32px;
+    padding: 4px 0;
     background: #ffffff;
     border: none;
-    padding: 1px 4px;
     font-size: 0.6rem;
     font-weight: 600;
+    text-align: center;
     color: #475569;
     cursor: pointer;
 }
 
-/* The purple of the active Combine button */
+/* The light purple of the other selections (the pager's page on show) */
 .match-options button[aria-pressed="true"] {
-    background: #a054d8;
-    color: #ffffff;
+    background: #f3e8ff;
+    color: #7928ca;
 }
 
 .filter-search {
@@ -284,17 +410,21 @@ header img[alt="Logo"] {
     color: #ffffff;
 }
 
-/* Column 2: the dataset list, names and track counts. 350px to 687px; it
-   takes the width the panel leaves once the panel is at its 850px (687px is
-   what a 27" monitor leaves; wider windows keep a blank on the right). */
+/* Column 2: the dataset list. 350px to 687px; it takes the width the panel
+   leaves once the panel is at its 850px (687px is what a 27" monitor leaves;
+   wider windows keep a blank on the right). Its columns follow its own width
+   (the container queries below the table's rules). */
 .gallery-datasets-list {
+    container: dataset-list / inline-size;
     flex: 1 0 350px;
     max-width: 687px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: calc(100vh - 120px);
     overflow-y: auto;
+    /* the scrollbar's room kept, with or without one: rows as wide when
+       gallery.js measures them (paginate) as on their page */
+    scrollbar-gutter: stable;
     padding: 0 2px 12px 0;
     box-sizing: border-box;
 }
@@ -323,6 +453,37 @@ header img[alt="Logo"] {
     color: #475569;
 }
 
+/* At the right, also when it wraps under the count (a narrow list) */
+.list-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+/* The list / icon switch (gallery.js), purple when on as the AND / OR one */
+.view-toggle {
+    display: inline-flex;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.view-toggle button {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    background: #ffffff;
+    border: none;
+    color: #475569;
+    cursor: pointer;
+}
+
+.view-toggle button[aria-pressed="true"] {
+    background: #a054d8;
+    color: #ffffff;
+}
+
 .list-sort select {
     border: 1px solid #e2e8f0;
     border-radius: 8px;
@@ -332,8 +493,11 @@ header img[alt="Logo"] {
     color: #1e293b;
 }
 
-/* The table: a header row, then one row (a button) per dataset */
+/* The table: a header row, then one row (a button) per dataset. It keeps its
+   full height (flex-shrink: 0): a list taller than the window scrolls, rather
+   than the table cutting off its last rows. */
 .list-table {
+    flex-shrink: 0;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     background: #ffffff;
@@ -342,11 +506,46 @@ header img[alt="Logo"] {
 
 .list-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 64px;
+    grid-template-columns: minmax(0, 1fr) 96px 64px 128px;
+    grid-template-areas: "name types tracks license";
     gap: 12px;
     align-items: center;
     padding: 12px 16px;
     text-align: left;
+}
+
+.list-name {
+    grid-area: name;
+}
+
+/* A dataset's type dots (gallery.js; their colours: .ann-dot at the end) */
+.list-types {
+    grid-area: types;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+.list-tracks {
+    grid-area: tracks;
+}
+
+.list-license {
+    grid-area: license;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The list's Types, Tracks and License columns, header too, centred (not
+   the icons: their own layout below) */
+.list-table:not(.icon-view) .list-types {
+    justify-content: center;
+}
+
+.list-table:not(.icon-view) .list-tracks,
+.list-table:not(.icon-view) .list-license {
+    text-align: center;
 }
 
 .list-header {
@@ -385,7 +584,7 @@ header img[alt="Logo"] {
 }
 
 .dataset-item-title {
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 700;
     color: #1e293b;
     word-break: break-word;
@@ -398,6 +597,171 @@ header img[alt="Logo"] {
 .list-cell {
     font-size: 0.85rem;
     color: #334155;
+}
+
+/* A narrower list: the dots wrap, 4 to a line (45px: 4 dots of 9px and
+   their 3 gaps of 3px), then License goes below 450px; a laptop's list
+   dragged to its widest (480-510px, the splitter) keeps License */
+@container dataset-list (max-width: 599px) {
+    .list-row {
+        grid-template-columns: minmax(0, 1fr) 45px 64px 128px;
+    }
+}
+
+@container dataset-list (max-width: 449px) {
+    .list-row {
+        grid-template-columns: minmax(0, 1fr) 45px 64px;
+        grid-template-areas: "name types tracks";
+    }
+
+    .list-license {
+        display: none;
+    }
+}
+
+@container dataset-list (max-width: 419px) {
+    /* The sort menu and the view switch on a line of their own under the
+       count, the menu stretched from the left edge to the switch */
+    .list-tools {
+        flex: 1 1 100%;
+    }
+
+    .list-sort,
+    .list-sort select {
+        flex: 1;
+    }
+}
+
+/* Under the list: which datasets are on show, and the pages (gallery.js,
+   drawPager): plain numbers and chevrons, the page on show in a light purple
+   circle */
+.list-pager {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-height: 32px;
+    padding: 0 4px;
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.pager-info {
+    white-space: nowrap;
+}
+
+/* (gallery.js adds compact when the line is too long) */
+.list-pager.compact .pager-words {
+    display: none;
+}
+
+.pager-pages {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
+}
+
+.list-pager button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    background: none;
+    font-size: 0.85rem;
+    color: #334155;
+    cursor: pointer;
+}
+
+.list-pager button:hover:not(:disabled) {
+    color: #a054d8;
+}
+
+.list-pager button[aria-current="page"] {
+    background: #f3e8ff;
+    border-color: #d8b4fe;
+    color: #7928ca;
+    font-weight: 600;
+}
+
+.list-pager button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.pager-gap {
+    width: 20px;
+    text-align: center;
+    color: #64748b;
+}
+
+/* A narrow list: smaller page buttons, to keep one line */
+@container dataset-list (max-width: 419px) {
+    .pager-pages {
+        gap: 2px;
+    }
+
+    .list-pager button {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+/* Only an icon says "tracks" after the number */
+.list-tracks .tracks-unit {
+    display: none;
+}
+
+/* Icon view (gallery.js, setView): a tile per dataset, 160px wide and as tall
+   as the tallest, as many to a line as fit (2 at the list's narrowest, 350px;
+   4 at its widest, 687px): its title, type dots (as in the list), tracks and
+   license */
+.list-table.icon-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 160px);
+    grid-auto-rows: 1fr;
+    gap: 10px;
+    border: none;
+    background: none;
+    overflow: visible;
+}
+
+.list-table.icon-view .list-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.list-table.icon-view .list-header {
+    display: none;
+}
+
+/* The title and the dots in the middle of the tile */
+.icon-view .list-name,
+.icon-view .list-types {
+    align-self: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* (shown whatever the list's width; one line, cut with "…") */
+.list-table.icon-view .list-license {
+    display: block;
+    align-self: stretch;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.icon-view .tracks-unit {
+    display: inline;
 }
 
 /* Combine mode (gallery.js): the button that switches it on, and a hint */
@@ -433,14 +797,10 @@ header img[alt="Logo"] {
 }
 
 /* Column 3: the panel, 850px, narrower (down to 400px) when the window has
-   no room for it (wider, the charts and their text grow too big). It sticks
-   below the theme's 56px header. */
+   no room for it (wider, the charts and their text grow too big) */
 .gallery-cards-information {
     flex: 0 1 850px;
     min-width: 400px;
-    position: sticky;
-    top: 72px;
-    max-height: calc(100vh - 90px);
     overflow-y: auto;
 }
 
@@ -465,19 +825,24 @@ header img[alt="Logo"] {
     padding-bottom: 6px;
 }
 
-/* Too narrow for the list and the panel's minimum width (350 + 24 + 400): the
-   list goes above the panel as a short scrollable box, and the panel flows
-   with the page. */
+/* Too narrow for the list and the panel's minimum width (350 + the 24px splitter + 400): the
+   list goes above the panel as a short scrollable box, and the panel and the
+   page grow with the panel's content (the page scrolls). */
 @container (max-width: 773px) {
     .gallery-layout {
         flex-direction: column;
-        align-items: stretch;
+        gap: 24px;
+        height: auto;
+    }
+
+    .gallery-splitter {
+        display: none;
     }
 
     .gallery-datasets-list {
         flex: none;
         min-width: 0;
-        max-height: 35vh;
+        max-height: 60vh;
     }
 
     .gallery-cards-information {
@@ -931,95 +1296,50 @@ header img[alt="Logo"] {
 }
 
 /* ==========================================================================
-   Distinct Colors per Annotation Type
+   A colour per annotation type
    ========================================================================== */
-/* 1. Rhythm: BeatData & TempoData (Orange / Amber) */
-[data-ann="BeatData"],
-[data-ann="TempoData"] {
-    background-color: #fff7ed !important;
-    color: #c2410c !important;
-    border-color: #fed7aa !important;
+/* Each official mirdata.annotations class has its family's colour (rhythm
+   orange, harmony green, pitch blue, structure indigo, lyrics rose, events
+   yellow) in a shade of its own, the darker first: a badge's background, text
+   and border (the filter pills, At a glance), and a solid one for an active
+   pill and the type's dot in the dataset list (--ann-on-solid: text on it).
+   Anything else (Instrument, Genre, future values) stays silver. */
+[data-ann="BeatData"] { --ann-bg: #ffedd5; --ann-text: #9a3412; --ann-border: #fdba74; --ann-solid: #c2410c; --ann-on-solid: #ffffff; }
+[data-ann="TempoData"] { --ann-bg: #fff7ed; --ann-text: #c2410c; --ann-border: #fed7aa; --ann-solid: #fb923c; --ann-on-solid: #431407; }
+[data-ann="ChordData"] { --ann-bg: #d1fae5; --ann-text: #065f46; --ann-border: #6ee7b7; --ann-solid: #047857; --ann-on-solid: #ffffff; }
+[data-ann="KeyData"] { --ann-bg: #ecfdf5; --ann-text: #047857; --ann-border: #a7f3d0; --ann-solid: #34d399; --ann-on-solid: #022c22; }
+[data-ann="NoteData"] { --ann-bg: #e0f2fe; --ann-text: #075985; --ann-border: #7dd3fc; --ann-solid: #0369a1; --ann-on-solid: #ffffff; }
+[data-ann="F0Data"] { --ann-bg: #f0f9ff; --ann-text: #0369a1; --ann-border: #bae6fd; --ann-solid: #0ea5e9; --ann-on-solid: #082f49; }
+[data-ann="MultiF0Data"] { --ann-bg: #f8fcff; --ann-text: #0284c7; --ann-border: #e0f2fe; --ann-solid: #7dd3fc; --ann-on-solid: #082f49; }
+[data-ann="SectionData"] { --ann-bg: #eef2ff; --ann-text: #4338ca; --ann-border: #c7d2fe; --ann-solid: #4f46e5; --ann-on-solid: #ffffff; }
+[data-ann="LyricData"] { --ann-bg: #fff1f2; --ann-text: #be123c; --ann-border: #fecdd3; --ann-solid: #e11d48; --ann-on-solid: #ffffff; }
+[data-ann="EventData"] { --ann-bg: #fef9c3; --ann-text: #854d0e; --ann-border: #fde047; --ann-solid: #a16207; --ann-on-solid: #ffffff; }
+[data-ann="EventDataExtended"] { --ann-bg: #fefce8; --ann-text: #a16207; --ann-border: #fde68a; --ann-solid: #facc15; --ann-on-solid: #422006; }
+
+/* (the theme styles code in #content, hence !important) */
+.glance-tags [data-ann] {
+    background-color: var(--ann-bg, #f1f5f9) !important;
+    color: var(--ann-text, #475569) !important;
+    border-color: var(--ann-border, #cbd5e1) !important;
 }
 
-.filter-pill[data-ann="BeatData"].active,
-.filter-pill[data-ann="TempoData"].active {
-    background-color: #ea580c !important;
-    color: #ffffff !important;
-    border-color: #ea580c !important;
+.filter-pill[data-ann] {
+    background-color: var(--ann-bg, #f8fafc);
+    color: var(--ann-text, #475569);
+    border-color: var(--ann-border, #e2e8f0);
 }
 
-/* 2. Harmony: ChordData & KeyData (Emerald Green) */
-[data-ann="ChordData"],
-[data-ann="KeyData"] {
-    background-color: #ecfdf5 !important;
-    color: #047857 !important;
-    border-color: #a7f3d0 !important;
+.filter-pill[data-ann].active {
+    background-color: var(--ann-solid, #475569);
+    color: var(--ann-on-solid, #ffffff);
+    border-color: var(--ann-solid, #475569);
 }
 
-.filter-pill[data-ann="ChordData"].active,
-.filter-pill[data-ann="KeyData"].active {
-    background-color: #059669 !important;
-    color: #ffffff !important;
-    border-color: #059669 !important;
+/* A type's dot in the dataset list */
+.ann-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background-color: var(--ann-solid, #94a3b8);
 }
-
-/* 3. Pitch & Melody: NoteData, F0Data & MultiF0Data (Sky Blue) */
-[data-ann="NoteData"],
-[data-ann="F0Data"],
-[data-ann="MultiF0Data"] {
-    background-color: #f0f9ff !important;
-    color: #0573e8 !important;
-    border-color: #bae6fd !important;
-}
-
-.filter-pill[data-ann="NoteData"].active,
-.filter-pill[data-ann="F0Data"].active,
-.filter-pill[data-ann="MultiF0Data"].active {
-    background-color: #0284c7 !important;
-    color: #ffffff !important;
-    border-color: #0284c7 !important;
-}
-
-/* 4. Structure: SectionData (Indigo) */
-[data-ann="SectionData"] {
-    background-color: #eef2ff !important;
-    color: #4338ca !important;
-    border-color: #c7d2fe !important;
-}
-
-.filter-pill[data-ann="SectionData"].active {
-    background-color: #4f46e5 !important;
-    color: #ffffff !important;
-    border-color: #4f46e5 !important;
-}
-
-/* 5. Lyrics: LyricData (Rose) */
-[data-ann="LyricData"] {
-    background-color: #fff1f2 !important;
-    color: #be123c !important;
-    border-color: #fecdd3 !important;
-}
-
-.filter-pill[data-ann="LyricData"].active {
-    background-color: #e11d48 !important;
-    color: #ffffff !important;
-    border-color: #e11d48 !important;
-}
-
-/* 6. Events: EventData & EventDataExtended (Yellow) */
-[data-ann="EventData"],
-[data-ann="EventDataExtended"] {
-    background-color: #fefce8 !important;
-    color: #a16207 !important;
-    border-color: #fde68a !important;
-}
-
-.filter-pill[data-ann="EventData"].active,
-.filter-pill[data-ann="EventDataExtended"].active {
-    background-color: #ca8a04 !important;
-    color: #ffffff !important;
-    border-color: #ca8a04 !important;
-}
-
-/* Anything else (Instrument, Genre, future values without a colour here)
-   keeps the silver badge and the default active pill defined above. */
