@@ -18,7 +18,7 @@ import os
 
 import yaml
 
-from stats import PARTS
+import stats
 
 
 def card_path(cards_dir, name):
@@ -112,13 +112,13 @@ def print_to_do(results, command):
             continue
         if result.get("error"):
             groups["error"].append((name, "", result["error"]))
-        for part in PARTS:
-            stats = result.get(part)
-            if stats and stats.get("status") in groups:
+        for part in stats.PARTS:
+            part_stats = result.get(part)
+            if part_stats and part_stats.get("status") in groups:
                 why = (
-                    stats.get("problems") or [stats.get("error") or "see its errors"]
+                    part_stats.get("problems") or [part_stats.get("error") or "see its errors"]
                 )[0]
-                groups[stats["status"]].append((name, part, why))
+                groups[part_stats["status"]].append((name, part, why))
     titles = {
         "needs_local": f"Run these locally ({command}):",
         "incomplete": "Incomplete (some files could not be read; a local run would not help):",

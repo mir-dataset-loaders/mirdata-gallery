@@ -10,7 +10,7 @@ import textwrap
 import typing
 
 import mirdata
-from mirdata.annotations import Annotation
+import mirdata.annotations
 
 # FIXME: NEEDS FIX
 
@@ -110,8 +110,8 @@ def _annotation_class_name(attr_name, item, guess=True):
                 break
         if (
             isinstance(ret, type)
-            and issubclass(ret, Annotation)
-            and ret is not Annotation
+            and issubclass(ret, mirdata.annotations.Annotation)
+            and ret is not mirdata.annotations.Annotation
         ):
             return ret.__name__
     if not guess:

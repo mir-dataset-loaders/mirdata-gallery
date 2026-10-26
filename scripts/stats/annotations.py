@@ -12,8 +12,7 @@ import logging
 import sys
 
 import card_builder
-from stats import remote
-from stats.annotation_types import ANNOTATION_TYPES, STATS, is_empty
+from stats import annotation_types, remote
 
 
 def part_status(problems, incomplete):
@@ -44,12 +43,12 @@ def read_tracks(ds, verbose=False):
     properties = {
         prop: ann_type
         for prop, ann_type in card_builder.annotation_properties(ds).items()
-        if ann_type in ANNOTATION_TYPES
+        if ann_type in annotation_types.ANNOTATION_TYPES
     }
     # typed by their return hint: a value of another type is an error, not a wrong guess
     declared = card_builder.annotation_properties(ds, guess=False)
     track_ids = ds.track_ids
-    stats = {prop: STATS[ann_type]() for prop, ann_type in properties.items()}
+    stats = {prop: annotation_types.STATS[ann_type]() for prop, ann_type in properties.items()}
     # annotation type -> ids of tracks with at least one such annotation
     tracks_with = {}
     skipped = {}  # guessed property -> why its values could not be used
@@ -71,7 +70,7 @@ def read_tracks(ds, verbose=False):
             try:
                 with quiet_logging():
                     value = getattr(track, prop)
-                if is_empty(value):
+                if annotation_types.is_empty(value):
                     continue
                 used = stats[prop].add(value)
             except Exception as e:

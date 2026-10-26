@@ -124,16 +124,16 @@ def test_f0():
     likelihood = annotations.F0Data(
         times[:2],
         "s",
-        np.array([220.0, 220.0]),
-        "hz",
+        np.array([93.0, 93.0]),  # A6 = 1760 Hz
+        "midi",
         np.array([0.9, 0.2]),
         "likelihood",
     )
     result = collect(F0(), binary, likelihood).result()
-    expected = {"frequencies": note_histogram([69, 81, 57])}  # A4, A5, A3
+    expected = {"frequencies": histogram([440.0, 880.0, 1760.0], "hz")}
     assert result == expected, (
         "only voiced frames should count (binary voicing above 0, likelihood from 0.5),"
-        " converted from Hz to MIDI notes"
+        " in Hz, whatever unit the loader gives"
     )
 
 
@@ -145,13 +145,13 @@ def test_multif0():
         "hz",
     )
     track2 = annotations.MultiF0Data(
-        np.array([0.0, 0.01]), "s", [[220.0, 440.0, 880.0], [440.0]], "hz"
-    )
+        np.array([0.0, 0.01]), "s", [[57.0, 69.0, 81.0], [69.0]], "midi"
+    )  # 220, 440, 880 Hz
     result = collect(MultiF0(), track1, track2).result()
-    frequencies = note_histogram([69, 69, 81, 57, 69, 81, 69])
+    frequencies = histogram([440.0, 440.0, 880.0, 220.0, 440.0, 880.0, 440.0], "hz")
     assert (
         result["frequencies"] == frequencies
-    ), "every sounding pitch should go into one MIDI note histogram"
+    ), "every sounding pitch should go into one Hz histogram, whatever unit the loader gives"
     polyphony = {1: 2, 2: 1, 3: 1}
     assert result["polyphony"] == polyphony, (
         "polyphony should count frames per number of pitches sounding at once;"
