@@ -9,12 +9,12 @@ from fake_dataset_loader import DATA_HOME
 
 FIELDS = [
     "name",
-    "license",
-    "annotations",
-    "bibtex",
     "summary",
-    "docstring_hash",
+    "annotations",
     "stats",
+    "docstring_hash",
+    "bibtex",
+    "license",
 ]
 
 

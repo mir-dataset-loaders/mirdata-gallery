@@ -48,12 +48,12 @@ def build_card(ds, summary=None, docstring_hash=None, stats=None):
     """
     return {
         "name": ds.name,
-        "license": license(ds),
-        "annotations": annotations(ds),
-        "bibtex": bibtex(ds),
         "summary": summary,
-        "docstring_hash": docstring_hash,
+        "annotations": annotations(ds),
         "stats": stats,
+        "docstring_hash": docstring_hash,
+        "bibtex": bibtex(ds),
+        "license": license(ds),
     }
 
 

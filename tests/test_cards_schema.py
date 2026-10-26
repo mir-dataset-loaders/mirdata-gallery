@@ -16,12 +16,12 @@ CARD_FILES = sorted(f for f in os.listdir(CARDS_DIR) if f.endswith(".yaml"))
 
 FIELDS = [
     "name",
-    "license",
-    "annotations",
-    "bibtex",
     "summary",
-    "docstring_hash",
+    "annotations",
     "stats",
+    "docstring_hash",
+    "bibtex",
+    "license",
 ]
 # The card's annotations field: mirdata's annotation types plus a few labels
 # that are not classes. Each one has a colour in docs/_static/css/custom.css.
