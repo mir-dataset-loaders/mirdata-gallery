@@ -8,17 +8,16 @@ each one is read, and the track is counted once.
 
 from collections import Counter
 
+import mirdata.annotations
 import numpy as np
-from mirdata import annotations
-from mirdata.annotations import Annotation, MultiAnnotator
 
-from stats.histograms import histogram, note_histogram
+from stats import histograms
 
 TOP = 30  # how many labels to keep per label distribution (the gallery plots fewer)
 # The official mirdata annotation types (BeatData, ChordData, ... TempoData): the
 # only ones the stats cover. Properties the card detection labels otherwise
 # (Instrument, Genre) are ignored.
-ANNOTATION_TYPES = {cls.__name__ for cls in Annotation.__subclasses__()}
+ANNOTATION_TYPES = {cls.__name__ for cls in mirdata.annotations.Annotation.__subclasses__()}
 
 
 # ------------------------------------------------------------------ helpers
@@ -40,23 +39,6 @@ def to_seconds(values, unit):
     if unit == "ms":
         return np.asarray(values, dtype=float) / 1000.0
     return None
-
-
-def to_midi(values, unit):
-    """Pitch values as MIDI note numbers, whatever unit a loader gives them in.
-
-    Loaders give pitches in Hz, MIDI or note names (mirdata's PITCH_UNITS),
-    often just the unit their files or their mirdata version used; they are
-    converted with mirdata's convert_pitch_units. Values with no pitch (0 or
-    less) are left out, and so are pitch classes (no octave): an empty array.
-    """
-    if unit == "note_name":  # "A4"
-        values, unit = annotations.convert_pitch_units(np.asarray(values), unit, "hz"), "hz"
-    if unit not in ("hz", "midi"):
-        return np.array([])
-    values = np.asarray(values, dtype=float)
-    values = values[values > 0]
-    return values if unit == "midi" else annotations.convert_pitch_units(values, unit, "midi")
 
 
 def interval_lengths(annotation):
@@ -106,7 +88,7 @@ def unpack(value):
     """
     if isinstance(value, dict):
         return [(str(k), v) for k, v in value.items()]
-    if isinstance(value, MultiAnnotator):
+    if isinstance(value, mirdata.annotations.MultiAnnotator):
         annotators = value.annotators or [None] * len(value.annotations or [])
         return [
             (None if a is None else str(a), v)
@@ -121,7 +103,7 @@ def is_empty(value):
     """True for a property value that holds no annotation: None, a blank string, an empty container."""
     if value is None or (isinstance(value, str) and not value.strip()):
         return True
-    if isinstance(value, (dict, list, tuple, MultiAnnotator)):
+    if isinstance(value, (dict, list, tuple, mirdata.annotations.MultiAnnotator)):
         return all(v is None for _, v in unpack(value))
     return False
 
@@ -129,7 +111,7 @@ def is_empty(value):
 class Stat:
     """Accumulates one annotation type over the tracks of a dataset."""
 
-    annotation = Annotation  # the mirdata class this Stat reads; set by each subclass
+    annotation = mirdata.annotations.Annotation  # the mirdata class this Stat reads; set by each subclass
 
     def __init__(self):
         self.n_tracks = 0  # tracks whose annotation was read
@@ -168,7 +150,7 @@ class Stat:
 class Tempo(Stat):
     """BPM values of TempoData annotations."""
 
-    annotation = annotations.TempoData
+    annotation = mirdata.annotations.TempoData
 
     def __init__(self):
         super().__init__()
@@ -178,13 +160,13 @@ class Tempo(Stat):
         self.bpm.extend(float(t) for t in value.tempos)
 
     def result(self):
-        return {"tempo": histogram(self.bpm, "bpm")}  # annotated by hand, unlike tempo_from_beats
+        return {"tempo": histograms.histogram(self.bpm, "bpm")}  # annotated by hand, unlike tempo_from_beats
 
 
 class Beats(Stat):
     """Tempo from the beat intervals, and the meter as beats per bar (3/4 and 3/8 both count as 3)."""
 
-    annotation = annotations.BeatData
+    annotation = mirdata.annotations.BeatData
 
     def __init__(self):
         super().__init__()
@@ -204,14 +186,14 @@ class Beats(Stat):
     def result(self):
         return {
             "meter": dict(sorted(self.meter.items())),
-            "tempo_from_beats": histogram(self.bpm, "bpm"),  # 60 / median beat gap, not annotated
+            "tempo_from_beats": histograms.histogram(self.bpm, "bpm"),  # 60 / median beat gap, not annotated
         }
 
 
 class Chords(Stat):
     """Chord labels and their qualities."""
 
-    annotation = annotations.ChordData
+    annotation = mirdata.annotations.ChordData
 
     def __init__(self):
         super().__init__()
@@ -233,11 +215,11 @@ class Chords(Stat):
 class F0(Stat):
     """Frequencies of the voiced frames of frame-wise F0 annotations."""
 
-    annotation = annotations.F0Data
+    annotation = mirdata.annotations.F0Data
 
     def __init__(self):
         super().__init__()
-        self.frequencies = []  # one array per annotation: its voiced frames, in MIDI
+        self.frequencies = []  # one array per annotation: its voiced frames, in Hz
 
     def read(self, value):
         frequencies = np.asarray(value.frequencies, dtype=float)
@@ -247,20 +229,23 @@ class F0(Stat):
             voiced = np.asarray(value.voicing, dtype=float) >= 0.5
         else:
             voiced = np.asarray(value.voicing, dtype=float) > 0
-        self.frequencies.append(to_midi(frequencies[voiced], value.frequency_unit))
+        voiced &= frequencies > 0
+        hz = mirdata.annotations.convert_pitch_units(frequencies[voiced], value.frequency_unit, "hz")
+        self.frequencies.append(hz)
 
     def result(self):
-        return {"frequencies": note_histogram(np.concatenate(self.frequencies) if self.frequencies else [])}
+        frequencies = np.concatenate(self.frequencies) if self.frequencies else []
+        return {"frequencies": histograms.histogram(frequencies, "hz")}
 
 
 class MultiF0(Stat):
     """Frequencies and polyphony (pitches sounding at once) of multi-pitch annotations."""
 
-    annotation = annotations.MultiF0Data
+    annotation = mirdata.annotations.MultiF0Data
 
     def __init__(self):
         super().__init__()
-        self.frequencies = []  # one array per annotation: every pitch of every frame, in MIDI
+        self.frequencies = []  # one array per annotation: every pitch of every frame, in Hz
         self.polyphony = Counter()  # frames per number of pitches; silent frames left out
 
     def read(self, value):
@@ -272,35 +257,53 @@ class MultiF0(Stat):
                 sounding.append(pitches)
                 self.polyphony[len(pitches)] += 1
         if sounding:  # converted once per annotation, not frame by frame
-            self.frequencies.append(to_midi(np.concatenate(sounding), value.frequency_unit))
+            hz = mirdata.annotations.convert_pitch_units(np.concatenate(sounding), value.frequency_unit, "hz")
+            self.frequencies.append(hz)
 
     def result(self):
+        frequencies = np.concatenate(self.frequencies) if self.frequencies else []
         return {
-            "frequencies": note_histogram(np.concatenate(self.frequencies) if self.frequencies else []),
+            "frequencies": histograms.histogram(frequencies, "hz"),
             "polyphony": dict(sorted(self.polyphony.items())),
         }
 
 
 class Notes(Stat):
-    """Pitch distribution of NoteData annotations."""
+    """Pitch distribution of NoteData annotations, in the unit the loader gives.
 
-    annotation = annotations.NoteData
+    Hz goes into a histogram; MIDI is counted per whole MIDI value, like the
+    polyphony of MultiF0: {40: 626, 41: 516, ...}.
+    """
+
+    annotation = mirdata.annotations.NoteData
 
     def __init__(self):
         super().__init__()
-        self.pitches = []  # one array per annotation, in MIDI
+        self.pitches = []  # one array per annotation, in self.unit
+        self.unit = None  # the loader's pitch unit: every track of a property has the same
 
     def read(self, value):
-        self.pitches.append(to_midi(value.pitches, value.pitch_unit))
+        self.unit = value.pitch_unit
+        pitches = np.asarray(value.pitches, dtype=float)
+        self.pitches.append(pitches[pitches > 0])  # 0: no pitch
 
     def result(self):
-        return {"pitches": note_histogram(np.concatenate(self.pitches) if self.pitches else [])}
+        pitches = np.concatenate(self.pitches) if self.pitches else []
+        if self.unit != "midi":
+            return {"pitches": histograms.histogram(pitches, self.unit)}
+        # every whole value from the lowest to the highest, 0 for one with no note;
+        # rounded first, as GuitarSet gives 43.98 for a 44
+        values = np.rint(pitches).astype(int)
+        if not len(values):
+            return {"pitches": {}}
+        lo = values.min()
+        return {"pitches": {int(lo + i): int(c) for i, c in enumerate(np.bincount(values - lo))}}
 
 
 class Sections(Stat):
     """Section labels, and the length of every section interval in seconds."""
 
-    annotation = annotations.SectionData
+    annotation = mirdata.annotations.SectionData
 
     def __init__(self):
         super().__init__()
@@ -317,14 +320,14 @@ class Sections(Stat):
     def result(self):
         return {
             "labels": top_counts(self.labels),
-            "section_interval_seconds": histogram(self.section_interval_seconds, "s", log=True),
+            "section_interval_seconds": histograms.histogram(self.section_interval_seconds, "s", log=True),
         }
 
 
 class Keys(Stat):
     """Key labels and modes of KeyData annotations."""
 
-    annotation = annotations.KeyData
+    annotation = mirdata.annotations.KeyData
 
     def __init__(self):
         super().__init__()
@@ -343,7 +346,7 @@ class Keys(Stat):
 class Lyrics(Stat):
     """How the lyrics are aligned (annotations per lyric_unit), and how many lyrics each track has."""
 
-    annotation = annotations.LyricData
+    annotation = mirdata.annotations.LyricData
 
     def __init__(self):
         super().__init__()
@@ -366,14 +369,14 @@ class Lyrics(Stat):
         unit = max(self.lyric_unit, key=self.lyric_unit.get) if self.lyric_unit else None
         return {
             "lyric_unit": dict(self.lyric_unit.most_common()),
-            "lyrics_per_track": histogram(self.lyrics_per_track, unit),
+            "lyrics_per_track": histograms.histogram(self.lyrics_per_track, unit),
         }
 
 
 class Events(Stat):
     """Event labels: how often each one appears."""
 
-    annotation = annotations.EventData
+    annotation = mirdata.annotations.EventData
 
     def __init__(self):
         super().__init__()

@@ -1,32 +1,34 @@
-"""Print the audio and annotation stats of mirdata datasets, to inspect them.
+"""Local tool: print the audio and annotation stats of mirdata datasets to inspect.
 
 Shows everything, including the logs and per-file errors a card leaves out,
 and writes nothing: generate_cards.py puts the stats into the cards. Each
 part ends with a status: ok, incomplete, or needs_local (rerun with --local).
 
 Usage:
-    python scripts/compute_stats.py --dataset rwc_popular                    # both parts
-    python scripts/compute_stats.py --dataset rwc_popular --only audio
-    python scripts/compute_stats.py --dataset rwc_popular --only annotations
-    python scripts/compute_stats.py --dataset rwc_popular --limit 5          # quick look
-    python scripts/compute_stats.py --dataset rwc_popular --json
-    python scripts/compute_stats.py --exclude acousticbrainz_genre           # every other dataset
-    python scripts/compute_stats.py --dataset rwc_popular --local            # ~/mir_datasets/<name>
-    python scripts/compute_stats.py --local --datasets-dir /path/to/mir_datasets
-    python scripts/compute_stats.py --dataset rwc_popular --fetch-dir /tmp/ann  # keep fetched files
-    python scripts/compute_stats.py --max-mb 2000 --max-minutes 30           # larger remote limits
+    python scripts/local/compute_stats_local.py --dataset rwc_popular            # both parts
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --only audio
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --only annotations
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --json
+    python scripts/local/compute_stats_local.py --exclude acousticbrainz_genre   # every other dataset
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --local    # ~/mir_datasets/<name>
+    python scripts/local/compute_stats_local.py --local --datasets-dir /path/to/mir_datasets
+    python scripts/local/compute_stats_local.py --dataset rwc_popular --fetch-dir /tmp/ann  # keep fetched files
 """
 
 import argparse
 import json
 import os
+import sys
 import tempfile
 
 import mirdata
 
+# scripts/local/ -> scripts/, where the gallery code (card_utils, stats, llm) lives
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import card_utils
 import stats
 import stats.histograms
-import stats.utils
 
 # --------------------------------------------------------------- computing
 
@@ -40,15 +42,12 @@ def compute(name, args, fetch_root):
         os.path.join(args.datasets_dir if args.local else fetch_root, name),
         local=args.local,
         parts=args.only,
-        limit=args.limit,
         workers=args.workers,
         verbose=args.verbose,
-        max_mb=args.max_mb,
-        max_minutes=args.max_minutes,
         on_part=(
             None
             if args.json
-            else lambda part, part_stats, s: print_part(part, part_stats, args.limit, s)
+            else lambda part, part_stats, s: print_part(part, part_stats, s)
         ),
     )
     if "error" in result and not args.json:
@@ -77,20 +76,20 @@ def fmt(value):
     return str(value)
 
 
-def print_part(part, part_stats, limit, elapsed):
+def print_part(part, part_stats, elapsed):
     print(f"  [{part}]")
     if "error" in part_stats:
         print(f"  error: {part_stats['error']}")
         return
-    (print_audio if part == "audio" else print_annotations)(part_stats, limit)
+    (print_audio if part == "audio" else print_annotations)(part_stats)
     print(f"  status:                 {part_stats['status']}")
     for problem in part_stats["problems"]:
         print(f"    {problem}")
     print(f"  elapsed:                {elapsed:.1f} s")
 
 
-def print_audio(part_stats, limit):
-    """The terminal block for one dataset's audio, counted from its index (limit does not apply)."""
+def print_audio(part_stats):
+    """The terminal block for one dataset's audio, counted from its index."""
     print(f"  tracks in index:        {part_stats['n_tracks']}")
     print(f"  audio files in index:   {part_stats['n_audio_files']}")
     print(f"  total audio duration in seconds: {part_stats['total_audio_duration_seconds']}")
@@ -98,7 +97,7 @@ def print_audio(part_stats, limit):
     print(f"  channel counts: {part_stats['channel_counts']}")
 
 
-def print_annotations(part_stats, limit):
+def print_annotations(part_stats):
     """The terminal block for one dataset's annotations."""
     print("\n".join(part_stats.get("sources", [])))
     brief = (
@@ -134,8 +133,6 @@ def print_annotations(part_stats, limit):
         print(f"  errors:                 {len(part_stats['errors'])}")
         for track_id, error in list(part_stats["errors"].items())[: 0 if brief else 5]:
             print(f"    {track_id}: {error}")
-    if limit:
-        print(f"  (only the first {limit} tracks were read)")
 
 
 def print_table(results):
@@ -187,19 +184,22 @@ def parse_args(argv=None):
         help="compute only the audio or only the annotations",
     )
     parser.add_argument(
-        "--limit",
-        type=stats.utils.positive_int,
-        default=None,
-        help="quick look: only the first N tracks (annotations)",
-    )
-    parser.add_argument(
         "--workers", type=int, default=4, help="parallel range requests"
     )
     parser.add_argument(
         "--verbose", action="store_true", help="print one line per file or track"
     )
     parser.add_argument("--json", action="store_true", help="print the result as JSON")
-    stats.utils.add_stats_arguments(parser)
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        help="compute the stats from local copies of the datasets, not the remotes",
+    )
+    parser.add_argument(
+        "--datasets-dir",
+        default=card_utils.DEFAULT_DATASETS_DIR,
+        help="with --local: folder with one sub-folder per dataset (default: ~/mir_datasets)",
+    )
     parser.add_argument(
         "--fetch-dir",
         default=None,
@@ -212,10 +212,10 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    names = stats.utils.select_datasets(
+    names = card_utils.select_datasets(
         mirdata.list_datasets(), args.dataset, args.exclude
     )
-    with tempfile.TemporaryDirectory(prefix="compute_stats_") as tmp:
+    with tempfile.TemporaryDirectory(prefix="compute_stats_local_") as tmp:
         fetch_root = args.fetch_dir or tmp
         results = {name: compute(name, args, fetch_root) for name in names}
     if args.json:
@@ -223,8 +223,8 @@ def main(argv=None):
         return
     if len(names) > 1:
         print_table(results)
-    stats.utils.print_to_do(
-        results, "python scripts/compute_stats.py --local --dataset <name>"
+    card_utils.print_to_do(
+        results, "python scripts/local/compute_stats_local.py --local --dataset <name>"
     )
 
 

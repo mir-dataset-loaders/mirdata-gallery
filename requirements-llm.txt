@@ -1,7 +1,9 @@
-# Optional: only for scripts/summarize_datasets_llm.py (runs a local model,
-# needs a GPU to be practical).
+# Optional: for the LLM summaries (scripts/llm.py, called by
+# scripts/generate_cards.py). Runs Qwen with llama.cpp on the CPU.
 #   pip install -r requirements.txt -r requirements-llm.txt
 
-torch>=2.0
-transformers>=4.40
-accelerate>=0.26   # required by transformers for device_map="auto"
+# Prebuilt CPU wheels of llama-cpp-python; without them pip compiles it from source.
+--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+
+llama-cpp-python
+huggingface_hub

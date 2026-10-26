@@ -1,6 +1,8 @@
-"""Shared fixtures: the fake dataset of fake_dataset.py, registered in mirdata, and its remotes."""
+"""Shared fixtures: the fake dataset registered in mirdata, and its remotes on a local server.
 
-import io
+Tests marked `online` use the internet; `pytest --local` skips them.
+"""
+
 import os
 import sys
 import zipfile
@@ -9,67 +11,67 @@ import mirdata
 import pytest
 from mirdata.download_utils import RemoteFileMetadata
 
-import fake_dataset
-from fake_server import FakeServer
+import fake_dataset_loader
+from fake_dataset_loader import DATA_HOME
+from fake_remote_server import FakeRemoteServer, dataset_files, zip_bytes
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--local", action="store_true", help="run offline: skip the tests marked online"
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "online: needs the internet (skipped with --local)"
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    if not config.getoption("--local"):
+        return
+    offline = pytest.mark.skip(reason="--local: offline run")
+    for item in items:
+        if "online" in item.keywords:
+            item.add_marker(offline)
 
 
 @pytest.fixture
 def fake_mirdata(monkeypatch):
     """mirdata with fake_dataset in its list of datasets, as if it were one of its loaders."""
-    monkeypatch.setitem(sys.modules, "mirdata.datasets.fake_dataset", fake_dataset)
+    monkeypatch.setitem(
+        sys.modules, "mirdata.datasets.fake_dataset", fake_dataset_loader
+    )
     monkeypatch.setattr(mirdata, "DATASETS", [*mirdata.DATASETS, "fake_dataset"])
 
 
-def dataset_files(folder):
-    """{index path: bytes} of the fake dataset's files under folder ("audio" or "annotations")."""
-    files = {}
-    for root, _, names in os.walk(os.path.join(fake_dataset.DATA_HOME, folder)):
-        for name in sorted(names):
-            path = os.path.join(root, name)
-            with open(path, "rb") as f:
-                files[os.path.relpath(path, fake_dataset.DATA_HOME)] = f.read()
-    return files
-
-
-def files_under(folder):
-    """Sorted paths, relative to folder, of every file below it."""
-    return sorted(
-        os.path.relpath(os.path.join(root, name), folder)
-        for root, _, names in os.walk(folder)
-        for name in names
-    )
-
-
-def zip_bytes(files, compression=zipfile.ZIP_DEFLATED):
-    """A zip of {member name: bytes}."""
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w", compression) as zf:
-        for name, data in files.items():
-            zf.writestr(name, data)
-    return buffer.getvalue()
-
-
 @pytest.fixture
-def server():
-    """A FakeServer running for the test."""
-    s = FakeServer()
-    s.start()
-    yield s
-    s.stop()
+def fake_remotes(fake_mirdata, monkeypatch):
+    """fake_dataset's remotes on a local server: audio.zip, annotations.zip and metadata.csv.
 
-
-@pytest.fixture
-def fake_remotes(fake_mirdata, server, monkeypatch):
-    """fake_dataset with two remotes on the local server, audio.zip and annotations.zip.
-
-    The remotes are fake_dataset.REMOTES["audio"] and ["annotations"]; a test
-    may change them, or the served files in server.files, before computing.
+    Returns the running FakeRemoteServer; a test may change its files or
+    failures before computing.
     """
-    server.files["audio.zip"] = zip_bytes(dataset_files("audio"), zipfile.ZIP_STORED)  # audio barely compresses
-    server.files["annotations.zip"] = zip_bytes(dataset_files("annotations"))
-    remotes = {
-        key: RemoteFileMetadata(filename=f"{key}.zip", url=server.url(f"{key}.zip"), checksum="")
-        for key in ("audio", "annotations")
+    server = FakeRemoteServer()
+    with open(os.path.join(DATA_HOME, "metadata.csv"), "rb") as f:
+        metadata = f.read()
+    # audio barely compresses: stored, not deflated
+    audio_zip = zip_bytes(dataset_files("audio"), zipfile.ZIP_STORED)
+    server.files = {
+        "audio.zip": audio_zip,
+        "annotations.zip": zip_bytes(dataset_files("annotations")),
+        "metadata.csv": metadata,
     }
-    monkeypatch.setattr(fake_dataset, "REMOTES", remotes)
-    return server
+    remotes = {
+        key: RemoteFileMetadata(filename=name, url=server.url(name), checksum="")
+        for key, name in [
+            ("audio", "audio.zip"),
+            ("annotations", "annotations.zip"),
+            ("metadata", "metadata.csv"),
+        ]
+    }
+    monkeypatch.setattr(fake_dataset_loader, "REMOTES", remotes)
+    server.start()
+    yield server
+    server.stop()

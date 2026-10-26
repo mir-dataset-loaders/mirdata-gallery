@@ -23,15 +23,6 @@ ANNOTATION_KEYS = (
 )
 
 
-def index_checksum(ds):
-    """The MD5 checksum mirdata publishes with a dataset's index, without downloading it.
-
-    A new index version comes with a new checksum, so it changes exactly when
-    the index does.
-    """
-    return ds._index_data.remote.checksum
-
-
 def audio_to_card(part):
     """The audio part as stored in a card."""
     if "error" in part:
@@ -67,9 +58,9 @@ def annotations_to_card(part):
 
 
 def result_to_card_stats(result, mode, checksum):
-    """The "stats" field for one compute_stats result ({"name", "audio", "annotations"}).
+    """The "stats" field for one stats.compute result ({"name", "audio", "annotations"}).
 
-    mode: "remote" or "local"; checksum: index_checksum of the dataset.
+    mode: "remote" or "local"; checksum: card_utils.index_checksum of the dataset.
     """
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}, got {mode!r}")

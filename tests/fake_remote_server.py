@@ -2,8 +2,7 @@
 
 It serves `files` ({name: bytes}) at http://127.0.0.1:<port>/<name>: HEAD gives
 the size, GET with a Range header gives those bytes (206), GET without one
-the whole file (200). Every request is logged in `requests`, and `sent`
-counts the bytes of each file that really left the server.
+the whole file (200). Every request is logged in `requests`.
 
 `failures` ({name: mode}) makes one file misbehave:
     "404", "403"      every request gets that status
@@ -11,19 +10,45 @@ counts the bytes of each file that really left the server.
     "no length"       no Content-Length anywhere; GET always sends the whole file
     "ignore range"    HEAD gives the size, GET always sends the whole file (200)
     "short range"     a 206 carries one byte less than asked
+
+dataset_files and zip_bytes build what it serves from the fake dataset's files.
 """
 
+import io
+import os
 import re
 import threading
+import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from fake_dataset_loader import DATA_HOME
 
-class FakeServer:
+
+def dataset_files(folder):
+    """{index path: bytes} of the fake dataset's files under folder ("audio" or "annotations")."""
+    files = {}
+    for root, _, names in os.walk(os.path.join(DATA_HOME, folder)):
+        for name in sorted(names):
+            path = os.path.join(root, name)
+            with open(path, "rb") as f:
+                files[os.path.relpath(path, DATA_HOME)] = f.read()
+    return files
+
+
+def zip_bytes(files, compression=zipfile.ZIP_DEFLATED):
+    """A zip holding {member name: bytes}."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression) as zf:
+        for name, data in files.items():
+            zf.writestr(name, data)
+    return buffer.getvalue()
+
+
+class FakeRemoteServer:
     def __init__(self):
         self.files = {}
         self.failures = {}
         self.requests = []  # (method, name, Range header or None)
-        self.sent = {}  # name -> bytes of the body written to the client
         server = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -81,13 +106,10 @@ class FakeServer:
             request.send_header("Content-Length", str(len(body)))
         request.end_headers()
         if method == "GET":
-            for start in range(0, len(body), 1 << 16):  # in pieces, to count what got through
-                chunk = body[start : start + (1 << 16)]
-                try:
-                    request.wfile.write(chunk)
-                except (BrokenPipeError, ConnectionResetError):
-                    break  # the client stopped reading, as it should when it gets the wrong answer
-                self.sent[name] = self.sent.get(name, 0) + len(chunk)
+            try:
+                request.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # the client stopped reading, as it should when it gets the wrong answer
 
     def start(self):
         self.thread.start()

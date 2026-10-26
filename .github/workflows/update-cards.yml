@@ -31,10 +31,7 @@ jobs:
       # requirements.txt installs mirdata from its master branch on GitHub,
       # so every run sees the newest loaders. No pip cache on purpose.
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
-          pip install huggingface_hub
+        run: pip install -r requirements.txt -r requirements-llm.txt
 
       # The 4-bit Qwen model (about 4.7 GB) is downloaded on the first run and
       # kept in the Actions cache; later runs restore it instead.
@@ -54,7 +51,6 @@ jobs:
           token: ${{ secrets.PR_TEST }}
           add-paths: |
             cards/*.yaml
-            cards/docstring_hashes.json
           branch: auto/update-cards
           title: "Update dataset cards from mirdata master"
           commit-message: "Update dataset cards from mirdata master"

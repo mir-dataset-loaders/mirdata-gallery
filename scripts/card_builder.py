@@ -2,15 +2,15 @@
 
 Each field function takes an initialized mirdata Dataset (from ``mirdata.initialize``)
 and returns the value to store in the card. Function names match the card
-fields on purpose, so build_card reads like the card itself.
+fields on purpose, so build_card reads like the card itself. clean_text tidies
+mirdata's text (license, bibtex, the loader docstring) for the YAML.
 """
 
+import textwrap
 import typing
 
 import mirdata
-from mirdata.annotations import Annotation
-
-from card_utils import clean_text
+import mirdata.annotations
 
 # FIXME: NEEDS FIX
 
@@ -39,20 +39,21 @@ FALLBACK_MAP = {
 }
 
 
-def build_card(ds, summary=None, stats=None):
+def build_card(ds, summary=None, docstring_hash=None, stats=None):
     """The card dict for one initialized dataset; keys in card order.
 
-    summary and stats are the card's summary and stats fields, from
-    generate_cards.update_summary() and update_stats() (new, kept from the
-    old card, or None).
+    summary, docstring_hash and stats are the card's summary, docstring_hash
+    and stats fields, from generate_cards.update_summary() and update_stats()
+    (new, kept from the old card, or None).
     """
     return {
         "name": ds.name,
-        "license": license(ds),
-        "annotations": annotations(ds),
-        "bibtex": bibtex(ds),
         "summary": summary,
+        "annotations": annotations(ds),
         "stats": stats,
+        "docstring_hash": docstring_hash,
+        "bibtex": bibtex(ds),
+        "license": license(ds),
     }
 
 
@@ -73,11 +74,12 @@ def annotations(ds):
     return sorted(found)
 
 
-def annotation_properties(ds):
+def annotation_properties(ds, guess=True):
     """{property name: annotation type} for every annotation property of the dataset's Track class.
 
     The card's annotations field lists the types; the stats read the
-    properties of the official mirdata types.
+    properties of the official mirdata types. guess=False keeps only the
+    properties whose return hint names the type (none guessed from FALLBACK_MAP).
     """
     found = {}
     track_class = getattr(ds, "_track_class", None)
@@ -86,13 +88,13 @@ def annotation_properties(ds):
             continue
         item = getattr(track_class, attr, None)
         if isinstance(item, (property, mirdata.core.cached_property)):
-            ann_cls = _annotation_class_name(attr, item)
+            ann_cls = _annotation_class_name(attr, item, guess)
             if ann_cls:
                 found[attr] = ann_cls
     return found
 
 
-def _annotation_class_name(attr_name, item):
+def _annotation_class_name(attr_name, item, guess=True):
     """Annotation class name a property returns, or None if it isn't one."""
     # @property stores the getter as .fget, @cached_property as .func
     func = getattr(item, "func", None) or getattr(item, "fget", None)
@@ -108,10 +110,12 @@ def _annotation_class_name(attr_name, item):
                 break
         if (
             isinstance(ret, type)
-            and issubclass(ret, Annotation)
-            and ret is not Annotation
+            and issubclass(ret, mirdata.annotations.Annotation)
+            and ret is not mirdata.annotations.Annotation
         ):
             return ret.__name__
+    if not guess:
+        return None
 
     # 2. Keyword in the property name
     attr_lower = attr_name.lower()
@@ -119,3 +123,16 @@ def _annotation_class_name(attr_name, item):
         if keyword in attr_lower:
             return class_name
     return None
+
+
+def clean_text(text):
+    """Tidy a multi-line string from mirdata so it stores cleanly in YAML.
+
+    Drops trailing spaces on every line (PyYAML refuses the readable `|`
+    block style otherwise), removes common indentation, and strips blank
+    lines around the text. Non-strings (None) pass through unchanged.
+    """
+    if not isinstance(text, str):
+        return text
+    lines = [line.rstrip() for line in text.splitlines()]
+    return textwrap.dedent("\n".join(lines)).strip()

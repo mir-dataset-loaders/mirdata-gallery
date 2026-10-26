@@ -12,8 +12,7 @@ import logging
 import sys
 
 import card_builder
-from stats import remote
-from stats.annotation_types import ANNOTATION_TYPES, STATS, is_empty
+from stats import annotation_types, remote
 
 
 def part_status(problems, incomplete):
@@ -33,37 +32,36 @@ class quiet_logging:
         logging.disable(logging.NOTSET)
 
 
-def dataset_stats(name, ds, limit=None, verbose=False):
-    """Load every track of an initialized dataset and summarize its annotations."""
-    properties = (
-        {  # the same detection as the card's annotations field, official types only
-            prop: ann_type
-            for prop, ann_type in card_builder.annotation_properties(ds).items()
-            if ann_type in ANNOTATION_TYPES
-        }
-    )
-    track_ids = ds.track_ids[:limit] if limit else ds.track_ids
-    stats = {prop: STATS[ann_type]() for prop, ann_type in properties.items()}
-    tracks_with = (
-        {}
-    )  # annotation type -> ids of tracks with at least one such annotation
-    skipped = {}  # property -> why its values could not be used
-    errors = (
-        {}
-    )  # track_id -> error while creating the track (none of its annotations read)
-    annotation_errors = {}  # property -> {track_id: error} while loading or reading it
+def error_text(e):
+    """An exception as one line: "ValueError: bad line"."""
+    return f"{type(e).__name__}: {e}"
 
-    def annotation_error(prop, track_id, e):
-        annotation_errors.setdefault(prop, {})[track_id] = f"{type(e).__name__}: {e}"
-        if verbose:
-            print(f"    {track_id} {prop}: {type(e).__name__}: {e}", file=sys.stderr)
+
+def read_tracks(ds, verbose=False):
+    """Load every track of an initialized dataset and summarize its annotations."""
+    # the same detection as the card's annotations field, official types only
+    properties = {
+        prop: ann_type
+        for prop, ann_type in card_builder.annotation_properties(ds).items()
+        if ann_type in annotation_types.ANNOTATION_TYPES
+    }
+    # typed by their return hint: a value of another type is an error, not a wrong guess
+    declared = card_builder.annotation_properties(ds, guess=False)
+    track_ids = ds.track_ids
+    stats = {prop: annotation_types.STATS[ann_type]() for prop, ann_type in properties.items()}
+    # annotation type -> ids of tracks with at least one such annotation
+    tracks_with = {}
+    skipped = {}  # guessed property -> why its values could not be used
+    # track_id -> error while creating the track (none of its annotations read)
+    errors = {}
+    annotation_errors = {}  # property -> {track_id: error} while loading or reading it
 
     for track_id in track_ids:
         try:
             with quiet_logging():
                 track = ds.track(track_id)
         except Exception as e:
-            errors[track_id] = f"{type(e).__name__}: {e}"
+            errors[track_id] = error_text(e)
             if verbose:
                 print(f"    {track_id}: {errors[track_id]}", file=sys.stderr)
             continue
@@ -72,22 +70,22 @@ def dataset_stats(name, ds, limit=None, verbose=False):
             try:
                 with quiet_logging():
                     value = getattr(track, prop)
-            except Exception as e:
-                annotation_error(prop, track_id, e)
-                continue
-            if is_empty(value):
-                continue
-            try:
+                if annotation_types.is_empty(value):
+                    continue
                 used = stats[prop].add(value)
             except Exception as e:
-                annotation_error(prop, track_id, e)
+                annotation_errors.setdefault(prop, {})[track_id] = error_text(e)
+                if verbose:
+                    print(f"    {track_id} {prop}: {error_text(e)}", file=sys.stderr)
                 continue
             if used:
                 tracks_with.setdefault(ann_type, set()).add(track_id)
+                continue
+            why = f"not a mirdata {ann_type} object (got {type(value).__name__})"
+            if prop in declared:
+                annotation_errors.setdefault(prop, {})[track_id] = why
             else:
-                skipped[prop] = (
-                    f"not a mirdata {ann_type} object (got {type(value).__name__})"
-                )
+                skipped[prop] = why
         if verbose:
             print(f"    {track_id}: ok", file=sys.stderr)
 
@@ -97,8 +95,7 @@ def dataset_stats(name, ds, limit=None, verbose=False):
         if stat.n_tracks
     }
     return {
-        "name": name,
-        "n_tracks": len(ds.track_ids),
+        "n_tracks": len(track_ids),
         "n_tracks_loaded": len(track_ids) - len(errors),
         "tracks_with": {t: len(ids) for t, ids in sorted(tracks_with.items())},
         "annotations": annotations,
@@ -123,49 +120,43 @@ def index_notes(index):
     ]
 
 
-def remote_stats(
-    name, ds, data_home, index, limit=None, workers=4, verbose=False, budget=None
+def dataset_stats(
+    ds,
+    data_home,
+    index=None,
+    local=False,
+    workers=4,
+    verbose=False,
+    max_mb=remote.MAX_REMOTE_MB,
+    max_minutes=remote.MAX_REMOTE_MINUTES,
 ):
-    """Fetch the dataset's annotation files from its remotes into data_home, then dataset_stats.
+    """Annotation stats of one dataset, read from a local copy (local=True) or fetched from its remotes.
 
-    ds must be initialized with that data_home; index is its index dict
-    (stats.load_index); budget is a stats.remote.Budget for the remote
-    reads. The result carries "status" (ok, incomplete or
-    needs_local), "problems" (why a local run is needed), "sources" (one line
-    per remote) and "missing_files" ({path: why it was not fetched}).
+    ds is initialized with data_home: the local copy (stats.compute checks it
+    exists), or the folder the annotation files are fetched into. A remote run
+    needs index (stats.load_index) and reads at most max_mb in max_minutes.
+    The result carries "status" (ok, incomplete or needs_local), "problems"
+    (why a local run is needed), "sources" (one line per remote, or the local
+    folder) and "missing_files" ({path: why it was not fetched}).
     """
-    track_ids = ds.track_ids[:limit] if limit else None
-    wanted = remote.annotation_paths(index, track_ids)
-    _, missing, sources, problems = remote.fetch(
-        ds.remotes or {},
-        wanted,
-        data_home,
-        workers=workers,
-        verbose=verbose,
-        budget=budget,
-    )
-    stats = dataset_stats(name, ds, limit, verbose)
+    if local:
+        problems, sources, missing = [], [f"  local                  {data_home}"], {}
+    else:
+        _, missing, sources, problems = remote.fetch(
+            ds.remotes,
+            remote.annotation_paths(index),
+            data_home,
+            workers=workers,
+            verbose=verbose,
+            budget=remote.Budget(max_mb, max_minutes),  # one for the whole dataset
+        )
+        sources = index_notes(index) + sources
+    stats = read_tracks(ds, verbose)
     incomplete = bool(missing or stats["errors"] or stats["annotation_errors"])
     return {
         **stats,
         "status": part_status(problems, incomplete),
         "problems": problems,
-        "sources": index_notes(index) + sources,
+        "sources": sources,
         "missing_files": missing,
-    }
-
-
-def local_stats(name, ds, data_home, limit=None, verbose=False):
-    """dataset_stats on a local copy of the dataset; ds is initialized with that data_home.
-
-    stats.compute checks that the local copy exists.
-    """
-    stats = dataset_stats(name, ds, limit, verbose)
-    incomplete = bool(stats["errors"] or stats["annotation_errors"])
-    return {
-        **stats,
-        "status": part_status([], incomplete),
-        "problems": [],
-        "sources": [f"  local                  {data_home}"],
-        "missing_files": {},
     }

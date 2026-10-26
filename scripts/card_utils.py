@@ -1,20 +1,24 @@
-"""Storing the cards: cards/*.yaml, the docstring hashes, and text tidying.
+"""Storing the cards (cards/*.yaml, the two checksums), and what the commands share.
 
 Every script that touches a card goes through here, so a card is formatted the
-same way no matter which script wrote it last.
+same way no matter which script wrote it last. generate_cards.py and
+local/compute_stats_local.py also share the dataset choice and the closing
+to-do list.
 
-cards/docstring_hashes.json maps dataset name -> SHA-256 of the loader
-docstring that produced the card's summary. generate_cards.py reruns the LLM
-only when the current docstring hashes differently, so unchanged datasets
-never cost model time and never get a slightly different summary.
+A card's docstring_hash is the SHA-256 of the loader docstring that produced
+its summary. generate_cards.py reruns the LLM only when the current docstring
+hashes differently, so unchanged datasets never cost model time and never get
+a slightly different summary. index_checksum is the checksum mirdata publishes
+with a dataset's index; the card keeps it in stats.computed.index, so the stats
+are recomputed only when the index changes.
 """
 
 import hashlib
-import json
 import os
-import textwrap
 
 import yaml
+
+import stats
 
 
 def card_path(cards_dir, name):
@@ -59,9 +63,7 @@ _CardDumper.add_representer(str, _str_presenter)
 _CardDumper.add_representer(list, _list_presenter)
 
 
-# --- docstring hashes ---------------------------------------------------------
-
-HASHES_FILENAME = "docstring_hashes.json"
+# --- docstring hash and index checksum ----------------------------------------
 
 
 def docstring_hash(text):
@@ -69,37 +71,61 @@ def docstring_hash(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def hashes_path(cards_dir):
-    return os.path.join(cards_dir, HASHES_FILENAME)
+def index_checksum(ds):
+    """The MD5 checksum mirdata publishes with a dataset's index, without downloading it.
 
-
-def read_hashes(cards_dir):
-    """The name -> hash map, or {} if the file doesn't exist."""
-    p = hashes_path(cards_dir)
-    if not os.path.exists(p):
-        return {}
-    with open(p, encoding="utf-8") as f:
-        return json.load(f)
-
-
-def write_hashes(cards_dir, mapping):
-    """Save the map with sorted keys so the git diff stays readable."""
-    with open(hashes_path(cards_dir), "w", encoding="utf-8") as f:
-        json.dump(mapping, f, indent=2, sort_keys=True)
-        f.write("\n")
-
-
-# --- text ---------------------------------------------------------------------
-
-
-def clean_text(text):
-    """Tidy a multi-line string from mirdata so it stores cleanly in YAML.
-
-    Drops trailing spaces on every line (PyYAML refuses the readable `|`
-    block style otherwise), removes common indentation, and strips blank
-    lines around the text. Non-strings (None) pass through unchanged.
+    A new index version comes with a new checksum, so it changes exactly when
+    the index does.
     """
-    if not isinstance(text, str):
-        return text
-    lines = [line.rstrip() for line in text.splitlines()]
-    return textwrap.dedent("\n".join(lines)).strip()
+    return ds._index_data.remote.checksum
+
+
+# --- shared by the commands ---------------------------------------------------
+
+DEFAULT_DATASETS_DIR = os.path.join(
+    os.path.expanduser("~"), "mir_datasets"
+)  # mirdata's default
+
+
+def select_datasets(all_names, dataset=None, exclude=""):
+    """The datasets to run: one (--dataset) or all, minus the comma-separated --exclude."""
+    names = list(all_names)
+    if dataset:
+        if dataset not in names:
+            raise SystemExit(f"Dataset '{dataset}' not found in mirdata.")
+        names = [dataset]
+    excluded = {n.strip() for n in exclude.split(",") if n.strip()}
+    return [n for n in names if n not in excluded]
+
+
+def print_to_do(results, command):
+    """List the datasets whose parts need a local run, and those left incomplete or failing.
+
+    results: {name: {"error"?, "audio"?, "annotations"?}}, each part with a
+    "status" and "problems" (or "error"): a compute result or a card's stats
+    field, which have the same shape. command: how to rerun one dataset
+    locally, shown in the heading.
+    """
+    groups = {"needs_local": [], "incomplete": [], "error": []}
+    for name, result in results.items():
+        if not result:
+            continue
+        if result.get("error"):
+            groups["error"].append((name, "", result["error"]))
+        for part in stats.PARTS:
+            part_stats = result.get(part)
+            if part_stats and part_stats.get("status") in groups:
+                why = (
+                    part_stats.get("problems") or [part_stats.get("error") or "see its errors"]
+                )[0]
+                groups[part_stats["status"]].append((name, part, why))
+    titles = {
+        "needs_local": f"Run these locally ({command}):",
+        "incomplete": "Incomplete (some files could not be read; a local run would not help):",
+        "error": "Failed:",
+    }
+    for status, rows in groups.items():
+        if rows:
+            print(f"\n{titles[status]}")
+            for name, part, why in rows:
+                print(f"  {name:28s} {part:12s} {why[:110]}")

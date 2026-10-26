@@ -38,10 +38,10 @@ def summarize(index):
 
 
 
-def dataset_stats(name, index):
+def dataset_stats(index):
     """Count the tracks and audio files of one dataset. Returns a dict.
 
     index: the dataset's index dict. The status is always ok: a local run
     would find nothing the index does not already say.
     """
-    return {"name": name, "status": "ok", "problems": [], **summarize(index)}
+    return {"status": "ok", "problems": [], **summarize(index)}

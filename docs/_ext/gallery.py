@@ -21,9 +21,7 @@ import json
 import os
 import textwrap
 
-import card_schema
 import yaml
-from card_schema import STATS_ANNOTATION_FIELDS
 from docutils import nodes
 from docutils.statemachine import StringList, string2lines
 from sphinx.util import logging
@@ -33,6 +31,26 @@ from sphinx.util.nodes import nested_parse_with_titles
 logger = logging.getLogger(__name__)
 
 MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest as "…"
+# The plotted fields of each annotation type, in plot order. A counts field not
+# listed is not plotted ("parts" counts where the annotations came from, not
+# what they hold); a histogram not listed is plotted after the listed ones.
+PLOT_FIELDS = {
+    "BeatData": ["tempo_from_beats", "meter"],
+    "ChordData": ["labels", "qualities"],
+    "EventData": ["events"],
+    "F0Data": ["frequencies"],
+    "KeyData": ["keys", "modes"],
+    "LyricData": ["lyric_unit", "lyrics_per_track"],
+    "MultiF0Data": ["frequencies", "polyphony"],
+    "NoteData": ["pitches"],
+    "SectionData": ["labels", "section_interval_seconds"],
+    "TempoData": ["tempo"],
+}
+
+# The unit written under the axis of a counts field whose labels are numbers in
+# a unit (a histogram has its own). NoteData pitches are counts only when the
+# loader gives MIDI: Hz pitches are a histogram.
+COUNT_UNITS = {("NoteData", "pitches"): "MIDI"}
 
 # --- Card rendering ----------------------------------------------------------
 
@@ -266,7 +284,7 @@ def ordered_plots(stats, with_beat_tempo=False):
 
     The audio duration comes first, then the plots grouped by annotation type,
     A–Z. Inside a type, the entry (track property) with the most annotations
-    comes first, then the others; each entry's plots in the schema's field
+    comes first, then the others; each entry's plots in PLOT_FIELDS
     order. An annotated tempo (TempoData) replaces the tempo derived from beats,
     unless with_beat_tempo (Combine mode hides neither).
     """
@@ -310,9 +328,9 @@ def ordered_plots(stats, with_beat_tempo=False):
 
 
 def annotation_plots(prop, entry, skip=()):
-    """The plots of one annotation entry, its histograms and counts in the schema's field order, but the fields in skip."""
-    order = list(STATS_ANNOTATION_FIELDS.get(entry["type"], {}))
-    # counts only when the schema names them: "parts" is counts too, but not a plot
+    """The plots of one annotation entry, its histograms and counts in PLOT_FIELDS order, but the fields in skip."""
+    order = PLOT_FIELDS.get(entry["type"], [])
+    # counts only when PLOT_FIELDS names them: "parts" is counts too, but not a plot
     fields = [
         key
         for key, value in entry.items()
@@ -356,7 +374,7 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
     """What one plot needs: data is a histogram or counts. counted names what the bars count, for the hover text.
 
     prop, type and field (None for the audio's) are what Combine mode matches
-    the plots of several datasets by.
+    the plots of several datasets by. unit is a counts field's (COUNT_UNITS).
     """
     total = sum(data["counts"]) if is_histogram(data) else sum(data.values())
     counted = (
@@ -377,6 +395,7 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
         "prop": prop,
         "type": ann_type,
         "field": field,
+        "unit": None if is_histogram(data) else COUNT_UNITS.get((ann_type, field)),
     }
 
 
@@ -425,10 +444,9 @@ class DatasetGallery(SphinxDirective):
         if not os.path.isdir(cards_dir):
             raise self.error(f"dataset-gallery: directory not found: {cards_dir}")
 
-        # The page is built by this file and the card format it reads: editing
-        # either re-renders the page too, not only editing a card.
+        # The page is built by this file: editing it re-renders the page too,
+        # not only editing a card.
         self.env.note_dependency(os.path.abspath(__file__))
-        self.env.note_dependency(os.path.abspath(card_schema.__file__))
 
         # Same per-line normalisation (tab expansion, rstrip) Sphinx applies
         # when it reads an .rst file, so the output matches a file-based page.

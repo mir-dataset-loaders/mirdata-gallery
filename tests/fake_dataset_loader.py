@@ -4,10 +4,13 @@ Its files are in tests/resources/mir_datasets/fake_dataset/, its index in
 tests/resources/fake_dataset_index_1.0.json. The numbers are small enough to
 check by hand:
 
-    track    audio                 beats (time, position)          chords
-    track1   2 s, 8000 Hz          every 0.5 s, 1 2 3 4  (120 bpm)  C:maj, A:min       (1 s each)
-    track2   4 s, 8000 Hz          every 1 s,   1 2 3 1  (60 bpm)   C:maj, G:7, N      (2 s, 1 s, 1 s)
-    track3   1 s, 16000 Hz         every 0.25 s, 1 2 3 4 (240 bpm)  none (null in the index)
+    track    audio           beats (time, position)            chords
+    track1   2 s, 8000 Hz    every 0.5 s,  1 2 3 4      (120 bpm, meter 4)   C:maj, A:min     (1 s each)
+    track2   4 s, 8000 Hz    every 0.75 s, 1 2 3 1 2 3  (80 bpm, meter 3)    C:maj, G:7, N    (2 s, 1 s, 1 s)
+    track3   1 s, 16000 Hz   every 0.25 s, 1 2 3 4      (240 bpm, meter 4)   none (null in the index)
+
+metadata.csv holds each track's title; like most loaders, it is read only when
+a property asks for it.
 
 conftest.py adds it to mirdata's list of datasets, so mirdata.initialize("fake_dataset")
 works like for any other dataset.
@@ -33,7 +36,7 @@ INDEXES = {
     "1.0": core.Index(
         filename="fake_dataset_index_1.0.json",
         url="https://example.com/fake_dataset_index_1.0.json",  # never fetched: the file is in RESOURCES
-        checksum="2047e922e60a768ae2dff8a62853f8b4",
+        checksum="76f820b1d7c4aa22c7edf1f6f9ec0998",
     ),
 }
 # mirdata keeps a remote index in its own package folder: point it to ours.
@@ -47,6 +50,9 @@ LICENSE_INFO = "Creative Commons Attribution 4.0 International"
 class Track(core.Track):
     """fake_dataset track class
 
+    Attributes:
+        title (str): the track's title, from metadata.csv
+
     Cached Properties:
         beats (BeatData): beat annotations
         chords (ChordData): chord annotations
@@ -57,6 +63,10 @@ class Track(core.Track):
         self.audio_path = self.get_path("audio")
         self.beats_path = self.get_path("beats")
         self.chords_path = self.get_path("chords")
+
+    @property
+    def title(self) -> str:
+        return self._track_metadata["title"]
 
     @core.cached_property
     def beats(self) -> Optional[annotations.BeatData]:
@@ -110,3 +120,12 @@ class Dataset(core.Dataset):
             remotes=REMOTES,
             license_info=LICENSE_INFO,
         )
+
+    @core.cached_property
+    def _metadata(self):
+        """{track_id: {"track_id", "title"}} from metadata.csv."""
+        metadata_path = os.path.join(self.data_home, "metadata.csv")
+        if not os.path.exists(metadata_path):
+            raise FileNotFoundError("Metadata not found. Did you run .download()?")
+        with open(metadata_path, encoding="utf-8") as fhandle:
+            return {row["track_id"]: row for row in csv.DictReader(fhandle)}
