@@ -1,8 +1,8 @@
 """The Stat classes of stats/annotation_types.py, fed mirdata annotations built in code.
 
-Histograms are compared with histogram() / note_histogram() of the values a
-Stat should collect: which values and which kind of histogram is this file's
-job, the bins are tested in test_histograms.py.
+Histograms are compared with histogram() of the values a Stat should
+collect: which values and which kind of histogram is this file's job, the
+bins are tested in test_histograms.py.
 """
 
 from collections import Counter
@@ -24,10 +24,9 @@ from stats.annotation_types import (
     bar_lengths,
     chord_quality,
     is_empty,
-    to_midi,
     top_counts,
 )
-from stats.histograms import histogram, note_histogram
+from stats.histograms import histogram
 
 
 def intervals(*pairs):
@@ -161,13 +160,16 @@ def test_multif0():
 
 def test_notes():
     two_notes = intervals((0, 1), (1, 2))
-    in_hz = annotations.NoteData(two_notes, "s", np.array([440.0, 880.0]), "hz")
-    in_midi = annotations.NoteData(two_notes, "s", np.array([60.0, 62.0]), "midi")
-    result = collect(Notes(), in_hz, in_midi).result()
-    expected = {"pitches": note_histogram([69, 81, 60, 62])}
-    assert (
-        result == expected
-    ), "every note pitch, in Hz or MIDI, should go into one MIDI note histogram"
+    in_midi = annotations.NoteData(two_notes, "s", np.array([64.0, 65.0]), "midi")
+    result = collect(Notes(), in_midi, in_midi).result()
+    expected = {"pitches": histogram([64.0, 65.0, 64.0, 65.0], "midi")}
+    assert result == expected, "MIDI pitches should be counted in MIDI, as the loader gives them"
+
+    in_hz = annotations.NoteData(two_notes, "s", np.array([440.0, 0.0]), "hz")  # 0: no pitch
+    higher = annotations.NoteData(two_notes, "s", np.array([880.0, 1760.0]), "hz")
+    result = collect(Notes(), in_hz, higher).result()
+    expected = {"pitches": histogram([440.0, 880.0, 1760.0], "hz")}
+    assert result == expected, "Hz pitches should be counted in Hz, without the 0s (no pitch)"
 
 
 def test_sections():
@@ -274,24 +276,6 @@ def test_is_empty():
 
 
 # ------------------------------------------------------------------ helpers
-
-
-def test_to_midi():
-    assert np.allclose(
-        to_midi([440.0, 880.0], "hz"), [69, 81]
-    ), "Hz should convert to MIDI"
-    assert np.allclose(
-        to_midi([60.0, 62.5], "midi"), [60, 62.5]
-    ), "MIDI should stay as it is"
-    assert np.allclose(
-        to_midi(["A4", "C4"], "note_name"), [69, 60]
-    ), "note names should convert to MIDI"
-    assert np.allclose(
-        to_midi([440.0, 0.0, -1.0], "hz"), [69]
-    ), "values of 0 or less should be dropped"
-    assert (
-        len(to_midi([0.0, 3.0], "pc")) == 0
-    ), "pitch classes (no octave) should give nothing"
 
 
 def test_chord_quality():

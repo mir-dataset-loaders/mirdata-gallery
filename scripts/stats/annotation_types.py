@@ -41,23 +41,6 @@ def to_seconds(values, unit):
     return None
 
 
-def to_midi(values, unit):
-    """Pitch values as MIDI note numbers, whatever unit a loader gives them in.
-
-    Loaders give pitches in Hz, MIDI or note names (mirdata's PITCH_UNITS),
-    often just the unit their files or their mirdata version used; they are
-    converted with mirdata's convert_pitch_units. Values with no pitch (0 or
-    less) are left out, and so are pitch classes (no octave): an empty array.
-    """
-    if unit == "note_name":  # "A4"
-        values, unit = mirdata.annotations.convert_pitch_units(np.asarray(values), unit, "hz"), "hz"
-    if unit not in ("hz", "midi"):
-        return np.array([])
-    values = np.asarray(values, dtype=float)
-    values = values[values > 0]
-    return values if unit == "midi" else mirdata.annotations.convert_pitch_units(values, unit, "midi")
-
-
 def interval_lengths(annotation):
     """Length in seconds of every interval of an interval-based annotation, or None."""
     intervals = np.asarray(annotation.intervals, dtype=float)
@@ -286,19 +269,23 @@ class MultiF0(Stat):
 
 
 class Notes(Stat):
-    """Pitch distribution of NoteData annotations."""
+    """Pitch distribution of NoteData annotations, in the unit the loader gives (Hz or MIDI)."""
 
     annotation = mirdata.annotations.NoteData
 
     def __init__(self):
         super().__init__()
-        self.pitches = []  # one array per annotation, in MIDI
+        self.pitches = []  # one array per annotation, in self.unit
+        self.unit = None  # the loader's pitch unit: every track of a property has the same
 
     def read(self, value):
-        self.pitches.append(to_midi(value.pitches, value.pitch_unit))
+        self.unit = value.pitch_unit
+        pitches = np.asarray(value.pitches, dtype=float)
+        self.pitches.append(pitches[pitches > 0])  # 0: no pitch
 
     def result(self):
-        return {"pitches": histograms.note_histogram(np.concatenate(self.pitches) if self.pitches else [])}
+        pitches = np.concatenate(self.pitches) if self.pitches else []
+        return {"pitches": histograms.histogram(pitches, self.unit)}
 
 
 class Sections(Stat):

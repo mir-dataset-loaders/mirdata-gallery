@@ -1,15 +1,12 @@
 """The bin rules of stats/histograms.py.
 
-Other test files compare against histogram() and note_histogram(); the exact
-bins are checked only here, by hand.
+Other test files compare against histogram(); the exact bins are checked
+only here, by hand.
 """
 
-import math
-
-import numpy as np
 import pytest
 
-from stats.histograms import MAX_BINS, histogram, log_edges, note_histogram, tidy_width
+from stats.histograms import MAX_BINS, histogram, log_edges, tidy_width
 
 
 def test_histogram():
@@ -106,21 +103,3 @@ def test_log_edges():
     assert (
         edges == decades
     ), f"a range that would need more than {MAX_BINS} bins should fall back to whole decades"
-
-
-def test_note_histogram():
-    result = note_histogram([71.99996, 72.0003, 60, 60.4])
-    edges = [n - 0.5 for n in range(60, 74)]  # 59.5, 60.5, ... 72.5
-    counts = [2] + [0] * 11 + [2]
-    assert result == {"unit": "midi", "edges": edges, "counts": counts}, (
-        "there should be one bin per note, edges halfway between notes, each pitch counted"
-        " under its nearest note, and an empty bin for every note in between"
-    )
-    wide = note_histogram([20, 100])
-    assert (
-        len(wide["counts"]) == 81
-    ), f"notes should get a bin each, more than {MAX_BINS} if needed"
-    assert note_histogram([]) is None, "no pitches should give no histogram"
-    assert note_histogram([math.nan]) is None, "NaN pitches should be left out"
-    single = note_histogram(np.array([60.0]))
-    assert single["counts"] == [1], "a numpy array should work too"
