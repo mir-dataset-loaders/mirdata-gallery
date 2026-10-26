@@ -72,6 +72,7 @@ ANNOTATION_FIELDS = {
 # The fields of an annotation entry, by type, besides type, n_tracks,
 # n_annotations and the optional parts.
 HISTOGRAM, COUNTS = "histogram", "counts"
+EITHER = "histogram or counts"  # NoteData pitches: a Hz histogram, or counts per MIDI value
 ENTRY_FIELDS = {
     "BeatData": {"tempo_from_beats": HISTOGRAM, "meter": COUNTS},
     "ChordData": {"labels": COUNTS, "qualities": COUNTS},
@@ -80,7 +81,7 @@ ENTRY_FIELDS = {
     "KeyData": {"keys": COUNTS, "modes": COUNTS},
     "LyricData": {"lyric_unit": COUNTS, "lyrics_per_track": HISTOGRAM},
     "MultiF0Data": {"frequencies": HISTOGRAM, "polyphony": COUNTS},
-    "NoteData": {"pitches": HISTOGRAM},
+    "NoteData": {"pitches": EITHER},
     "SectionData": {"labels": COUNTS, "section_interval_seconds": HISTOGRAM},
     "TempoData": {"tempo": HISTOGRAM},
 }
@@ -131,8 +132,11 @@ def check_entry(prop, entry):
     if "parts" in entry:
         check_counts(entry["parts"], f"{where}.parts")
     for field, kind in fields.items():
+        value = entry[field]
+        if kind == EITHER:
+            kind = HISTOGRAM if value is None or set(value) == HISTOGRAM_KEYS else COUNTS
         check = check_histogram if kind == HISTOGRAM else check_counts
-        check(entry[field], f"{where}.{field}")
+        check(value, f"{where}.{field}")
 
 
 def check_part(part, value, fields):

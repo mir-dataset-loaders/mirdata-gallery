@@ -269,7 +269,11 @@ class MultiF0(Stat):
 
 
 class Notes(Stat):
-    """Pitch distribution of NoteData annotations, in the unit the loader gives (Hz or MIDI)."""
+    """Pitch distribution of NoteData annotations, in the unit the loader gives.
+
+    Hz goes into a histogram; MIDI is counted per whole MIDI value, like the
+    polyphony of MultiF0: {40: 626, 41: 516, ...}.
+    """
 
     annotation = mirdata.annotations.NoteData
 
@@ -285,7 +289,15 @@ class Notes(Stat):
 
     def result(self):
         pitches = np.concatenate(self.pitches) if self.pitches else []
-        return {"pitches": histograms.histogram(pitches, self.unit)}
+        if self.unit != "midi":
+            return {"pitches": histograms.histogram(pitches, self.unit)}
+        # every whole value from the lowest to the highest, 0 for one with no note;
+        # rounded first, as GuitarSet gives 43.98 for a 44
+        values = np.rint(pitches).astype(int)
+        if not len(values):
+            return {"pitches": {}}
+        lo = values.min()
+        return {"pitches": {int(lo + i): int(c) for i, c in enumerate(np.bincount(values - lo))}}
 
 
 class Sections(Stat):

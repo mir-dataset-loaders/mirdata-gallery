@@ -160,10 +160,13 @@ def test_multif0():
 
 def test_notes():
     two_notes = intervals((0, 1), (1, 2))
-    in_midi = annotations.NoteData(two_notes, "s", np.array([64.0, 65.0]), "midi")
+    in_midi = annotations.NoteData(two_notes, "s", np.array([64.0, 65.98]), "midi")
     result = collect(Notes(), in_midi, in_midi).result()
-    expected = {"pitches": histogram([64.0, 65.0, 64.0, 65.0], "midi")}
-    assert result == expected, "MIDI pitches should be counted in MIDI, as the loader gives them"
+    expected = {"pitches": {64: 2, 65: 0, 66: 2}}
+    assert result == expected, (
+        "MIDI pitches should be counted per whole MIDI value (65.98 as 66), every value"
+        " from the lowest to the highest, 0 for a value with no note"
+    )
 
     in_hz = annotations.NoteData(two_notes, "s", np.array([440.0, 0.0]), "hz")  # 0: no pitch
     higher = annotations.NoteData(two_notes, "s", np.array([880.0, 1760.0]), "hz")

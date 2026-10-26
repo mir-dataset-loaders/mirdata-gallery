@@ -17,6 +17,8 @@
     const MAX_LABELS = 10; // text labels plotted per counts field; the rest join "(other)"
     const MAX_LABEL_CHARS = 7; // a longer label is cut under its bar; the hover text has it whole
     const CHAR_WIDTH = 4.7; // about how wide one character of a plot label is, in SVG units
+    const THIN = 3; // bars in a slot narrower than this touch, so many thin bars read as one shape
+    const UNIT_NAMES = { hz: "Hz" }; // a unit as a chart writes it; any other as stored (s, bpm, ...)
     const OTHER = "(other)";
 
     const GROUPED = new Intl.NumberFormat("en-US"); // 1,000
@@ -108,18 +110,19 @@
     // tallest bar reaches the top. With pieces (stacks), a bar is drawn as its
     // pieces, each in its dataset's colour (custom.css, combine-c0 to c4, grey
     // combine-other), the rest of a bar with a dataset in focus pale grey
-    // (combine-rest). gapless bars touch, so many thin ones read as one shape
-    // (notesSvg).
+    // (combine-rest). Bars in a slot narrower than THIN touch (a count per MIDI
+    // value), so many thin ones read as one shape.
     // Returns the SVG pieces (without the closing tag), the slot width and the y of the axis.
-    function barsSvg(counts, tips, pieces = null, gapless = false) {
+    function barsSvg(counts, tips, pieces = null) {
         const plotWidth = WIDTH - LEFT - RIGHT, plotHeight = HEIGHT - TOP - BOTTOM;
         const slot = plotWidth / counts.length;
         const barWidth = plotWidth / Math.max(counts.length, MIN_SLOTS);
         const highest = Math.max(...counts) || 1;
         const base = TOP + plotHeight;
+        const gapless = slot < THIN;
         const gap = gapless ? 0 : 1;
 
-        const out = [`<svg class="plot-svg${gapless ? " plot-notes" : ""}" viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img">`];
+        const out = [`<svg class="plot-svg${gapless ? " plot-gapless" : ""}" viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img">`];
         for (const tick of yTicks(Math.max(...counts))) {
             const y = (base - (plotHeight * tick) / highest).toFixed(1);
             out.push(
@@ -160,11 +163,9 @@
     // The x axis shows up to MAX_TICKS edge values and the unit. Hovering a bar
     // shows its range and count. parts (combine.js, each on the same edges)
     // stack the bars by dataset, or show one dataset in focus (its name).
-    // Pitches, one bar per note, are drawn by notesSvg.
     function histogramSvg(hist, counted, parts = null, focus = null) {
-        if (isNotes(hist)) return notesSvg(hist, counted, parts, focus);
         const { edges, counts } = hist;
-        const { unit } = hist;
+        const unit = UNIT_NAMES[hist.unit] || hist.unit;
         const plotWidth = WIDTH - LEFT - RIGHT;
         const pieces = parts && stacks(parts, (data) => data.counts, counts, focus);
         const tips = counts.map((count, i) =>
@@ -186,75 +187,6 @@
         return out.join("");
     }
 
-    // --- Pitches: one bar per note ---------------------------------------------
-
-    const NOTE_NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
-    const TAIL = 0.0005; // the share of the values on each side a pitch chart may fold into its end bars
-
-    // A pitch histogram from scripts/stats (note_histogram): MIDI, one bin per
-    // note, its edges at half notes (59.5, 60.5, ...)
-    function isNotes(hist) {
-        const { unit, edges } = hist;
-        return unit === "midi" && Math.abs(edges[0] - Math.floor(edges[0]) - 0.5) < 1e-9 && edges.every((e, i) => Math.abs(e - edges[0] - i) < 1e-9);
-    }
-
-    const noteName = (n) => `${NOTE_NAMES[n % 12]}${Math.floor(n / 12) - 1}`; // 60: C4
-    const noteHz = (n) => GROUPED.format(Math.round(440 * 2 ** ((n - 69) / 12))); // 69: 440
-
-    // The bars a pitch chart keeps, from..to: the rare extremes on each side,
-    // at most TAIL of the values, are counted in the end bars instead, so a few
-    // stray values (a pitch tracker's harmonics) do not stretch the axis
-    function keptBars(counts) {
-        const cut = counts.reduce((sum, count) => sum + count, 0) * TAIL;
-        let from = 0, to = counts.length - 1, low = 0, high = 0;
-        while (from < to && low + counts[from] <= cut) low += counts[from++];
-        while (to > from && high + counts[to] <= cut) high += counts[to--];
-        return { from, to };
-    }
-
-    // counts from..to, the ones before and after added to the first and last
-    function fold(counts, from, to) {
-        const kept = counts.slice(from, to + 1);
-        kept[0] += counts.slice(0, from).reduce((sum, count) => sum + count, 0);
-        kept[kept.length - 1] += counts.slice(to + 1).reduce((sum, count) => sum + count, 0);
-        return kept;
-    }
-
-    // A pitch histogram (isNotes) as one bar per note, the bars touching. The
-    // x axis names each C (C3, C4, ...), and an end bar that holds the folded
-    // extremes (keptBars) its note with "≤" or "≥". Hovering a bar shows its
-    // note, Hz and count: "A4 · 440 Hz: 120 values". parts and focus as in
-    // histogramSvg.
-    function notesSvg(hist, counted, parts = null, focus = null) {
-        const first = Math.round(hist.edges[0] + 0.5); // the note of the first bin
-        const { from, to } = keptBars(hist.counts);
-        const counts = fold(hist.counts, from, to);
-        const low = from > 0, high = to < hist.counts.length - 1; // extremes folded in
-        const folded = parts && parts.map((part) => ({ ...part, data: { counts: fold(part.data.counts, from, to) } }));
-        const pieces = folded && stacks(folded, (data) => data.counts, counts, focus);
-        const last = counts.length - 1;
-        const tips = counts.map((count, i) => {
-            const n = first + from + i;
-            let what = `${noteName(n)} · ${noteHz(n)} Hz`;
-            if (i === 0 && low) what = `${noteName(n)} and below · ${noteHz(n)} Hz and below`;
-            if (i === last && high) what = `${noteName(n)} and above · ${noteHz(n)} Hz and above`;
-            return barTip(what, count, counted, pieces && pieces[i]);
-        });
-        const { out, slot, base } = barsSvg(counts, tips, pieces, true);
-        const x = (i) => LEFT + (i + 0.5) * slot;
-        const label = (i, text) => `<text class="plot-label" x="${x(i).toFixed(1)}" y="${base + 10}" text-anchor="middle">${escapeHtml(text)}</text>`;
-        const ends = [...(low ? [[0, `≤${noteName(first + from)}`]] : []), ...(high ? [[last, `≥${noteName(first + to)}`]] : [])];
-        const wide = (text) => Array.from(text).length * 5.5; // about how wide an axis label is, a little generous
-        const clear = (i, text) => ends.every(([end, other]) => Math.abs(x(end) - x(i)) > (wide(text) + wide(other)) / 2 + 2);
-        counts.forEach((_, i) => {
-            const n = first + from + i;
-            if (n % 12 || !clear(i, noteName(n))) return; // a C, clear of the end labels
-            out.push(`<line class="plot-axis" x1="${x(i).toFixed(1)}" y1="${base}" x2="${x(i).toFixed(1)}" y2="${base + 2.5}"/>`, label(i, noteName(n)));
-        });
-        out.push(...ends.map(([i, text]) => label(i, text)), "</svg>");
-        return out.join("");
-    }
-
     // [label, count] per bar of a counts field (given as [label, count] pairs).
     //
     // Numbers (meter, polyphony) are all plotted, in order. Text labels are
@@ -272,16 +204,32 @@
         return named.slice(0, MAX_LABELS).concat(rest ? [[OTHER, rest]] : []);
     }
 
+    // Which number labels a counts chart writes when they do not all fit under
+    // their bars: the multiples of the smallest 1, 2 or 5 × 10ⁿ step that puts
+    // them far enough apart, e.g. 40, 50, 60 for a count per MIDI value
+    function numberStep(labels, slot) {
+        const widest = Math.max(...labels.map((chars) => chars.length)) * CHAR_WIDTH;
+        for (let e = 0; ; e++) {
+            for (const m of [1, 2, 5]) {
+                const step = m * 10 ** e;
+                if (step * slot >= widest + 2) return step;
+            }
+        }
+    }
+
     // One counts field ([label, count] pairs) as an SVG bar chart, the same chart as a histogram.
     //
     // Every bar has its label under it: flat when every label fits under its
-    // bar, else tilted, smaller and cut to MAX_LABEL_CHARS. Hovering a bar shows
-    // the whole label and its count, "at least" for the labels in atLeast (a
-    // pooled count that may miss some of a dataset's "(other)", combine.js).
+    // bar, else tilted, smaller and cut to MAX_LABEL_CHARS; numbers that do not
+    // fit (a count per MIDI value) are written flat, only every few (numberStep).
+    // Hovering a bar shows the whole label and its count, "at least" for the
+    // labels in atLeast (a pooled count that may miss some of a dataset's
+    // "(other)", combine.js).
     // parts (combine.js, each a dataset's own pairs) stack the bars by dataset,
     // or show one dataset in focus (its name); when the label may hide in that
-    // dataset's "(other)", its count is unknown and the hover says so.
-    function countsSvg(pairs, counted, atLeast = [], parts = null, focus = null) {
+    // dataset's "(other)", its count is unknown and the hover says so. A unit
+    // (gallery.py, COUNT_UNITS: MIDI) is written under the axis, as a histogram's.
+    function countsSvg(pairs, counted, atLeast = [], parts = null, focus = null, unit = null) {
         const bars = countBars(pairs);
         const unsure = new Set(atLeast.map(String));
         const pieces = parts && stacks(parts, (data) => countsUnder(bars, data), bars.map(([, count]) => count), focus);
@@ -298,10 +246,13 @@
         );
         const labels = bars.map(([label]) => Array.from(String(label))); // characters, as Python counts them
         const flat = labels.every((chars) => chars.length * CHAR_WIDTH <= slot);
+        const numbers = bars.every(([label]) => typeof label === "number");
+        const step = numbers && !flat ? numberStep(labels, slot) : 1;
         labels.forEach((chars, i) => {
             const x = (LEFT + (i + 0.5) * slot).toFixed(1);
             const label = chars.join("");
-            if (flat) {
+            if (step > 1 && bars[i][0] % step) return; // the hover still has it
+            if (flat || numbers) {
                 out.push(
                     `<text class="plot-label" x="${x}" y="${base + 10}"` +
                         ` text-anchor="middle">${escapeHtml(label)}</text>`
@@ -315,6 +266,12 @@
                     ` dominant-baseline="middle" transform="rotate(-60 ${x} ${y})">${escapeHtml(text)}</text>`
             );
         });
+        if (unit) {
+            out.push(
+                `<text class="plot-unit" x="${(LEFT + (WIDTH - LEFT - RIGHT) / 2).toFixed(1)}" y="${base + 20}"` +
+                    ` text-anchor="middle">${escapeHtml(unit)}</text>`
+            );
+        }
         out.push("</svg>");
         return out.join("");
     }
@@ -333,8 +290,8 @@
         return pairs.some(([l, count]) => l === OTHER && count > 0) && !pairs.some(([l]) => String(l) === String(label));
     }
 
-    function chartSvg(data, counted, atLeast, parts, focus) {
-        return Array.isArray(data) ? countsSvg(data, counted, atLeast, parts, focus) : histogramSvg(data, counted, parts, focus);
+    function chartSvg(data, counted, atLeast, parts, focus, unit) {
+        return Array.isArray(data) ? countsSvg(data, counted, atLeast, parts, focus, unit) : histogramSvg(data, counted, parts, focus);
     }
 
     // The figures of a plot grid: each plot's title, its source and its chart,
@@ -348,14 +305,14 @@
                     `<figure class="plot" data-type="${escapeHtml(p.type || "")}">` +
                     `<figcaption><span class="plot-title">${escapeHtml(p.title)}</span>` +
                     `<span class="plot-source">${escapeHtml(p.source)}</span></figcaption>` +
-                    `${chartSvg(p.data, p.counted, p.atLeast, p.parts, focus)}</figure>`
+                    `${chartSvg(p.data, p.counted, p.atLeast, p.parts, focus, p.unit)}</figure>`
             )
             .join("\n");
     }
 
     const charts = {
         WIDTH, LEFT, RIGHT, TOP, MAX_LABELS, MAX_LABEL_CHARS, MIN_SLOTS,
-        escapeHtml, number, yTicks, shortNumber, isNotes, histogramSvg, countBars, countsSvg, chartSvg, plotGridHtml,
+        escapeHtml, number, yTicks, shortNumber, histogramSvg, countBars, countsSvg, chartSvg, plotGridHtml,
     };
     if (typeof module !== "undefined" && module.exports) {
         module.exports = charts; // Node, for the tests

@@ -47,6 +47,11 @@ PLOT_FIELDS = {
     "TempoData": ["tempo"],
 }
 
+# The unit written under the axis of a counts field whose labels are numbers in
+# a unit (a histogram has its own). NoteData pitches are counts only when the
+# loader gives MIDI: Hz pitches are a histogram.
+COUNT_UNITS = {("NoteData", "pitches"): "MIDI"}
+
 # --- Card rendering ----------------------------------------------------------
 
 
@@ -369,7 +374,7 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
     """What one plot needs: data is a histogram or counts. counted names what the bars count, for the hover text.
 
     prop, type and field (None for the audio's) are what Combine mode matches
-    the plots of several datasets by.
+    the plots of several datasets by. unit is a counts field's (COUNT_UNITS).
     """
     total = sum(data["counts"]) if is_histogram(data) else sum(data.values())
     counted = (
@@ -390,6 +395,7 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
         "prop": prop,
         "type": ann_type,
         "field": field,
+        "unit": None if is_histogram(data) else COUNT_UNITS.get((ann_type, field)),
     }
 
 

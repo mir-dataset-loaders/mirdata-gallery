@@ -1147,9 +1147,9 @@ body:has(#mirdata-gallery) footer p {
     filter: brightness(0.85);
 }
 
-/* Pitch charts' bars touch, one per note (charts.js, notesSvg): no white gap
+/* Thin bars touch (charts.js, barsSvg: a count per MIDI value): no white gap
    between their thin pieces either */
-.plot-notes .plot-piece {
+.plot-gapless .plot-piece {
     stroke: none;
 }
 
