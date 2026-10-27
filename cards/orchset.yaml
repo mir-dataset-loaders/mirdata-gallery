@@ -24,8 +24,7 @@ stats:
     problems: []
     n_tracks: 64
     n_tracks_loaded: 64
-    tracks_with:
-      F0Data: 64
+    tracks_with: {F0Data: 64}
     annotations:
       melody:
         type: F0Data

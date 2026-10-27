@@ -55,12 +55,21 @@ def _list_presenter(dumper, data):
     return dumper.represent_sequence("tag:yaml.org,2002:seq", data, flow_style=flow)
 
 
+def _dict_presenter(dumper, data):
+    """Dicts of numbers (label counts, meter, polyphony) go on wrapped lines: {3: 12, 4: 88}."""
+    flow = bool(data) and all(
+        isinstance(v, (int, float)) and not isinstance(v, bool) for v in data.values()
+    )
+    return dumper.represent_mapping("tag:yaml.org,2002:map", data, flow_style=flow)
+
+
 class _CardDumper(yaml.SafeDumper):
     """Our dump settings, kept off the global yaml.Dumper."""
 
 
 _CardDumper.add_representer(str, _str_presenter)
 _CardDumper.add_representer(list, _list_presenter)
+_CardDumper.add_representer(dict, _dict_presenter)
 
 
 # --- docstring hash and index checksum ----------------------------------------

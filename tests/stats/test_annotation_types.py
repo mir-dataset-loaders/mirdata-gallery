@@ -5,8 +5,6 @@ collect: which values and which kind of histogram is this file's job, the
 bins are tested in test_histograms.py.
 """
 
-from collections import Counter
-
 import numpy as np
 from mirdata import annotations
 
@@ -21,10 +19,7 @@ from stats.annotation_types import (
     Notes,
     Sections,
     Tempo,
-    bar_lengths,
-    chord_quality,
     is_empty,
-    top_counts,
 )
 from stats.histograms import histogram
 
@@ -235,6 +230,14 @@ def test_events():
     assert result == expected, "events should count every event label"
 
 
+def test_every_label_is_kept():
+    rare = [f"event{i}" for i in range(40)]
+    result = collect(Events(), events(*rare, "kick", "kick", "kick")).result()
+    assert len(result["events"]) == 41, "every label should be kept, however many there are"
+    assert "(other)" not in result["events"], "no labels should be folded into (other)"
+    assert list(result["events"])[0] == "kick", "labels should come most common first"
+
+
 # ------------------------------------------------------------ the shared base
 
 
@@ -293,23 +296,12 @@ def test_chord_quality():
         "G:7": "7",
     }
     for label, quality in expected.items():
-        assert chord_quality(label) == quality, f"{label} should have quality {quality}"
+        assert Chords.chord_quality(label) == quality, f"{label} should have quality {quality}"
 
 
 def test_bar_lengths():
-    bars = bar_lengths([1, 2, 3, 4, 1, 2, 3])
+    bars = Beats.bar_lengths([1, 2, 3, 4, 1, 2, 3])
     assert bars == [4, 3], "a bar should end where the count goes back down"
-    bars = bar_lengths([0, 0, 1, 2, 1, 2])
+    bars = Beats.bar_lengths([0, 0, 1, 2, 1, 2])
     assert bars == [2, 2], "position 0 (a beat outside any bar) should be skipped"
-    assert bar_lengths([]) == [], "no positions should give no bars"
-
-
-def test_top_counts():
-    counter = Counter({"a": 3, "b": 2, "c": 1, "d": 1})
-    kept = top_counts(counter, top=2)
-    expected = {"a": 3, "b": 2, "(other)": 2}
-    assert (
-        kept == expected
-    ), "only the most common labels should be kept, the rest added up into (other)"
-    kept = top_counts(counter, top=4)
-    assert kept == dict(counter), "nothing left over should mean no (other)"
+    assert Beats.bar_lengths([]) == [], "no positions should give no bars"

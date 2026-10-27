@@ -23,7 +23,13 @@ CARD = {
     "annotations": ["BeatData", "ChordData"],
     "bibtex": "@misc{fake_dataset,\n  title={A fake dataset}\n}",
     "summary": "Beats and chords of three tracks, annotated à la main.",
-    "stats": {"tempo": {"unit": "bpm", "edges": [0, 100, 200], "counts": [1, 1]}},
+    "stats": {
+        "tempo": {"unit": "bpm", "edges": [0, 100, 200], "counts": [1, 1]},
+        "meter": {3: 12, 4: 88},
+        "labels": {f"{root}:{quality}": 100 - i for i, (root, quality) in enumerate(
+            (root, quality) for quality in ("maj", "min", "7") for root in "CDEFGAB"
+        )},
+    },
 }
 
 
@@ -38,6 +44,12 @@ def test_write_card(tmp_path):
         text = f.read()
     assert "bibtex: |" in text, "multi-line text should use the | block style"
     assert "edges: [0, 100, 200]" in text, "number lists should sit on one line"
+    assert "meter: {3: 12, 4: 88}" in text, "number dicts should sit on one line"
+    labels = text[text.index("labels: {") : text.index("}", text.index("labels: {")) + 1].splitlines()
+    assert len(labels) > 1, "a long number dict should wrap onto several lines"
+    # yaml breaks a line after the entry that passes 80 characters, so a line can run one entry over
+    assert all(len(line) < 120 for line in labels), "a wrapped number dict should break soon after 80 characters"
+    assert list(card["stats"]["labels"]) == list(CARD["stats"]["labels"]), "labels should keep their order"
     assert "- BeatData\n" in text, "other lists should have one item per line"
     assert "à la main" in text, "non-ASCII text should be written as it is"
 

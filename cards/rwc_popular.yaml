@@ -29,18 +29,13 @@ stats:
     problems: []
     n_tracks: 100
     n_tracks_loaded: 100
-    tracks_with:
-      BeatData: 100
-      ChordData: 100
-      F0Data: 100
+    tracks_with: {BeatData: 100, ChordData: 100, F0Data: 100}
     annotations:
       beats:
         type: BeatData
         n_tracks: 100
         n_annotations: 100
-        meter:
-          4: 99
-          5: 1
+        meter: {4: 99, 5: 1}
         tempo_from_beats:
           unit: bpm
           edges: [60, 80, 100, 120, 140, 160, 180, 200, 220, 240]
@@ -49,56 +44,94 @@ stats:
         type: ChordData
         n_tracks: 100
         n_annotations: 100
-        labels:
-          G:maj: 834
-          C:maj: 692
-          F:maj: 657
-          D:maj: 560
-          A:maj: 489
-          A:min: 377
-          Eb:maj: 373
-          Bb:maj: 322
-          A:min7: 313
-          E:min7: 300
-          N: 263
-          D:min7: 240
-          B:min: 229
-          G:min7: 221
-          E:maj: 215
-          B:min7: 203
-          Ab:maj: 191
-          E:min: 191
-          B:maj: 175
-          F#:min7: 168
-          F:min: 167
-          C:min: 164
-          Db:maj: 162
-          D:min: 160
-          F:maj7: 157
-          G:min: 141
-          C:min7: 135
-          F:min7: 135
-          G:7: 131
-          G:maj/3: 125
-          (other): 4977
-        qualities:
-          maj: 6180
-          min7: 2004
-          min: 1953
-          '7': 907
-          maj7: 827
-          sus4: 372
-          maj6: 359
-          N: 263
-          dim: 144
-          sus2: 100
-          maj9: 84
-          aug: 65
-          min9: 65
-          '9': 50
-          hdim7: 48
-          min6: 36
-          dim7: 10
+        labels: {'G:maj': 834, 'C:maj': 692, 'F:maj': 657, 'D:maj': 560, 'A:maj': 489,
+          'A:min': 377, 'Eb:maj': 373, 'Bb:maj': 322, 'A:min7': 313, 'E:min7': 300,
+          N: 263, 'D:min7': 240, 'B:min': 229, 'G:min7': 221, 'E:maj': 215, 'B:min7': 203,
+          'Ab:maj': 191, 'E:min': 191, 'B:maj': 175, 'F#:min7': 168, 'F:min': 167,
+          'C:min': 164, 'Db:maj': 162, 'D:min': 160, 'F:maj7': 157, 'G:min': 141,
+          'C:min7': 135, 'F:min7': 135, 'G:7': 131, 'G:maj/3': 125, 'C:maj/3': 123,
+          'C:maj7': 107, 'E:7': 107, 'Ab:maj7': 104, 'Bb:maj7': 100, 'C#:min': 99,
+          'D:7': 95, 'A:7': 93, 'C:7': 89, 'G:maj7': 87, 'D:maj/3': 84, 'F:maj/3': 83,
+          'F#:min': 78, 'E:maj/3': 71, 'Bb:min7': 70, 'C#:min7': 70, 'D:maj7': 68,
+          'C:maj/5': 68, 'Gb:maj': 67, 'F#:7': 60, 'D:maj/5': 54, 'Eb:maj7': 53, 'Bb:min': 51,
+          'A:maj/3': 50, 'G:maj6': 50, 'F#:maj': 50, 'Bb:maj6': 50, 'G:sus4(b7)': 50,
+          'G:sus4': 47, 'F:maj/5': 46, 'Bb:maj/3': 44, 'Bb:maj/2': 44, 'Bb:maj/5': 43,
+          'Eb:7': 40, 'G#:min': 38, 'Eb:maj6': 38, 'E:maj/5': 36, 'A:maj7': 36, 'G:maj/5': 34,
+          'F:maj6': 33, 'F#:sus4(b7)': 33, 'Db:maj7': 31, 'Gb:7': 31, 'C:sus4(b7)': 31,
+          'Db:maj6': 30, 'B:sus4': 30, 'A#:dim': 29, 'G:maj/2': 29, 'A:maj(*3)': 28,
+          'F:maj/2': 28, 'Eb:maj/3': 27, 'Ab:maj6': 27, 'B:7': 27, 'A:maj6': 27, 'F:7': 27,
+          'B:dim': 27, 'Bb:7': 26, 'G#:min7': 26, 'D:maj6': 25, 'C:maj/4': 25, 'Ab:7': 24,
+          'C#:maj': 23, 'C:maj/2': 23, 'C:maj6': 23, 'Ab:maj/3': 23, 'E:min/b3': 23,
+          'Ab:min': 22, 'Ab:maj/5': 22, 'F#:sus2': 22, 'Db:maj/3': 22, 'F:maj9': 21,
+          'Eb:maj/2': 21, 'D:min/5': 21, 'Db:9': 21, 'B:maj(*3)': 20, 'B:maj7/5': 20,
+          'Eb:sus4': 19, 'C:sus4': 19, 'B:min9': 19, 'D:sus4': 18, 'G:min/b3': 18,
+          'E:min6': 18, 'Db:7': 18, 'Db:maj/5': 18, 'E:hdim7': 17, 'D:min(2)': 17,
+          'A:min7/b3': 17, 'Eb:sus2': 17, 'Eb:min7': 16, 'Eb:maj/5': 16, 'Bb:sus4': 16,
+          'G#:7': 16, 'D:min9': 16, 'C:min7/b7': 16, 'A:sus4': 16, 'Ab:sus2': 16,
+          'Bb:sus4(b7)': 15, 'G:maj6/5': 15, 'E:dim': 14, 'D:dim': 13, 'C#:dim': 13,
+          'Bb:7/b7': 13, 'Ab:maj9': 12, 'Eb:maj(*3,*5)': 12, 'E:maj7': 12, 'G:7(13)': 12,
+          'B:aug': 12, 'C:maj(2)': 12, 'Db:min': 12, 'Eb:min(*b3,*5)': 12, 'C#:7': 11,
+          'F#:maj/5': 11, 'D#:dim': 11, 'D:min(7)': 11, 'D:maj9': 11, 'A:sus2': 11,
+          'G:7/b7': 10, 'G:sus2': 10, 'D#:min': 10, 'F:9': 9, 'G:min9': 9, 'Eb:sus4(b7)': 9,
+          'Eb:maj9': 9, 'A:min7/b7': 9, 'C:hdim7': 9, 'Gb:maj6': 8, 'A:maj/5': 8,
+          'C:7/b7': 8, 'F#:dim': 8, 'E:maj(*3)': 8, 'E:7/3': 8, 'C:maj9': 8, 'F:dim': 7,
+          'C:maj(*3,*5)': 7, 'C#:sus4': 7, 'F#:aug': 7, 'G#:min/5': 7, 'D:hdim7': 7,
+          'Ab:min6': 7, 'F#:maj7': 6, 'G#:dim': 6, 'Cb:maj': 6, 'Bb:maj9': 6, 'G:min7/b7': 6,
+          'G:min/5': 6, 'G:7(9)': 6, 'B:maj6': 6, 'C:min/b3': 6, 'Ab:maj/2': 6, 'C:maj7/7': 6,
+          'Eb:aug': 6, 'G:9': 6, 'F#:min/b3': 6, 'Db:maj9': 6, 'G:dim': 6, 'Gb:maj7': 6,
+          'Eb:min7/2': 6, 'Db:min(*b3,*5)': 6, 'Fb:min(*b3,*5)': 6, 'D:7/b7': 6, 'B:9': 6,
+          'B:maj7': 5, 'G:aug': 5, 'G#:maj/3': 5, 'E:sus4': 5, 'F:min/5': 5, 'E:7(b9)': 5,
+          'G:maj/4': 5, 'E:aug': 5, 'D:maj/2': 5, 'Ab:min7': 5, 'F#:min/5': 5, 'G:maj9': 5,
+          'G:7/3': 5, 'G:sus4(b7)/b7': 5, 'F:sus2': 5, 'Eb:min7/b3': 5, 'Bb:maj(b10)': 5,
+          'Ab:min(*b3,*5)': 4, 'C:min(*b3,*5)': 4, 'G#:maj': 4, 'G:min7/b3': 4, 'C#:min/5': 4,
+          'B:sus4(b7)': 4, 'E:min7/b7': 4, 'F:sus4': 4, 'E:sus4(b7)': 4, 'Cb:maj7': 4,
+          'E:maj6': 4, 'G#:maj(*3)': 4, 'F:min9': 4, 'F:7/3': 4, 'C#:min9': 4, 'G:sus4/5': 4,
+          'F:maj7/3': 4, 'Bb:sus2': 4, 'Db:maj(#11)': 4, 'A:9': 4, 'C:aug': 4, 'Cb:min(*b3,*5)': 4,
+          'Ab:sus4/2': 4, 'Ab:min/b3': 4, 'Db:min/5': 4, 'C#:maj6/3': 4, 'C:7(b2)': 4,
+          'Bb:min9': 4, 'Db:min/b3': 4, 'Gb:min': 4, 'Gb:min7': 4, 'C:min/5': 3, 'F:maj(*3,*5)': 3,
+          'D:maj(*3,*5)': 3, 'F:aug': 3, 'D:aug': 3, 'Ab:maj(*3,*5)': 3, 'F#:maj/3': 3,
+          'B:maj/5': 3, 'F#:7/b7': 3, 'B:maj/4': 3, 'A:dim': 3, 'F#:maj6/5': 3, 'F:maj6/5': 3,
+          'D:min7(9)': 3, 'C#:sus4(b7)': 3, 'C#:aug': 3, 'Gb:maj/2': 3, 'D:sus4/5': 3,
+          'A:hdim7': 3, 'Eb:min/b3': 3, 'Gb:maj/3': 3, 'Db:maj/2': 3, 'Ab:aug': 3,
+          'C:dim': 3, 'A#:dim7': 3, 'D:maj7/7': 3, 'G#:aug': 3, 'G:sus4/4': 3, 'F:min/b3': 3,
+          'D#:min7': 3, 'Bb:min(*b3,*5)': 3, 'D:hdim7/b7': 3, 'G#:sus4(b7)': 3, 'C#:sus2(4)': 3,
+          'G:maj6(b7)': 3, 'C:min7(*b3,*5)': 2, 'Eb:maj7/5': 2, 'Bb:maj(*3,*5)': 2,
+          'Eb:maj(*5)': 2, 'B:maj(*3,*5)': 2, 'G#:maj7': 2, 'B:sus4(b7,9)': 2, 'F#:min9': 2,
+          'A:7/5': 2, 'F:min6': 2, 'C:min7/b3': 2, 'E:7(b13)': 2, 'A:min/5': 2, 'D:min7/b7': 2,
+          'C:sus2(b7)': 2, 'C:7(9)': 2, 'D#:aug': 2, 'A:7/3': 2, 'Eb:dim': 2, 'D:sus4(b7)': 2,
+          'E:sus4(b7,9)': 2, 'B:maj/2': 2, 'B:hdim7': 2, 'D:dim7': 2, 'E:min9': 2,
+          'B:min7/5': 2, 'A:sus4(b7)': 2, 'F:7(b9)': 2, 'Bb:min/4': 2, 'F:aug(b7)': 2,
+          'A:maj7/7': 2, 'F:min6/b3': 2, 'A:min6': 2, 'C:min9': 2, 'G#:min/b3': 2,
+          'Bb:aug': 2, 'Gb:maj/5': 2, 'Eb:maj6/3': 2, 'E:hdim7/b5': 2, 'Db:maj7/5': 2,
+          'F:maj7/5': 2, 'Gb:aug': 2, 'F#:maj9': 2, 'Eb:min7(4)': 2, 'Cb:maj6': 2,
+          'D#:min7(4)': 2, 'D#:sus4/5': 2, 'B:min/b3': 2, 'A#:min': 2, 'A#:maj': 2,
+          'A#:min/b3': 2, 'B:maj9': 2, 'Eb:min9': 2, 'C:sus2': 2, 'G#:hdim7': 2, 'A:sus2(b7)': 2,
+          'G:maj(9)': 2, 'D:maj/b7': 2, 'Bb:maj(*3)': 1, 'Ab:min7/b7': 1, 'Ab:min/6': 1,
+          'Ab:min/b6': 1, 'Ab:sus4': 1, 'Eb:7/3': 1, 'Bb:min7/b3': 1, 'C:min(*b3)': 1,
+          'D#:7': 1, 'D:7(*3)': 1, 'C:maj(*5)': 1, 'Bb:maj7(9)': 1, 'G:min7/5': 1,
+          'F:min(*b3,*5)': 1, 'E:min(*b3,*5)': 1, 'F:min(7)': 1, 'E:maj(*3,*5)': 1,
+          'F:min7/b3': 1, 'B:maj(*1,*5)/3': 1, 'B:maj(*1,*3)/5': 1, 'Gb:maj(*3,*5)': 1,
+          'E:7(#9)': 1, 'A:maj9': 1, 'E:maj7/7': 1, 'F#:7/3': 1, 'D#:maj': 1, 'D#:maj7': 1,
+          'G#:min7(11)': 1, 'G#:7(b9)': 1, 'Bb:min6': 1, 'G:9(13)': 1, 'A:7(11)': 1,
+          'E:maj9': 1, 'G#:min7/b7': 1, 'Eb:7(#9)': 1, 'Bb:sus4(7)': 1, 'B:aug/3': 1,
+          'G:min7(9)': 1, 'F#:hdim7': 1, 'F:maj7(9)': 1, 'Db:sus4(b7)': 1, 'Db:7(#9)': 1,
+          'F#:sus4(b7,9)': 1, 'C#:7(b9)': 1, 'C#:7(b9,#9)': 1, 'A:maj(9)': 1, 'B:maj/3': 1,
+          'F:min(9)': 1, 'A:aug': 1, 'B:7/3': 1, 'Db:dim': 1, 'E:9': 1, 'Bb:7/5': 1,
+          'Eb:min': 1, 'F#:min7/5': 1, 'A#:sus2': 1, 'F:7/b7': 1, 'F#:dim7': 1, 'F#:min(*b3,*5)': 1,
+          'Eb:dim7': 1, 'Ab:sus4(b7)': 1, 'E:dim7': 1, 'C:maj7/3': 1, 'D:min6': 1,
+          'Bb:maj7/7': 1, 'Eb:7/b7': 1, 'Bb:min7(2)': 1, 'Bb:min7(2)/b7': 1, 'F:min9/b7': 1,
+          'Db:min6': 1, 'Bb:7/3': 1, 'Ab:maj6/5': 1, 'D:min7/b3': 1, 'G:min6': 1,
+          'A#:hdim7': 1, 'B:sus4(b7)/7': 1, 'E:7/5': 1, 'B:dim7': 1, 'C:dim7': 1,
+          'C:sus4(b7)/5': 1, 'D:min7/5': 1, 'D:9': 1, 'D:sus4(b7,9)': 1, 'C:sus4(b7)/b7': 1,
+          'C#:maj/5': 1, 'Bb:9': 1, 'Ab:dim/b3': 1, 'Gb:sus2(4)': 1, 'C#:maj6(4)/3': 1,
+          'G#:min6(b7)': 1, 'F#:sus2(6)': 1, 'C#:7(b2)': 1, 'A#:maj/5': 1, 'G#:maj/5': 1,
+          'G#:sus2(b7)': 1, 'C#:maj/3': 1, 'C#:maj6': 1, 'C#:maj6(4)': 1, 'F#:maj6': 1,
+          'F:sus2/5': 1, 'G:maj(*5)': 1, 'E:maj6(b2)': 1, 'G:maj(2)/3': 1, 'E:maj7/3': 1,
+          'E:hdim7/b3': 1, 'G:aug(b7)': 1, 'G:sus4/2': 1, 'G:sus2/3': 1, 'B:min7/b7': 1,
+          'C:maj(9)/6': 1, 'C:maj(9)/5': 1, 'G:maj(9)/3': 1, 'G:maj7/3': 1}
+        qualities: {maj: 6180, min7: 2004, min: 1953, '7': 907, maj7: 827, sus4: 372,
+          maj6: 359, N: 263, dim: 144, sus2: 100, maj9: 84, aug: 65, min9: 65, '9': 50,
+          hdim7: 48, min6: 36, dim7: 10}
       melody:
         type: F0Data
         n_tracks: 100
