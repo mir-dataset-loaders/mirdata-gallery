@@ -1,8 +1,9 @@
 // The Statistics charts: every plot as an SVG bar chart, drawn in the page.
 // gallery.py puts each panel's plots on its plot grid (data-plots), gallery.js
 // draws them with plotGridHtml. A plot is {title, source, counted, data}: data
-// is a histogram {unit, edges, counts} or a counts field as [label, count] pairs
-// (and a combined one from combine.js has parts, and may have atLeast; it is
+// is a grid {unit, width, counts as [start, count] pairs}, a counts field as
+// [label, count] pairs, or a histogram {unit, edges, counts} (the audio durations)
+// (and a combined one from combine.js has parts; it is
 // stacked by dataset, or shows one dataset in focus against the whole).
 // Every function returns SVG or HTML text, so tests/charts.test.js runs in Node.
 (function () {
@@ -18,7 +19,9 @@
     const MAX_LABEL_CHARS = 7; // a longer label is cut under its bar; the hover text has it whole
     const CHAR_WIDTH = 4.7; // about how wide one character of a plot label is, in SVG units
     const THIN = 3; // bars in a slot narrower than this touch, so many thin bars read as one shape
-    const UNIT_NAMES = { hz: "Hz" }; // a unit as a chart writes it; any other as stored (s, bpm, ...)
+    const UNIT_NAMES = { hz: "Hz", midi: "MIDI" }; // a unit as a chart writes it; any other as stored (s, bpm, ...)
+    const MAX_BINS = 25; // most bars a grid is drawn with (barWidth)
+    const VALUE_UNITS = new Set(["midi"]); // grids whose bins are one value each (notes, rounded): a bar per bin
     const OTHER = "(other)";
 
     const GROUPED = new Intl.NumberFormat("en-US"); // 1,000
@@ -89,11 +92,11 @@
     }
 
     // A bar's hover text: what it is (its range or label) and its count,
-    // "60–80 bpm: 84 tracks", "at least" when the count may miss some (atLeast).
-    // With several datasets, their counts too, " (a 36, b 48)"; with one in
-    // focus, its count of the whole instead, "60–80 bpm: a 36 of 84 tracks".
-    function barTip(what, count, counted, pieces, atLeast = false) {
-        const total = `${atLeast ? "at least " : ""}${GROUPED.format(count)} ${counted}`;
+    // "60–80 bpm: 84 tracks". With several datasets, their counts too,
+    // " (a 36, b 48)"; with one in focus, its count of the whole instead,
+    // "60–80 bpm: a 36 of 84 tracks".
+    function barTip(what, count, counted, pieces) {
+        const total = `${GROUPED.format(count)} ${counted}`;
         if (pieces && pieces.at(-1).rest) return `${what}: ${pieces[0].name} ${GROUPED.format(pieces[0].count)} of ${total}`;
         if (!pieces || pieces.length < 2) return `${what}: ${total}`;
         const named = pieces.filter((p) => p.count).map((p) => `${p.name} ${GROUPED.format(p.count)}`);
@@ -110,8 +113,8 @@
     // tallest bar reaches the top. With pieces (stacks), a bar is drawn as its
     // pieces, each in its dataset's colour (custom.css, combine-c0 to c4, grey
     // combine-other), the rest of a bar with a dataset in focus pale grey
-    // (combine-rest). Bars in a slot narrower than THIN touch (a count per MIDI
-    // value), so many thin ones read as one shape.
+    // (combine-rest). Bars in a slot narrower than THIN touch (a grid's many
+    // bins), so many thin ones read as one shape.
     // Returns the SVG pieces (without the closing tag), the slot width and the y of the axis.
     function barsSvg(counts, tips, pieces = null) {
         const plotWidth = WIDTH - LEFT - RIGHT, plotHeight = HEIGHT - TOP - BOTTOM;
@@ -166,7 +169,6 @@
     function histogramSvg(hist, counted, parts = null, focus = null) {
         const { edges, counts } = hist;
         const unit = UNIT_NAMES[hist.unit] || hist.unit;
-        const plotWidth = WIDTH - LEFT - RIGHT;
         const pieces = parts && stacks(parts, (data) => data.counts, counts, focus);
         const tips = counts.map((count, i) =>
             barTip(`${number(edges[i])}–${number(edges[i + 1])} ${unit}`, count, counted, pieces && pieces[i])
@@ -179,12 +181,114 @@
                     ` text-anchor="middle">${number(edges[i])}</text>`
             );
         }
-        out.push(
-            `<text class="plot-unit" x="${(LEFT + plotWidth / 2).toFixed(1)}" y="${base + 20}"` +
-                ` text-anchor="middle">${escapeHtml(unit)}</text>`
-        );
+        out.push(unitSvg(unit, base));
         out.push("</svg>");
         return out.join("");
+    }
+
+    // The unit written under the x axis (at base, barsSvg's), in the middle
+    function unitSvg(unit, base) {
+        return (
+            `<text class="plot-unit" x="${(LEFT + (WIDTH - LEFT - RIGHT) / 2).toFixed(1)}" y="${base + 20}"` +
+            ` text-anchor="middle">${escapeHtml(unit)}</text>`
+        );
+    }
+
+    // One grid {unit, width, counts as [start, count] pairs, lowest first} as an
+    // SVG bar chart: its bins merged into bars barWidth wide, from the bar
+    // holding the lowest bin to the one holding the highest (barStarts).
+    //
+    // A bar is a range, "60–70 bpm", with round numbers at its edges
+    // (numberStep); in a grid of VALUE_UNITS it is one value, "64 MIDI", named
+    // under its middle. Hovering a bar shows it and its count. parts
+    // (combine.js, each a dataset's own grid) stack the bars by dataset, or show
+    // one dataset in focus (its name), on the same bars.
+    function gridSvg(grid, counted, parts = null, focus = null) {
+        const unit = UNIT_NAMES[grid.unit] || grid.unit;
+        const values = VALUE_UNITS.has(grid.unit);
+        const width = values ? grid.width : barWidth(grid);
+        const starts = barStarts(grid, width);
+        const counts = barCounts(grid, starts, width);
+        const pieces = parts && stacks(parts, (data) => barCounts(data, starts, width), counts, focus);
+        const name = (start) => (values ? number(start) : `${number(start)}–${number(start + width)}`);
+        const tips = starts.map((start, i) => barTip(`${name(start)} ${unit}`, counts[i], counted, pieces && pieces[i]));
+        const { out, slot, base } = barsSvg(counts, tips, pieces);
+        // [number, where on the axis, in bars]: a value bar's middle, or every edge of the range bars
+        const marks = values
+            ? starts.map((start, i) => [start, i + 0.5])
+            : [...starts, starts.at(-1) + width].map((edge, i) => [edge, i]);
+        const step = numberStep(marks.map(([value]) => Array.from(number(value))), slot, width);
+        for (const [value, at] of marks) {
+            if (Math.round(value / width) % Math.round(step / width)) continue; // the hover still has it
+            out.push(
+                `<text class="plot-label" x="${(LEFT + at * slot).toFixed(1)}" y="${base + 10}"` +
+                    ` text-anchor="middle">${number(value)}</text>`
+            );
+        }
+        out.push(unitSvg(unit, base));
+        out.push("</svg>");
+        return out.join("");
+    }
+
+    // The width a grid's bins are merged into bars of: the Freedman-Diaconis
+    // width (2 × IQR / n^⅓, the quartiles read off the counts) rounded to the
+    // closest of barWidths, or, when wider, the narrowest of those giving at
+    // most MAX_BINS bars. e.g. guitarset tempo on its 1 bpm grid: IQR 98–141
+    // bpm, 360 tracks → 12.1 → 10 bpm, 15 bars.
+    function barWidth(grid) {
+        const total = grid.counts.reduce((sum, [, count]) => sum + count, 0);
+        const fd = (2 * (quartile(grid, 0.75, total) - quartile(grid, 0.25, total))) / Math.cbrt(total);
+        const closest = closestWidth(grid, fd);
+        const lowest = grid.counts[0][0], highest = grid.counts.at(-1)[0];
+        for (const width of barWidths(grid)) {
+            if (width >= closest && barOf(highest, width) - barOf(lowest, width) + 1 <= MAX_BINS) return width;
+        }
+    }
+
+    // The widths a grid's bins can be merged into, narrowest first: its own
+    // width times 1, 2 or 5 × 10ⁿ, so a bar is always a whole number of bins
+    function* barWidths(grid) {
+        for (let e = 0; ; e++) for (const m of [1, 2, 5]) yield grid.width * m * 10 ** e;
+    }
+
+    // The width of barWidths closest to x in ratio: 12.1 → 10, 16 → 20; the grid's own when x is smaller
+    function closestWidth(grid, x) {
+        let best = grid.width;
+        for (const width of barWidths(grid)) {
+            if (Math.abs(Math.log(width / x)) < Math.abs(Math.log(best / x))) best = width;
+            if (width >= x) return best;
+        }
+    }
+
+    // The start of the bin where a grid's running count reaches share of its total (0.25: the lower quartile)
+    function quartile(grid, share, total) {
+        let sum = 0;
+        for (const [start, count] of grid.counts) {
+            sum += count;
+            if (sum >= share * total) return start;
+        }
+    }
+
+    // Which bar, width wide, holds the bin starting at start (1e-9: float noise)
+    const barOf = (start, width) => Math.floor(start / width + 1e-9);
+
+    // The starts of a grid's bars, width wide, from the bar holding its lowest
+    // bin to the one holding its highest, the empty bars too, so they are
+    // evenly spaced along the axis
+    function barStarts(grid, width) {
+        const first = barOf(grid.counts[0][0], width), last = barOf(grid.counts.at(-1)[0], width);
+        return Array.from({ length: last - first + 1 }, (_, i) => (first + i) * width);
+    }
+
+    // A grid's count in each bar starting at starts (barStarts, width wide):
+    // the counts of the bins it holds added up, 0 in an empty bar
+    function barCounts(grid, starts, width) {
+        const own = new Map();
+        for (const [start, count] of grid.counts) {
+            const bar = barOf(start, width);
+            own.set(bar, (own.get(bar) || 0) + count);
+        }
+        return starts.map((start) => own.get(barOf(start, width)) || 0);
     }
 
     // [label, count] per bar of a counts field (given as [label, count] pairs).
@@ -196,23 +300,23 @@
             return [...pairs].sort((a, b) => a[0] - b[0]);
         }
         const named = pairs
-            .filter(([label]) => label !== OTHER)
             .map(([label, count]) => [String(label), count])
             .sort((a, b) => b[1] - a[1]); // stable: a tie keeps the stored order
-        const other = pairs.find(([label]) => label === OTHER);
-        const rest = named.slice(MAX_LABELS).reduce((sum, [, count]) => sum + count, 0) + (other ? other[1] : 0);
+        const rest = named.slice(MAX_LABELS).reduce((sum, [, count]) => sum + count, 0);
         return named.slice(0, MAX_LABELS).concat(rest ? [[OTHER, rest]] : []);
     }
 
-    // Which number labels a counts chart writes when they do not all fit under
-    // their bars: the multiples of the smallest 1, 2 or 5 × 10ⁿ step that puts
-    // them far enough apart, e.g. 40, 50, 60 for a count per MIDI value
-    function numberStep(labels, slot) {
+    // Which number labels a chart writes when they do not all fit under their
+    // bars, one number per bar, width apart (a grid's width; 1 for a counts
+    // field's numbers): the multiples of the smallest step of 1, 2 or 5 × 10ⁿ
+    // bars that puts them far enough apart, e.g. 40, 50, 60 MIDI, or 1,000,
+    // 2,000 Hz on a 10 Hz grid
+    function numberStep(labels, slot, width = 1) {
         const widest = Math.max(...labels.map((chars) => chars.length)) * CHAR_WIDTH;
         for (let e = 0; ; e++) {
             for (const m of [1, 2, 5]) {
-                const step = m * 10 ** e;
-                if (step * slot >= widest + 2) return step;
+                const bars = m * 10 ** e;
+                if (bars * slot >= widest + 2) return bars * width;
             }
         }
     }
@@ -221,24 +325,14 @@
     //
     // Every bar has its label under it: flat when every label fits under its
     // bar, else tilted, smaller and cut to MAX_LABEL_CHARS; numbers that do not
-    // fit (a count per MIDI value) are written flat, only every few (numberStep).
-    // Hovering a bar shows the whole label and its count, "at least" for the
-    // labels in atLeast (a pooled count that may miss some of a dataset's
-    // "(other)", combine.js).
-    // parts (combine.js, each a dataset's own pairs) stack the bars by dataset,
-    // or show one dataset in focus (its name); when the label may hide in that
-    // dataset's "(other)", its count is unknown and the hover says so. A unit
-    // (gallery.py, COUNT_UNITS: MIDI) is written under the axis, as a histogram's.
-    function countsSvg(pairs, counted, atLeast = [], parts = null, focus = null, unit = null) {
+    // fit (a wide polyphony) are written flat, only every few (numberStep).
+    // Hovering a bar shows the whole label and its count. parts (combine.js,
+    // each a dataset's own pairs) stack the bars by dataset, or show one
+    // dataset in focus (its name).
+    function countsSvg(pairs, counted, parts = null, focus = null) {
         const bars = countBars(pairs);
-        const unsure = new Set(atLeast.map(String));
         const pieces = parts && stacks(parts, (data) => countsUnder(bars, data), bars.map(([, count]) => count), focus);
-        const focused = focus != null && parts && parts.find((part) => part.name === focus);
-        const tips = bars.map(([label, count], i) => {
-            const tip = barTip(String(label), count, counted, pieces && pieces[i], unsure.has(String(label)));
-            if (!focused || label === OTHER || !mayHide(focused.data, label)) return tip;
-            return `${label}: at least ${GROUPED.format(count)} ${counted}; ${focus}'s may be in its ${OTHER}`;
-        });
+        const tips = bars.map(([label, count], i) => barTip(String(label), count, counted, pieces && pieces[i]));
         const { out, slot, base } = barsSvg(
             bars.map(([, count]) => count),
             tips,
@@ -266,12 +360,6 @@
                     ` dominant-baseline="middle" transform="rotate(-60 ${x} ${y})">${escapeHtml(text)}</text>`
             );
         });
-        if (unit) {
-            out.push(
-                `<text class="plot-unit" x="${(LEFT + (WIDTH - LEFT - RIGHT) / 2).toFixed(1)}" y="${base + 20}"` +
-                    ` text-anchor="middle">${escapeHtml(unit)}</text>`
-            );
-        }
         out.push("</svg>");
         return out.join("");
     }
@@ -285,13 +373,10 @@
         return bars.map(([label]) => (label === OTHER ? total - named : own.get(String(label)) || 0));
     }
 
-    // Whether a dataset's pairs may hide label in their "(other)": they have one, but not the label
-    function mayHide(pairs, label) {
-        return pairs.some(([l, count]) => l === OTHER && count > 0) && !pairs.some(([l]) => String(l) === String(label));
-    }
-
-    function chartSvg(data, counted, atLeast, parts, focus, unit) {
-        return Array.isArray(data) ? countsSvg(data, counted, atLeast, parts, focus, unit) : histogramSvg(data, counted, parts, focus);
+    // A plot's chart, by the shape of its data: counts pairs, a grid (it has a width), or a histogram
+    function chartSvg(data, counted, parts, focus) {
+        if (Array.isArray(data)) return countsSvg(data, counted, parts, focus);
+        return "width" in data ? gridSvg(data, counted, parts, focus) : histogramSvg(data, counted, parts, focus);
     }
 
     // The figures of a plot grid: each plot's title, its source and its chart,
@@ -305,14 +390,14 @@
                     `<figure class="plot" data-type="${escapeHtml(p.type || "")}">` +
                     `<figcaption><span class="plot-title">${escapeHtml(p.title)}</span>` +
                     `<span class="plot-source">${escapeHtml(p.source)}</span></figcaption>` +
-                    `${chartSvg(p.data, p.counted, p.atLeast, p.parts, focus, p.unit)}</figure>`
+                    `${chartSvg(p.data, p.counted, p.parts, focus)}</figure>`
             )
             .join("\n");
     }
 
     const charts = {
         WIDTH, LEFT, RIGHT, TOP, MAX_LABELS, MAX_LABEL_CHARS, MIN_SLOTS,
-        escapeHtml, number, yTicks, shortNumber, histogramSvg, countBars, countsSvg, chartSvg, plotGridHtml,
+        escapeHtml, number, yTicks, shortNumber, histogramSvg, gridSvg, countBars, countsSvg, chartSvg, plotGridHtml,
     };
     if (typeof module !== "undefined" && module.exports) {
         module.exports = charts; // Node, for the tests

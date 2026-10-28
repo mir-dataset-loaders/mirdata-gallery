@@ -47,7 +47,6 @@
     // --- Pooled plots ---------------------------------------------------------
 
     const MAX_BINS = 25; // as scripts/stats/histograms.py: a pooled histogram has no more bars either
-    const OTHER = "(other)";
     const clean = (x) => Number(x.toFixed(10)); // float noise off: 0.6000000000000001 -> 0.6
     const atMost = (a, b) => a <= b + 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
 
@@ -144,6 +143,20 @@
         return timeBins(hists);
     }
 
+    const isGrid = (data) => !Array.isArray(data) && "width" in data; // {unit, width, counts as [start, count] pairs}
+
+    // Grids of one width added up, bin by bin, lowest first; null when their
+    // widths differ (a bin is never split)
+    function poolGrids(grids) {
+        const { unit, width } = grids[0];
+        if (!grids.every((g) => g.width === width)) return null;
+        const total = new Map();
+        for (const grid of grids) {
+            for (const [start, count] of grid.counts) total.set(start, (total.get(start) || 0) + count);
+        }
+        return { unit, width, counts: [...total].sort((a, b) => a[0] - b[0]) };
+    }
+
     const addUp = (each) => each[0].map((_, i) => each.reduce((sum, counts) => sum + counts[i], 0));
 
     // Histograms added up, on pooledBins: no count is split or guessed. null
@@ -153,19 +166,13 @@
         return bins && { unit: bins.unit, edges: bins.edges, counts: addUp(bins.each) };
     }
 
-    // Counts fields ([label, count] pairs) added up, label by label. A dataset
-    // keeps only its most common text labels, the rest in "(other)": a label it
-    // did not keep may hide in there, so its pooled count is "at least" (atLeast).
+    // Counts fields ([label, count] pairs) added up, label by label
     function poolCounts(fields) {
         const total = new Map();
         for (const pairs of fields) {
             for (const [label, count] of pairs) total.set(label, (total.get(label) || 0) + count);
         }
-        const folded = fields.filter((pairs) => pairs.some(([label, count]) => label === OTHER && count > 0));
-        const atLeast = [...total.keys()].filter(
-            (label) => label !== OTHER && folded.some((pairs) => !pairs.some(([l]) => l === label))
-        );
-        return { pairs: [...total], atLeast };
+        return [...total];
     }
 
     const COLOURS = 5; // datasets with a colour of their own; the others share grey
@@ -178,13 +185,16 @@
         return null;
     }
 
-    const unitKey = (unit) => (SECONDS[unit] ? "time" : unit); // any time units match: timeBins
-    const matchKey = (p) => [p.prop, p.type, p.field, Array.isArray(p.data) ? "" : unitKey(p.data.unit)].join("|");
+    // What plots must share, past their property, type and field, to be pooled:
+    // counts any; a grid its unit; a histogram its unit, any time units matching (timeBins)
+    const shapeKey = (data) =>
+        Array.isArray(data) ? "counts" : isGrid(data) ? `grid ${data.unit}` : SECONDS[data.unit] ? "time" : data.unit;
+    const matchKey = (p) => [p.prop, p.type, p.field, shapeKey(p.data)].join("|");
     const typeRank = (p) => (p.type ? `1${p.type}` : "0"); // the audio's first, then the types A–Z
 
     // The plots of a combination, from each dataset's plots ({name, slot,
     // plots}, in the order selected; slot its colour, nextColour). Plots of the same property, type, field
-    // and unit (any time units count as one: pooledBins) are pooled into one,
+    // and shape (matchKey) are pooled into one,
     // its source starting with how many datasets it holds when not all do; a
     // plot no other dataset has, or one that cannot be pooled exactly, is shown
     // on its own, in its own unit, its source starting with its dataset. Every plot has parts: each dataset's own data on the plot's bars,
@@ -204,16 +214,18 @@
         for (const members of groups.values()) {
             const plots = members.map((m) => m.plot);
             const part = (m, data) => ({ name: m.name, slot: m.slot, data });
-            let merged = null; // {data, atLeast, parts}
+            let merged = null; // {data, parts}
             if (members.length > 1) {
                 if (Array.isArray(plots[0].data)) {
-                    const { pairs, atLeast } = poolCounts(plots.map((p) => p.data));
-                    merged = { data: pairs, atLeast, parts: members.map((m) => part(m, m.plot.data)) };
+                    merged = { data: poolCounts(plots.map((p) => p.data)), parts: members.map((m) => part(m, m.plot.data)) };
+                } else if (isGrid(plots[0].data)) {
+                    const data = poolGrids(plots.map((p) => p.data));
+                    if (data) merged = { data, parts: members.map((m) => part(m, m.plot.data)) };
                 } else {
                     const bins = pooledBins(plots.map((p) => p.data));
                     if (bins) {
                         const on = (counts) => ({ unit: bins.unit, edges: bins.edges, counts });
-                        merged = { data: on(addUp(bins.each)), atLeast: [], parts: members.map((m, i) => part(m, on(bins.each[i]))) };
+                        merged = { data: on(addUp(bins.each)), parts: members.map((m, i) => part(m, on(bins.each[i]))) };
                     }
                 }
             }
@@ -234,7 +246,7 @@
         });
     }
 
-    const combine = { glanceRows, namedNotes, poolHistograms, poolCounts, nextColour, combinedPlots };
+    const combine = { glanceRows, namedNotes, poolHistograms, poolGrids, poolCounts, nextColour, combinedPlots };
     if (typeof module !== "undefined" && module.exports) {
         module.exports = combine; // Node, for the tests
     } else {
