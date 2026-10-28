@@ -1,4 +1,4 @@
-"""Annotation stats of one dataset: histograms and label counts per annotation property.
+"""Annotation stats of one dataset: grid counts and label counts per annotation property.
 
 Only the ten official mirdata annotation types are read:
 card_builder.annotation_properties finds them, annotation_types.py has one

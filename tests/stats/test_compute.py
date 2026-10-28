@@ -8,7 +8,7 @@ import shutil
 import fake_dataset_loader
 from fake_dataset_loader import DATA_HOME
 from stats import compute
-from stats.histograms import histogram
+from stats.annotation_types import grid
 
 
 def compute_local(data_home=DATA_HOME, **kwargs):
@@ -80,10 +80,10 @@ def test_compute(fake_mirdata):
     assert beats["n_annotations"] == 3, "n_annotations should count every annotation"
     meter = {3: 1, 4: 2}
     assert beats["meter"] == meter, "meter should count the tracks per beats-per-bar"
-    tempo = histogram([80, 120, 240], "bpm")
+    tempo = grid([80, 120, 240], "bpm")
     assert (
         beats["tempo_from_beats"] == tempo
-    ), "tempo should pool one value per track into one bpm histogram"
+    ), "tempo should pool one value per track on one 1-bpm grid"
 
     chords = ann["annotations"]["chords"]
     fields = {"type", "n_tracks", "n_annotations", "labels", "qualities"}

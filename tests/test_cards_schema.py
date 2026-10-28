@@ -45,6 +45,7 @@ MODES = {"remote", "local"}
 NAME = re.compile(r"[a-z0-9_]+")
 SHA256 = re.compile(r"[0-9a-f]{64}")
 HISTOGRAM_KEYS = {"unit", "edges", "counts"}
+GRID_KEYS = {"unit", "width", "counts"}
 CRASHED_PART = {"status", "error"}
 DATASET_ERROR = {"computed", "error"}
 STATS_KEYS = {"computed", "audio", "annotations"}
@@ -71,19 +72,18 @@ ANNOTATION_FIELDS = {
 }
 # The fields of an annotation entry, by type, besides type, n_tracks,
 # n_annotations and the optional parts.
-HISTOGRAM, COUNTS = "histogram", "counts"
-EITHER = "histogram or counts"  # NoteData pitches: a Hz histogram, or counts per MIDI value
+COUNTS, GRID = "counts", "grid"
 ENTRY_FIELDS = {
-    "BeatData": {"tempo_from_beats": HISTOGRAM, "meter": COUNTS},
+    "BeatData": {"tempo_from_beats": GRID, "meter": COUNTS},
     "ChordData": {"labels": COUNTS, "qualities": COUNTS},
     "EventData": {"events": COUNTS},
-    "F0Data": {"frequencies": HISTOGRAM},
+    "F0Data": {"frequencies": GRID},
     "KeyData": {"keys": COUNTS, "modes": COUNTS},
-    "LyricData": {"lyric_unit": COUNTS, "lyrics_per_track": HISTOGRAM},
-    "MultiF0Data": {"frequencies": HISTOGRAM, "polyphony": COUNTS},
-    "NoteData": {"pitches": EITHER},
-    "SectionData": {"labels": COUNTS, "section_interval_seconds": HISTOGRAM},
-    "TempoData": {"tempo": HISTOGRAM},
+    "LyricData": {"lyric_unit": COUNTS, "lyrics_per_track": GRID},
+    "MultiF0Data": {"frequencies": GRID, "polyphony": COUNTS},
+    "NoteData": {"pitches": GRID},
+    "SectionData": {"labels": COUNTS, "section_interval_seconds": GRID},
+    "TempoData": {"tempo": GRID},
 }
 
 
@@ -105,8 +105,9 @@ def check_counts(value, where):
 
 
 def check_histogram(value, where):
+    """The old {unit, edges, counts}: only duration_histogram, until durations are computed again."""
     if value is None:
-        return  # no values to bin, e.g. no track with two beats
+        return  # no values to bin
     assert set(value) == HISTOGRAM_KEYS, f"{where} should be {{unit, edges, counts}}"
     edges, counts = value["edges"], value["counts"]
     assert isinstance(value["unit"], str), f"{where} unit should be text"
@@ -116,6 +117,23 @@ def check_histogram(value, where):
     assert increasing, f"{where} edges should increase"
     whole = all(is_count(n) for n in counts)
     assert whole, f"{where} counts should be whole numbers >= 0"
+
+
+def check_grid(value, where):
+    if value is None:
+        return  # no values to count, e.g. no track with two beats
+    assert set(value) == GRID_KEYS, f"{where} should be {{unit, width, counts}}"
+    assert isinstance(value["unit"], str), f"{where} unit should be text"
+    width = value["width"]
+    positive = isinstance(width, (int, float)) and width > 0
+    assert positive, f"{where} width should be a number > 0"
+    starts = list(value["counts"])
+    increasing = all(a < b for a, b in zip(starts, starts[1:]))
+    assert increasing, f"{where} bins should be sorted, lowest first"
+    on_grid = all(abs(s / width - round(s / width)) < 1e-9 for s in starts)
+    assert on_grid, f"{where} bins should start on multiples of the width"
+    filled = all(is_count(n) and n > 0 for n in value["counts"].values())
+    assert filled, f"{where} counts should be whole numbers > 0 (empty bins left out)"
 
 
 def check_entry(prop, entry):
@@ -132,11 +150,8 @@ def check_entry(prop, entry):
     if "parts" in entry:
         check_counts(entry["parts"], f"{where}.parts")
     for field, kind in fields.items():
-        value = entry[field]
-        if kind == EITHER:
-            kind = HISTOGRAM if value is None or set(value) == HISTOGRAM_KEYS else COUNTS
-        check = check_histogram if kind == HISTOGRAM else check_counts
-        check(value, f"{where}.{field}")
+        check = check_grid if kind == GRID else check_counts
+        check(entry[field], f"{where}.{field}")
 
 
 def check_part(part, value, fields):

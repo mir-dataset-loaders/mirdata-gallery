@@ -1,8 +1,7 @@
 """The Stat classes of stats/annotation_types.py, fed mirdata annotations built in code.
 
-Histograms are compared with histogram() of the values a Stat should
-collect: which values and which kind of histogram is this file's job, the
-bins are tested in test_histograms.py.
+Numeric fields are compared with grid() of the values a Stat should collect;
+the exact bins are checked by hand only in test_grid*.
 """
 
 import numpy as np
@@ -19,9 +18,9 @@ from stats.annotation_types import (
     Notes,
     Sections,
     Tempo,
+    grid,
     is_empty,
 )
-from stats.histograms import histogram
 
 
 def intervals(*pairs):
@@ -58,10 +57,10 @@ def test_tempo():
         intervals((0, 10), (10, 20)), "s", np.array([90.0, 180.0]), "bpm"
     )
     result = collect(Tempo(), track1, track2).result()
-    expected = {"tempo": histogram([120.0, 90.0, 180.0], "bpm")}
+    expected = {"tempo": grid([120.0, 90.0, 180.0], "bpm")}
     assert (
         result == expected
-    ), "every tempo of every annotation should go into one bpm histogram"
+    ), "every tempo of every annotation should be counted on one 1-bpm grid"
 
 
 def test_beats():
@@ -76,7 +75,7 @@ def test_beats():
         beats([0.0]),  # one beat
         beats([0, 1, 2], time_unit="ticks"),
     ).result()
-    tempo = histogram([120.0, 60.0, 240.0], "bpm")
+    tempo = grid([120.0, 60.0, 240.0], "bpm")
     assert result["tempo_from_beats"] == tempo, (
         "tempo should be 60 / the median beat gap, one per annotation, with ms read as s/1000;"
         " one beat or a non-clock unit (ticks) should give no tempo"
@@ -124,7 +123,7 @@ def test_f0():
         "likelihood",
     )
     result = collect(F0(), binary, likelihood).result()
-    expected = {"frequencies": histogram([440.0, 880.0, 1760.0], "hz")}
+    expected = {"frequencies": grid([440.0, 880.0, 1760.0], "hz")}
     assert result == expected, (
         "only voiced frames should count (binary voicing above 0, likelihood from 0.5),"
         " in Hz, whatever unit the loader gives"
@@ -142,10 +141,10 @@ def test_multif0():
         np.array([0.0, 0.01]), "s", [[57.0, 69.0, 81.0], [69.0]], "midi"
     )  # 220, 440, 880 Hz
     result = collect(MultiF0(), track1, track2).result()
-    frequencies = histogram([440.0, 440.0, 880.0, 220.0, 440.0, 880.0, 440.0], "hz")
+    frequencies = grid([440.0, 440.0, 880.0, 220.0, 440.0, 880.0, 440.0], "hz")
     assert (
         result["frequencies"] == frequencies
-    ), "every sounding pitch should go into one Hz histogram, whatever unit the loader gives"
+    ), "every sounding pitch should be counted on one Hz grid, whatever unit the loader gives"
     polyphony = {1: 2, 2: 1, 3: 1}
     assert result["polyphony"] == polyphony, (
         "polyphony should count frames per number of pitches sounding at once;"
@@ -157,16 +156,16 @@ def test_notes():
     two_notes = intervals((0, 1), (1, 2))
     in_midi = annotations.NoteData(two_notes, "s", np.array([64.0, 65.98]), "midi")
     result = collect(Notes(), in_midi, in_midi).result()
-    expected = {"pitches": {64: 2, 65: 0, 66: 2}}
+    expected = {"pitches": grid([64, 64, 66, 66], "midi")}
     assert result == expected, (
-        "MIDI pitches should be counted per whole MIDI value (65.98 as 66), every value"
-        " from the lowest to the highest, 0 for a value with no note"
+        "MIDI pitches should be counted per note, rounded to the nearest one (65.98 as 66,"
+        " not 65)"
     )
 
     in_hz = annotations.NoteData(two_notes, "s", np.array([440.0, 0.0]), "hz")  # 0: no pitch
     higher = annotations.NoteData(two_notes, "s", np.array([880.0, 1760.0]), "hz")
     result = collect(Notes(), in_hz, higher).result()
-    expected = {"pitches": histogram([440.0, 880.0, 1760.0], "hz")}
+    expected = {"pitches": grid([440.0, 880.0, 1760.0], "hz")}
     assert result == expected, "Hz pitches should be counted in Hz, without the 0s (no pitch)"
 
 
@@ -181,10 +180,10 @@ def test_sections():
     assert (
         result["labels"] == labels
     ), "labels should count every section label; unlabeled sections add none"
-    lengths = histogram([10.0, 20.0, 5.0, 40.0], "s", log=True)
+    lengths = grid([10.0, 20.0, 5.0, 40.0], "s")
     assert result["section_interval_seconds"] == lengths, (
         "every section's length in seconds (ms read as s/1000), labeled or not,"
-        " should go into one log histogram"
+        " should be counted on one 1 s grid"
     )
 
 
@@ -217,7 +216,7 @@ def test_lyrics():
     assert (
         result["lyric_unit"] == units
     ), "lyric_unit should count the annotations of each unit"
-    per_track = histogram([5, 4], "words")
+    per_track = grid([5, 4], "words")
     assert result["lyrics_per_track"] == per_track, (
         "lyrics_per_track should add up all of a track's annotations,"
         " in the most common unit"
@@ -305,3 +304,34 @@ def test_bar_lengths():
     bars = Beats.bar_lengths([0, 0, 1, 2, 1, 2])
     assert bars == [2, 2], "position 0 (a beat outside any bar) should be skipped"
     assert Beats.bar_lengths([]) == [], "no positions should give no bars"
+
+
+def test_grid():
+    result = grid([133.7, 101.9, 133.2, 120.0, 133.0], "bpm")
+    expected = {"unit": "bpm", "width": 1, "counts": {101: 1, 120: 1, 133: 3}}
+    assert result == expected, (
+        "each value should count under its whole number rounded down (133.7 under 133);"
+        " empty bins should be left out"
+    )
+    assert list(result["counts"]) == [101, 120, 133], "bins should be sorted, lowest first"
+    assert all(
+        isinstance(start, int) for start in result["counts"]
+    ), "whole-number bin starts should be ints"
+
+
+def test_grid_width_by_unit():
+    result = grid([447.0, 440.0, 451.2, 1760.4], "hz")
+    expected = {"unit": "hz", "width": 10, "counts": {440: 2, 450: 1, 1760: 1}}
+    assert result == expected, "hz should count in 10 Hz bins: 447 under 440"
+    result = grid([0.5, 0.9, 59.9, 60.0], "s")
+    expected = {"unit": "s", "width": 1, "counts": {0: 2, 59: 1, 60: 1}}
+    assert result == expected, "seconds should count in 1 s bins"
+    result = grid([412, 380, 380], "words")
+    expected = {"unit": "words", "width": 1, "counts": {380: 2, 412: 1}}
+    assert result == expected, "a unit without its own width should count whole numbers"
+
+
+def test_grid_empty():
+    assert grid([], "bpm") is None, "no values should give no grid"
+    missing = [None, float("nan"), float("inf")]
+    assert grid(missing, "bpm") is None, "None, NaN and infinity should be left out"

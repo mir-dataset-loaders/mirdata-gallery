@@ -1,7 +1,7 @@
 """One Stat class per official mirdata annotation type.
 
 A Stat reads one property's annotations track by track (add, read) and
-turns them into histograms and label counts at the end (result). A property
+turns them into grid counts and label counts at the end (result). A property
 can hold several annotations at once (a dict, a MultiAnnotator or a list):
 each one is read, and the track is counted once.
 """
@@ -11,12 +11,13 @@ from collections import Counter
 import mirdata.annotations
 import numpy as np
 
-from stats import histograms
-
 # The official mirdata annotation types (BeatData, ChordData, ... TempoData): the
 # only ones the stats cover. Properties the card detection labels otherwise
 # (Instrument, Genre) are ignored.
 ANNOTATION_TYPES = {cls.__name__ for cls in mirdata.annotations.Annotation.__subclasses__()}
+# grid() bin width per unit, the same for every dataset so the gallery can add
+# datasets up bin by bin; any other unit (words, syllables, ...) counts whole numbers
+GRID_WIDTHS = {"bpm": 1, "s": 1, "hz": 10, "midi": 1}
 
 
 # ------------------------------------------------------------------ helpers
@@ -38,6 +39,33 @@ def interval_lengths(annotation):
     if not len(intervals):
         return None
     return to_seconds(intervals[:, 1] - intervals[:, 0], unit)
+
+
+def _number(x):
+    """A Python int when x is integral, else a float with float noise removed."""
+    x = round(float(x), 10)
+    return int(x) if x == int(x) else x
+
+
+def grid(values, unit):
+    """{"unit", "width", "counts"} of the values, or None when there are none.
+
+    counts maps the start of every bin that holds a value to how many it holds,
+    lowest first; empty bins are left out. A value v goes in the bin starting
+    at floor(v / width) * width, the width from GRID_WIDTHS: in bpm (width 1)
+    133.7 counts under 133, in hz (width 10) 447 counts under 440.
+    """
+    width = GRID_WIDTHS.get(unit, 1)
+    values = np.asarray([v for v in values if v is not None], dtype=float)
+    values = values[np.isfinite(values)]
+    if not len(values):
+        return None
+    starts, counts = np.unique(np.floor(values / width) * width, return_counts=True)
+    return {
+        "unit": unit,
+        "width": width,
+        "counts": {_number(s): int(c) for s, c in zip(starts, counts)},
+    }
 
 
 # ------------------------------------------------------------------- stats
@@ -127,7 +155,7 @@ class Tempo(Stat):
         self.bpm.extend(float(t) for t in value.tempos)
 
     def result(self):
-        return {"tempo": histograms.histogram(self.bpm, "bpm")}  # annotated by hand, unlike tempo_from_beats
+        return {"tempo": grid(self.bpm, "bpm")}  # annotated by hand, unlike tempo_from_beats
 
 
 class Beats(Stat):
@@ -151,7 +179,7 @@ class Beats(Stat):
     def result(self):
         return {
             "meter": dict(sorted(self.meter.items())),
-            "tempo_from_beats": histograms.histogram(self.bpm, "bpm"),  # 60 / median beat gap, not annotated
+            "tempo_from_beats": grid(self.bpm, "bpm"),  # 60 / median beat gap, not annotated
         }
 
     @staticmethod
@@ -233,7 +261,7 @@ class F0(Stat):
 
     def result(self):
         frequencies = np.concatenate(self.frequencies) if self.frequencies else []
-        return {"frequencies": histograms.histogram(frequencies, "hz")}
+        return {"frequencies": grid(frequencies, "hz")}
 
     @staticmethod
     def voiced_hz(f0):
@@ -269,7 +297,7 @@ class MultiF0(Stat):
     def result(self):
         frequencies = np.concatenate(self.frequencies) if self.frequencies else []
         return {
-            "frequencies": histograms.histogram(frequencies, "hz"),
+            "frequencies": grid(frequencies, "hz"),
             "polyphony": dict(sorted(self.polyphony.items())),
         }
 
@@ -288,8 +316,7 @@ class MultiF0(Stat):
 class Notes(Stat):
     """Pitch distribution of NoteData annotations, in the unit the loader gives.
 
-    Hz goes into a histogram; MIDI is counted per whole MIDI value, like the
-    polyphony of MultiF0: {40: 626, 41: 516, ...}.
+    Hz is counted in 10 Hz bins, MIDI per note (rounded to the nearest one).
     """
 
     annotation = mirdata.annotations.NoteData
@@ -306,18 +333,9 @@ class Notes(Stat):
 
     def result(self):
         pitches = np.concatenate(self.pitches) if self.pitches else []
-        if self.unit != "midi":
-            return {"pitches": histograms.histogram(pitches, self.unit)}
-        return {"pitches": self.midi_counts(pitches)}
-
-    @staticmethod
-    def midi_counts(pitches):
-        """{midi: notes} for every whole value from the lowest to the highest, 0 for one with no note."""
-        values = np.rint(pitches).astype(int)  # rounded first, as GuitarSet gives 43.98 for a 44
-        if not len(values):
-            return {}
-        lo = values.min()
-        return {int(lo + i): int(c) for i, c in enumerate(np.bincount(values - lo))}
+        if self.unit == "midi":
+            pitches = np.rint(pitches)  # to the nearest note, as GuitarSet gives 43.98 for a 44
+        return {"pitches": grid(pitches, self.unit)}
 
 
 class Sections(Stat):
@@ -340,7 +358,7 @@ class Sections(Stat):
     def result(self):
         return {
             "labels": dict(self.labels.most_common()),
-            "section_interval_seconds": histograms.histogram(self.section_interval_seconds, "s", log=True),
+            "section_interval_seconds": grid(self.section_interval_seconds, "s"),
         }
 
 
@@ -394,7 +412,7 @@ class Lyrics(Stat):
         unit = max(self.lyric_unit, key=self.lyric_unit.get) if self.lyric_unit else None
         return {
             "lyric_unit": dict(self.lyric_unit.most_common()),
-            "lyrics_per_track": histograms.histogram(self.lyrics_per_track, unit),
+            "lyrics_per_track": grid(self.lyrics_per_track, unit),
         }
 
 

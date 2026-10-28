@@ -28,7 +28,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import card_utils
 import stats
-import stats.histograms
 
 # --------------------------------------------------------------- computing
 
@@ -65,13 +64,22 @@ def hms(seconds):
     return f"{h}h {m:02d}m {s:02d}s"
 
 
+def format_grid(grid_counts):
+    """One line for the terminal: '130-131 bpm: 9, 131-132 bpm: 7'."""
+    unit, width = grid_counts["unit"], grid_counts["width"]
+    return ", ".join(
+        f"{start}-{start + width} {unit}: {count}"
+        for start, count in grid_counts["counts"].items()
+    )
+
+
 def fmt(value):
-    """One short string for a histogram, a label dict, or a scalar."""
+    """One short string for a grid, a label dict, or a scalar."""
     if value is None:
         return "-"
     if isinstance(value, dict):
-        if set(value) == {"unit", "edges", "counts"}:
-            return stats.histograms.format_histogram(value)
+        if set(value) == {"unit", "width", "counts"}:
+            return format_grid(value)
         return ", ".join(f"{k}: {v}" for k, v in value.items())
     return str(value)
 
