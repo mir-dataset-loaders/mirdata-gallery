@@ -36,16 +36,21 @@ MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest
 # what they hold); a grid or histogram not listed is plotted after the listed ones.
 PLOT_FIELDS = {
     "BeatData": ["tempo_from_beats", "meter"],
-    "ChordData": ["labels", "qualities"],
+    "ChordData": ["labels"],
     "EventData": ["events"],
     "F0Data": ["frequencies"],
-    "KeyData": ["keys", "modes"],
+    "KeyData": ["keys"],
     "LyricData": ["lyric_unit", "lyrics_per_track"],
     "MultiF0Data": ["frequencies", "polyphony"],
     "NoteData": ["pitches"],
     "SectionData": ["labels", "section_interval_seconds"],
     "TempoData": ["tempo"],
 }
+
+# The label fields drawn as a circle of fifths instead of bars (charts.js,
+# circleSvg), and its rings: a ring per chord quality or per key mode. The
+# rings show what the qualities and modes fields would, so those are not plotted.
+CIRCLE_FIELDS = {("ChordData", "labels"): "chords", ("KeyData", "keys"): "keys"}
 
 # --- Card rendering ----------------------------------------------------------
 
@@ -280,8 +285,9 @@ def ordered_plots(stats, with_beat_tempo=False):
     The audio duration comes first, then the plots grouped by annotation type,
     A–Z. Inside a type, the entry (track property) with the most annotations
     comes first, then the others; each entry's plots in PLOT_FIELDS
-    order. An annotated tempo (TempoData) replaces the tempo derived from beats,
-    unless with_beat_tempo (Combine mode hides neither).
+    order. The circles (CIRCLE_FIELDS) come last, in the same order, on rows
+    of their own. An annotated tempo (TempoData) replaces the tempo derived
+    from beats, unless with_beat_tempo (Combine mode hides neither).
     """
     plots = []
     audio = stats.get("audio") or {}
@@ -319,7 +325,7 @@ def ordered_plots(stats, with_beat_tempo=False):
             if prop != best[0]
             for p in entry_plots
         )
-    return plots
+    return [p for p in plots if not p["circle"]] + [p for p in plots if p["circle"]]
 
 
 def annotation_plots(prop, entry, skip=()):
@@ -379,19 +385,22 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
     """What one plot needs: data is a grid, a histogram or counts. counted names what the bars count, for the hover text.
 
     prop, type and field (None for the audio's) are what Combine mode matches
-    the plots of several datasets by.
+    the plots of several datasets by. circle names the rings of a field drawn
+    as a circle (CIRCLE_FIELDS), whose labels count segments.
     """
+    circle = CIRCLE_FIELDS.get((ann_type, field))
     if is_grid(data):
         total = sum(data["counts"].values())
     elif is_histogram(data):
         total = sum(data["counts"])
     else:
         total = sum(data.values())
-    counted = (
-        "tracks"
-        if total == n_tracks
-        else "annotations" if total == n_annotations else "values"
-    )
+    if total == n_tracks:
+        counted = "tracks"
+    elif total == n_annotations:
+        counted = "annotations"
+    else:
+        counted = "segments" if circle else "values"
     words = (
         field.removesuffix("_histogram")
         .removesuffix("_per_annotation")
@@ -405,6 +414,7 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
         "prop": prop,
         "type": ann_type,
         "field": field,
+        "circle": circle,
     }
 
 

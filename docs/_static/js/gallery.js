@@ -426,7 +426,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // colours: each selected dataset's colour, given when it joins (combine.js, nextColour)
     // focus: the dataset whose part of each plot is shown (its chip's name clicked), or null: stacked
     // typeFocus: the annotation type whose plots alone are shown (7. below), or null: all
-    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null, typeFocus: null };
+    // picks: the property a dataset adds to a combined plot, picked with the plot's buttons
+    // (charts.js, picksHtml), {plot's pickKey: {dataset title: property}}; one not picked adds
+    // its first (combine.js)
+    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null, typeFocus: null, picks: {} };
     const combineBar = document.createElement("div");
     combineBar.className = "combine-bar";
     const combineBtn = document.createElement("button");
@@ -453,6 +456,7 @@ document.addEventListener("DOMContentLoaded", function () {
         combine.colours.clear();
         combine.focus = null;
         combine.typeFocus = null;
+        combine.picks = {};
         if (combine.on) {
             // the dataset on show is the first one of the combination, purple as in its panel
             if (activeItem && activeItem.card.style.display !== "none") join(activeItem);
@@ -470,7 +474,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // A dataset joins the combination with the first free colour, and leaves it
     // with its colour, free for the next one to join; the others keep theirs.
-    // The focused one leaving takes the focus with it: the plots stack again.
+    // The focused one leaving takes the focus with it: the plots stack again;
+    // its picks go with it too.
     function join(item) {
         combine.colours.set(item, mirdataCombine.nextColour([...combine.colours.values()]));
         combine.selected.push(item);
@@ -480,6 +485,7 @@ document.addEventListener("DOMContentLoaded", function () {
         combine.colours.delete(item);
         combine.selected.splice(combine.selected.indexOf(item), 1);
         if (combine.focus === item) combine.focus = null;
+        for (const key in combine.picks) delete combine.picks[key][item.title];
     }
 
     function toggleCombined(item) {
@@ -552,7 +558,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const types = [...new Set(selected.flatMap((d) => d.annotations))].sort();
         const tags = types.map((t) => `<code data-ann="${escape(t)}">${escape(t)}</code>`).join("");
         const notes = mirdataCombine.namedNotes(selected.map((d) => ({ name: d.title, notes: d.facts.notes })));
-        const plots = mirdataCombine.combinedPlots(datasets);
+        const plots = mirdataCombine.combinedPlots(datasets, combine.picks);
         if (!plots.length) notes.push("Nothing to plot yet.");
         combinedPanel.innerHTML =
             `<h2>${selected.length} Datasets Combined</h2>` +
@@ -573,6 +579,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     combinedPanel.addEventListener("click", (e) => {
+        // a plot's button: that dataset adds this property to the plot
+        const pick = e.target.closest(".plot-pick");
+        if (pick) {
+            const { key, name, prop } = pick.dataset;
+            combine.picks[key] = { ...combine.picks[key], [name]: prop };
+            fillCombinedPanel(combine.selected);
+            return;
+        }
         const name = e.target.closest(".combine-name");
         if (name) {
             const item = combine.selected[Number(name.dataset.index)];
@@ -873,10 +887,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         tip.textContent = bar.dataset.tip;
         tip.style.display = "block";
-        // centred above the cursor, kept inside the window
+        // centred above the cursor, kept inside the window: below it when a tall
+        // one (a circle cell's labels) has no room above
         const x = Math.min(Math.max(e.clientX - tip.offsetWidth / 2, 4), window.innerWidth - tip.offsetWidth - 4);
+        const above = e.clientY - tip.offsetHeight - 10;
         tip.style.left = `${x}px`;
-        tip.style.top = `${e.clientY - tip.offsetHeight - 10}px`;
+        tip.style.top = `${above >= 4 ? above : e.clientY + 16}px`;
     }
     const hideTip = () => (tip.style.display = "none");
     [infoColumn, sidebar, listColumn].forEach((el) => {
@@ -913,8 +929,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const show = !type || fig.dataset.type === type;
             fig.style.display = show ? "" : "none";
             shown += show;
-        });
-        // a type without plots: a note instead
+        });        // a type without plots: a note instead
         let empty = panel.querySelector(".type-empty");
         if (type && !shown) {
             if (!empty) {

@@ -185,24 +185,49 @@
         return null;
     }
 
-    // What plots must share, past their property, type and field, to be pooled:
-    // counts any; a grid its unit; a histogram its unit, any time units matching (timeBins)
+    // What plots must share, past their type and field, to be pooled: counts
+    // any; a grid its unit; a histogram its unit, any time units matching (timeBins)
     const shapeKey = (data) =>
         Array.isArray(data) ? "counts" : isGrid(data) ? `grid ${data.unit}` : SECONDS[data.unit] ? "time" : data.unit;
-    const matchKey = (p) => [p.prop, p.type, p.field, shapeKey(p.data)].join("|");
-    const typeRank = (p) => (p.type ? `1${p.type}` : "0"); // the audio's first, then the types A–Z
+    const matchKey = (p) => [p.type, p.field, shapeKey(p.data)].join("|");
+    // the audio's first, then the types A–Z, then the circles (types A–Z), as gallery.py's ordered_plots
+    const typeRank = (p) => (p.circle ? `2${p.type}` : p.type ? `1${p.type}` : "0");
+
+    // The property a dataset adds to a plot: the one picked on it
+    // (picks[pickKey][name]), else its first, the one with the most annotations
+    // (gallery.py's ordered_plots lists it first)
+    const pickOf = (picks, pickKey, name, props) => {
+        const picked = picks[pickKey] && picks[pickKey][name];
+        return props.includes(picked) ? picked : props[0];
+    };
+
+    // Each dataset's properties in a group of plots (matchKey), in its plots'
+    // order, and the one it adds (pickOf): [{name, slot, props, pick}]
+    function choicesOf(members, picks, pickKey) {
+        const choices = [];
+        for (const m of members) {
+            const choice = choices.find((c) => c.name === m.name);
+            if (choice) choice.props.push(m.plot.prop);
+            else choices.push({ name: m.name, slot: m.slot, props: [m.plot.prop] });
+        }
+        return choices.map((c) => ({ ...c, pick: pickOf(picks, pickKey, c.name, c.props) }));
+    }
 
     // The plots of a combination, from each dataset's plots ({name, slot,
-    // plots}, in the order selected; slot its colour, nextColour). Plots of the same property, type, field
-    // and shape (matchKey) are pooled into one,
-    // its source starting with how many datasets it holds when not all do; a
-    // plot no other dataset has, or one that cannot be pooled exactly, is shown
-    // on its own, in its own unit, its source starting with its dataset. Every plot has parts: each dataset's own data on the plot's bars,
-    // with its colour, for charts.js to stack. In the single
-    // panel's order: the audio's first, then the types A–Z, pooled ones first in
-    // a type.
-    function combinedPlots(datasets) {
-        const groups = new Map();
+    // plots}, in the order selected; slot its colour, nextColour). Plots of the
+    // same type, field and shape (matchKey) are pooled into one, its source the
+    // type, after how many datasets it holds when not all do. A dataset with
+    // several properties there adds one (pickOf); a pooled plot then has pickKey
+    // and choices, those datasets' choicesOf, for its buttons (charts.js,
+    // picksHtml; gallery.js keeps the picks). A plot no other dataset has, or one that
+    // cannot be pooled exactly, is shown on its own, in its own unit, its source
+    // starting with its dataset, and so is every plot of a property not added.
+    // Every plot has parts: each dataset's own data on the plot's bars, with its
+    // colour, for charts.js to stack. In the single panel's order: the audio's
+    // first, then the types A–Z, then the circles; in a type the pooled ones,
+    // then the others added, then the ones not added.
+    function combinedPlots(datasets, picks = {}) {
+        const groups = new Map(); // matchKey → [{name, slot, plot}]
         for (const { name, slot, plots } of datasets) {
             for (const plot of plots) {
                 const key = matchKey(plot);
@@ -210,10 +235,16 @@
                 groups.get(key).push({ name, slot, plot });
             }
         }
+        const part = (m, data) => ({ name: m.name, slot: m.slot, data });
+        const alone = (m, order) => ({ ...m.plot, source: `${m.name} · ${m.plot.source}`, pooled: false, order, parts: [part(m, m.plot.data)] });
         const out = [];
-        for (const members of groups.values()) {
+        for (const [pickKey, all] of groups) {
+            const choices = choicesOf(all, picks, pickKey);
+            const members = all.filter((m) => choices.find((c) => c.name === m.name).pick === m.plot.prop);
+            out.push(...all.filter((m) => !members.includes(m)).map((m) => alone(m, 2)));
+            const withChoice = choices.filter((c) => c.props.length > 1);
+            const buttons = withChoice.length ? { pickKey, choices: withChoice } : {}; // a pooled plot's only
             const plots = members.map((m) => m.plot);
-            const part = (m, data) => ({ name: m.name, slot: m.slot, data });
             let merged = null; // {data, parts}
             if (members.length > 1) {
                 if (Array.isArray(plots[0].data)) {
@@ -232,17 +263,16 @@
             if (merged) {
                 const counted = plots.every((p) => p.counted === plots[0].counted) ? plots[0].counted : "values";
                 const coverage = members.length < datasets.length ? `${members.length} of ${datasets.length} · ` : "";
-                out.push({ ...plots[0], ...merged, counted, source: coverage + plots[0].source, pooled: true });
+                const source = coverage + (plots[0].type || plots[0].source); // the audio's has no type
+                out.push({ ...plots[0], ...merged, ...buttons, counted, source, pooled: true, order: 0 });
             } else {
-                for (const m of members) {
-                    out.push({ ...m.plot, source: `${m.name} · ${m.plot.source}`, pooled: false, parts: [part(m, m.plot.data)] });
-                }
+                out.push(...members.map((m) => alone(m, 1)));
             }
         }
         // Array sort is stable: the first-seen order stays inside a rank
         return out.sort((a, b) => {
             const [ra, rb] = [typeRank(a), typeRank(b)];
-            return ra < rb ? -1 : ra > rb ? 1 : b.pooled - a.pooled;
+            return ra < rb ? -1 : ra > rb ? 1 : a.order - b.order;
         });
     }
 

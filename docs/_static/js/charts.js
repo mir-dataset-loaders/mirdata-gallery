@@ -1,6 +1,7 @@
-// The Statistics charts: every plot as an SVG bar chart, drawn in the page.
+// The Statistics charts: every plot as an SVG bar chart, or a chord or key
+// field as a circle of fifths, drawn in the page.
 // gallery.py puts each panel's plots on its plot grid (data-plots), gallery.js
-// draws them with plotGridHtml. A plot is {title, source, counted, data}: data
+// draws them with plotGridHtml. A plot is {title, source, counted, data, circle}: data
 // is a grid {unit, width, counts as [start, count] pairs}, a counts field as
 // [label, count] pairs, or a histogram {unit, edges, counts} (the audio durations)
 // (and a combined one from combine.js has parts; it is
@@ -23,6 +24,37 @@
     const MAX_BINS = 25; // most bars a grid is drawn with (barWidth)
     const VALUE_UNITS = new Set(["midi"]); // grids whose bins are one value each (notes, rounded): a bar per bin
     const OTHER = "(other)";
+
+    // The chord and key circles (circleSvg): a slice per root, fifths clockwise
+    // from C at the top, and a ring per chord quality or key mode, inside out.
+    // Each quality or mode goes on its ring (of), any other on "other", and a
+    // label without one ("C", "C/3") on the first.
+    const FIFTHS = ["C", "G", "D", "A", "E", "B", "F#", "Db", "Ab", "Eb", "Bb", "F"];
+    const NATURALS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }; // each letter's pitch class
+    const CIRCLES = {
+        chords: {
+            rings: ["maj", "min", "7", "maj7", "min7", "dim", "sus", "other"],
+            of: {
+                maj: "maj", maj6: "maj", min: "min", min6: "min",
+                7: "7", 9: "7", 11: "7", 13: "7",
+                maj7: "maj7", maj9: "maj7", maj11: "maj7", maj13: "maj7",
+                min7: "min7", min9: "min7", min11: "min7", min13: "min7",
+                dim: "dim", dim7: "dim", hdim7: "dim", sus2: "sus", sus4: "sus",
+            },
+        },
+        keys: {
+            rings: ["major", "minor", "other"],
+            of: { major: "major", maj: "major", minor: "minor", min: "minor" },
+        },
+    };
+    // A circle's size, two bar charts wide as it spans two columns (custom.css);
+    // its middle, its outer radius (room left around it for the root names) and
+    // its empty middle's radius
+    const CIRCLE_WIDTH = 2 * WIDTH, CIRCLE_HEIGHT = 170;
+    const CX = CIRCLE_WIDTH / 2, CY = CIRCLE_HEIGHT / 2, OUTER = CIRCLE_HEIGHT / 2 - 17, HOLE = 16;
+    const RING_NAMES_AT = -15; // the angle the ring names are written along, over the cells: between F and C
+    const FAINTEST = 0.08; // the shade of a cell used least, so it never looks unused
+    const MAX_CELL_LABELS = 10; // labels a cell's hover text lists; the rest as "… and 4 more"
 
     const GROUPED = new Intl.NumberFormat("en-US"); // 1,000
 
@@ -146,8 +178,7 @@
                 bar = "";
                 for (const piece of pieces[i].filter((p) => p.count)) {
                     const height = (plotHeight * piece.count) / highest;
-                    const colour = piece.rest ? "rest" : piece.slot == null ? "other" : `c${piece.slot}`;
-                    bar += rect(`plot-piece combine-${colour}`, bottom, height);
+                    bar += rect(pieceClass(piece), bottom, height);
                     bottom -= height;
                 }
             }
@@ -159,6 +190,13 @@
         });
         out.push(`<line class="plot-axis" x1="${LEFT}" y1="${base}" x2="${WIDTH - RIGHT}" y2="${base}"/>`);
         return { out, slot, base };
+    }
+
+    // The class of a piece of a bar or a circle's cell (stacks): its dataset's
+    // colour, grey for the others, pale grey for the rest of a dataset in focus
+    function pieceClass(piece) {
+        const colour = piece.rest ? "rest" : piece.slot == null ? "other" : `c${piece.slot}`;
+        return `plot-piece combine-${colour}`;
     }
 
     // One histogram {unit, edges, counts} as an SVG bar chart.
@@ -373,8 +411,180 @@
         return bars.map(([label]) => (label === OTHER ? total - named : own.get(String(label)) || 0));
     }
 
-    // A plot's chart, by the shape of its data: counts pairs, a grid (it has a width), or a histogram
-    function chartSvg(data, counted, parts, focus) {
+    // A chord or key field ([label, count] pairs) as a circle of fifths
+    // (CIRCLES[circle]): a cell per root (slice) and quality or mode (ring),
+    // shaded by its count, linear, the most used cell darkest and a used one
+    // never fainter than FAINTEST. A cell no label falls in is left blank. The
+    // rings have equal areas (ringEdges), so only the shade says how much; each
+    // ring's name and share are written over it (RING_NAMES_AT). Labels
+    // without a root (N, X) are written in the middle.
+    //
+    // Hovering a cell shows its count and its labels, most common first.
+    // parts (combine.js, each a dataset's own pairs) split each cell's arc by
+    // dataset, or show one dataset in focus (its name), as the bars' stacks.
+    function circleSvg(pairs, circle, counted, parts = null, focus = null) {
+        const { rings } = CIRCLES[circle];
+        const edges = ringEdges(rings.length);
+        const { cells, rootless } = circleCells(pairs, circle);
+        const total = pairs.reduce((sum, [, count]) => sum + count, 0);
+        const highest = Math.max(...cells.map((cell) => cell.count), 1);
+        const counts = cells.map((cell) => cell.count);
+        const pieces = parts
+            ? stacks(parts, (data) => countsIn(cells, data, circle), counts, focus)
+            : counts.map((count) => [{ slot: 0, count }]); // one dataset: its colour, as a combination's first
+        // each dataset's own label counts, for the hover text of a combined circle
+        const own = parts && parts.length > 1 ? parts.map(({ name, data }) => ({ name, counts: new Map(data.map(([label, count]) => [String(label), count])) })) : null;
+
+        const out = [`<svg class="plot-svg plot-circle-svg" viewBox="0 0 ${CIRCLE_WIDTH} ${CIRCLE_HEIGHT}" role="img">`];
+        for (let slice = 0; slice < FIFTHS.length; slice++) {
+            for (let ring = 0; ring < rings.length; ring++) {
+                out.push(`<path class="circle-cell" d="${sectorPath(edges[ring], edges[ring + 1], slice * 30 - 15, slice * 30 + 15)}"/>`);
+            }
+            const [x, y] = pointAt(OUTER + 7, slice * 30);
+            out.push(
+                `<text class="plot-label circle-root" x="${x}" y="${y}" text-anchor="middle"` +
+                    ` dominant-baseline="middle">${FIFTHS[slice]}</text>`
+            );
+        }
+        cells.forEach((cell, i) => {
+            const shade = Math.max(FAINTEST, cell.count / highest).toFixed(3);
+            let start = cell.slice * 30 - 15;
+            const drawn = pieces[i]
+                .filter((piece) => piece.count)
+                .map((piece) => {
+                    const end = start + (30 * piece.count) / cell.count;
+                    const path = sectorPath(edges[cell.ring], edges[cell.ring + 1], start, end);
+                    start = end;
+                    return `<path class="${pieceClass(piece)}" fill-opacity="${shade}" d="${path}"/>`;
+                })
+                .join("");
+            const name = `${FIFTHS[cell.slice]} ${rings[cell.ring]} (${percent(cell.count, total)})`;
+            const tip = [barTip(name, cell.count, counted, pieces[i]), ...labelLines(cell.labels, own)].join("\n");
+            out.push(`<g><title>${escapeHtml(tip)}</title>${drawn}</g>`);
+        });
+        // each ring's name and share, over its cells along RING_NAMES_AT
+        rings.forEach((ring, i) => {
+            const share = percent(cells.filter((cell) => cell.ring === i).reduce((sum, cell) => sum + cell.count, 0), total);
+            const [x, y] = pointAt((edges[i] + edges[i + 1]) / 2, RING_NAMES_AT);
+            out.push(
+                `<text class="plot-label circle-ring" x="${x}" y="${y}" text-anchor="middle"` +
+                    ` dominant-baseline="middle">${escapeHtml(ring)} ${share}</text>`
+            );
+        });
+        // the labels without a root: two written in the middle ("+3 more"), all in its hover text
+        if (rootless.length) {
+            const rootlessTotal = rootless.reduce((sum, [, count]) => sum + count, 0);
+            const tip = [`No root: ${GROUPED.format(rootlessTotal)} ${counted}`, ...labelLines(rootless, own)].join("\n");
+            const lines = rootless.slice(0, 2).map(([label, count]) => `${label} ${percent(count, total)}`);
+            if (rootless.length > 2) lines.push(`+${rootless.length - 2} more`);
+            const texts = lines.map((line, i) => {
+                const y = (CY + (i - (lines.length - 1) / 2) * 9).toFixed(1);
+                return `<text class="plot-label circle-middle" x="${CX}" y="${y}" text-anchor="middle" dominant-baseline="middle">${escapeHtml(line)}</text>`;
+            });
+            out.push(`<g><title>${escapeHtml(tip)}</title><circle class="plot-hit" cx="${CX}" cy="${CY}" r="${HOLE}"/>${texts.join("")}</g>`);
+        }
+        out.push("</svg>");
+        return out.join("");
+    }
+
+    // A label's root and quality (a key's mode): "A:min7(9)/5" → ["A", "min7"],
+    // "C/3" → ["C", null] (no quality written), "C:(1,5)" → ["C", ""] (only notes)
+    function rootAndQuality(label) {
+        const [root, quality] = String(label).split("/")[0].split(":");
+        return [root, quality === undefined ? null : quality.split("(")[0]];
+    }
+
+    // A root's pitch class, 0 (C) to 11: its letter moved a semitone by each # or
+    // b, "Cb" → 11; null when it is not a note (N, X)
+    function pitchClass(root) {
+        const match = /^([A-G])([#b]*)$/.exec(root);
+        if (!match) return null;
+        const moves = Array.from(match[2]).reduce((sum, sign) => sum + (sign === "#" ? 1 : -1), 0);
+        return (((NATURALS[match[1]] + moves) % 12) + 12) % 12;
+    }
+
+    // The [slice, ring] a label falls in on a circle (CIRCLES[circle]), or null when it has no root
+    function cellOf(label, circle) {
+        const [root, quality] = rootAndQuality(label);
+        const pc = pitchClass(root);
+        if (pc === null) return null;
+        const { rings, of } = CIRCLES[circle];
+        const slice = FIFTHS.findIndex((name) => pitchClass(name) === pc);
+        return [slice, quality === null ? 0 : rings.indexOf(of[quality] || "other")];
+    }
+
+    // A circle's used cells, each {slice, ring, count, labels} (labels as
+    // [label, count] pairs, most common first), and the labels with no root
+    function circleCells(pairs, circle) {
+        const cells = new Map(), rootless = [];
+        for (const [label, count] of pairs) {
+            const cell = cellOf(label, circle);
+            if (!cell) {
+                rootless.push([String(label), count]);
+                continue;
+            }
+            const key = cell.join();
+            if (!cells.has(key)) cells.set(key, { slice: cell[0], ring: cell[1], count: 0, labels: [] });
+            cells.get(key).count += count;
+            cells.get(key).labels.push([String(label), count]);
+        }
+        const mostFirst = (a, b) => b[1] - a[1];
+        for (const cell of cells.values()) cell.labels.sort(mostFirst);
+        return { cells: [...cells.values()], rootless: rootless.sort(mostFirst) };
+    }
+
+    // One dataset's count in each cell (circleCells' cells), from its own pairs
+    function countsIn(cells, pairs, circle) {
+        const own = new Map();
+        for (const [label, count] of pairs) {
+            const cell = cellOf(label, circle);
+            if (cell) own.set(cell.join(), (own.get(cell.join()) || 0) + count);
+        }
+        return cells.map((cell) => own.get([cell.slice, cell.ring].join()) || 0);
+    }
+
+    // The radii of a circle's ring edges, inside out, from HOLE to OUTER: rings of equal area
+    function ringEdges(n) {
+        return Array.from({ length: n + 1 }, (_, i) => Math.sqrt(HOLE ** 2 + (i * (OUTER ** 2 - HOLE ** 2)) / n));
+    }
+
+    // The point at radius r from the circle's middle, at angle degrees clockwise from the top
+    function pointAt(r, angle) {
+        const a = (angle * Math.PI) / 180;
+        return [(CX + r * Math.sin(a)).toFixed(2), (CY - r * Math.cos(a)).toFixed(2)];
+    }
+
+    // The path of a ring's piece: between radii r0 and r1, from angle a0 to a1 (clockwise from the top)
+    function sectorPath(r0, r1, a0, a1) {
+        const [p, q, s, t] = [pointAt(r1, a0), pointAt(r1, a1), pointAt(r0, a1), pointAt(r0, a0)];
+        return `M${p} A${r1} ${r1} 0 0 1 ${q} L${s} A${r0} ${r0} 0 0 0 ${t}Z`;
+    }
+
+    // A count's share of total, as a circle writes it: 49%, 1.5%, 0.4%, <0.1%
+    function percent(count, total) {
+        const share = (100 * count) / total;
+        if (!count) return "0%";
+        return share >= 10 ? `${Math.round(share)}%` : share >= 0.1 ? `${share.toFixed(1)}%` : "<0.1%";
+    }
+
+    // Labels for a hover text, one a line, "G:7: 80", at most MAX_CELL_LABELS,
+    // then "… and 4 more"; with each dataset's own counts (own, a combined
+    // circle's) that have the label, "G:7: 80 (rwc_popular: 50, guitarset: 30)"
+    function labelLines(labels, own = null) {
+        const lines = labels.slice(0, MAX_CELL_LABELS).map(([label, count]) => {
+            const line = `${label}: ${GROUPED.format(count)}`;
+            if (!own) return line;
+            const each = own.filter((d) => d.counts.get(label)).map((d) => `${d.name}: ${GROUPED.format(d.counts.get(label))}`);
+            return `${line} (${each.join(", ")})`;
+        });
+        const more = labels.length - MAX_CELL_LABELS;
+        return more > 0 ? [...lines, `… and ${more} more`] : lines;
+    }
+
+    // A plot's chart: a circle when gallery.py names its rings (circle), else
+    // by the shape of its data: counts pairs, a grid (it has a width), or a histogram
+    function chartSvg(data, counted, parts, focus, circle) {
+        if (circle) return circleSvg(data, circle, counted, parts, focus);
         if (Array.isArray(data)) return countsSvg(data, counted, parts, focus);
         return "width" in data ? gridSvg(data, counted, parts, focus) : histogramSvg(data, counted, parts, focus);
     }
@@ -387,17 +597,33 @@
             .map(
                 (p) =>
                     // data-type: the annotation type ("" for the audio's), for gallery.js's type focus
-                    `<figure class="plot" data-type="${escapeHtml(p.type || "")}">` +
+                    `<figure class="plot${p.circle ? " plot-circle" : ""}" data-type="${escapeHtml(p.type || "")}">` +
                     `<figcaption><span class="plot-title">${escapeHtml(p.title)}</span>` +
-                    `<span class="plot-source">${escapeHtml(p.source)}</span></figcaption>` +
-                    `${chartSvg(p.data, p.counted, p.parts, focus)}</figure>`
+                    `<span class="plot-source">${escapeHtml(p.source)}</span>${picksHtml(p)}</figcaption>` +
+                    `${chartSvg(p.data, p.counted, p.parts, focus, p.circle)}</figure>`
             )
             .join("\n");
     }
 
+    // A combined plot's buttons (combine.js, choices): for each dataset with
+    // several properties it could add to the plot, one per property, the one it
+    // adds pressed; a click swaps it in (gallery.js)
+    function picksHtml(p) {
+        if (!p.choices) return "";
+        const sets = p.choices.map(({ name, props, pick }) => {
+            const buttons = props.map(
+                (prop) =>
+                    `<button class="plot-pick" data-key="${escapeHtml(p.pickKey)}" data-name="${escapeHtml(name)}"` +
+                    ` data-prop="${escapeHtml(prop)}" aria-pressed="${prop === pick}">${escapeHtml(prop)}</button>`
+            );
+            return `<span class="plot-pick-set">${escapeHtml(name)}: ${buttons.join("")}</span>`;
+        });
+        return `<span class="plot-picks">${sets.join("")}</span>`;
+    }
+
     const charts = {
         WIDTH, LEFT, RIGHT, TOP, MAX_LABELS, MAX_LABEL_CHARS, MIN_SLOTS,
-        escapeHtml, number, yTicks, shortNumber, histogramSvg, gridSvg, countBars, countsSvg, chartSvg, plotGridHtml,
+        escapeHtml, number, yTicks, shortNumber, histogramSvg, gridSvg, countBars, countsSvg, circleSvg, cellOf, chartSvg, plotGridHtml,
     };
     if (typeof module !== "undefined" && module.exports) {
         module.exports = charts; // Node, for the tests

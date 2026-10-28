@@ -1147,10 +1147,93 @@ body:has(#mirdata-gallery) footer p {
     filter: brightness(0.85);
 }
 
-/* Thin bars touch (charts.js, barsSvg: a count per MIDI value): no white gap
+/* Thin bars touch (charts.js, barsSvg: a grid's many bins): no white gap
    between their thin pieces either */
 .plot-gapless .plot-piece {
     stroke: none;
+}
+
+/* A chord or key circle (charts.js, circleSvg) spans two columns; the circles
+   come after the bar plots (gallery.py, combine.js), the first on a new row */
+.plot-grid .plot-circle {
+    grid-column: span 2;
+}
+
+.plot-grid .plot:not(.plot-circle) + .plot-circle {
+    grid-column: 1 / span 2;
+}
+
+/* Every cell's outline, so the unused ones show as blank cells */
+.circle-cell {
+    fill: none;
+    stroke: #e2e8f0;
+    stroke-width: 0.5;
+}
+
+/* A hovered cell is outlined: its shade may be too faint to darken */
+.plot-circle-svg g:hover .plot-piece {
+    stroke: #1e293b;
+    stroke-width: 0.8;
+}
+
+.plot-circle-svg .circle-root {
+    font-weight: 600;
+    fill: #334155;
+}
+
+/* A ring's name over its cells, a white edge keeping it readable on any
+   shade; the cells under it still take the hover */
+.plot-circle-svg .circle-ring {
+    font-size: 5px;
+    fill: #1e293b;
+    stroke: #ffffff;
+    stroke-width: 2px;
+    stroke-linejoin: round;
+    paint-order: stroke;
+    pointer-events: none;
+}
+
+/* N, X in the circle's empty middle */
+.plot-circle-svg .circle-middle {
+    font-size: 7px;
+}
+
+/* Combine mode: a plot's buttons under its source (charts.js, picksHtml), one
+   per property a dataset could add to it, the one it adds pressed */
+#content .plot figcaption .plot-picks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 8px;
+    margin-top: 3px;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.plot-pick-set {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px;
+}
+
+.plot-pick {
+    padding: 0 7px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    background: #ffffff;
+    font: inherit;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.plot-pick:hover {
+    border-color: #a054d8;
+}
+
+.plot-pick[aria-pressed="true"] {
+    background: #faf5ff;
+    border-color: #a054d8;
+    color: #7928ca;
 }
 
 /* A y tick's line across the chart, behind the bars (charts.js, barsSvg) */
@@ -1175,7 +1258,8 @@ body:has(#mirdata-gallery) footer p {
     font-size: 7px;
 }
 
-/* A bar's hover text, shown at once above the cursor (gallery.js) */
+/* A bar's hover text, shown at once above the cursor (gallery.js); a circle
+   cell's has one label a line */
 .plot-tip {
     display: none;
     position: fixed;
@@ -1186,7 +1270,7 @@ body:has(#mirdata-gallery) footer p {
     background: #1e293b;
     color: #ffffff;
     font-size: 0.8rem;
-    white-space: nowrap;
+    white-space: pre;
 }
 
 /* "Try it with mirdata": a dark code block (this one only), copy icon always
