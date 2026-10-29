@@ -1345,7 +1345,7 @@ body:has(.stats-dialog[open]) {
     font-size: 7px;
 }
 
-/* A bar's hover text, shown at once above the cursor (gallery.js); a circle
+/* A bar's hover text, shown at once right of the cursor (gallery.js); a circle
    cell's has one label a line */
 .plot-tip {
     display: none;

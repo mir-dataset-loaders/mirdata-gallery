@@ -868,7 +868,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (share !== null) showPage();
 
     // 6. Plot bars, the filters' AND / OR buttons and the list's type dots: show
-    // their hover text at once, in a box above the cursor. The browser's own <title> tooltip waits
+    // their hover text at once, in a box right of the cursor. The browser's own <title> tooltip waits
     // about a second, so the text moves from each bar's <title> to data-tip.
     const tip = document.createElement("div");
     tip.className = "plot-tip";
@@ -892,12 +892,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         tip.textContent = bar.dataset.tip;
         tip.style.display = "block";
-        // centred above the cursor, kept inside the window: below it when a tall
-        // one (a circle cell's labels) has no room above
-        const x = Math.min(Math.max(e.clientX - tip.offsetWidth / 2, 4), window.innerWidth - tip.offsetWidth - 4);
-        const above = e.clientY - tip.offsetHeight - 10;
+        // right of the cursor, its middle level with it, kept inside the window:
+        // left of the cursor when there is no room on the right
+        const right = e.clientX + 14;
+        const x = right + tip.offsetWidth <= window.innerWidth - 4 ? right : Math.max(e.clientX - 14 - tip.offsetWidth, 4);
+        const y = Math.min(Math.max(e.clientY - tip.offsetHeight / 2, 4), window.innerHeight - tip.offsetHeight - 4);
         tip.style.left = `${x}px`;
-        tip.style.top = `${above >= 4 ? above : e.clientY + 16}px`;
+        tip.style.top = `${y}px`;
     }
     const hideTip = () => (tip.style.display = "none");
     [infoColumn, sidebar, listColumn].forEach((el) => {
