@@ -1198,22 +1198,108 @@ body:has(#mirdata-gallery) footer p {
     font-size: 7px;
 }
 
-/* Combine mode: a plot's buttons under its source (charts.js, picksHtml), one
-   per property a dataset could add to it, the one it adds pressed */
-#content .plot figcaption .plot-picks {
+/* Combine mode: a pooled plot's sources (charts.js, sourcesHtml; gallery.js,
+   showSources): a button right after its title, and the bubble it
+   opens under the title, over the plots, listing each dataset's property: a
+   tag, or a button per property when it has several, the one it adds pressed */
+#content .plot figcaption {
+    position: relative;
+}
+
+.plot-title-line {
     display: flex;
-    flex-wrap: wrap;
-    gap: 3px 8px;
-    margin-top: 3px;
+    align-items: center;
+    gap: 6px;
+}
+
+.plot-title-line .plot-title {
+    min-width: 0;
+}
+
+.plot-sources-btn {
+    flex-shrink: 0;
+    padding: 0 7px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    background: #ffffff;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: #7928ca;
+    cursor: pointer;
+}
+
+.plot-sources-btn:hover,
+.plot-sources-btn[aria-expanded="true"] {
+    background: #faf5ff;
+    border-color: #a054d8;
+}
+
+.plot-sources {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 20;
+    width: max-content;
+    max-width: 360px;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
     font-size: 0.75rem;
     color: #64748b;
 }
 
-.plot-pick-set {
-    display: inline-flex;
+/* one that would run past the plots' right edge opens from its plot's right edge */
+.plot-sources.leftwards {
+    left: auto;
+    right: 0;
+}
+
+.plot-sources-title {
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* the datasets' names in one column, their properties in the next */
+.plot-sources-grid {
+    display: grid;
+    grid-template-columns: max-content auto;
+    align-items: baseline; /* a name level with the first line of its buttons */
+    row-gap: 5px;
+}
+
+.plot-sources-row {
+    display: contents;
+}
+
+/* a faint line across both columns between datasets, so wrapped buttons stay with theirs */
+.plot-sources-rule {
+    grid-column: 1 / -1;
+    border-top: 1px solid #f1f5f9;
+}
+
+.plot-sources-name {
+    padding-right: 12px;
+    color: #334155;
+}
+
+.plot-sources-name .combine-dot {
+    vertical-align: -1px;
+}
+
+.plot-sources-props {
+    display: flex;
     flex-wrap: wrap;
-    align-items: center;
     gap: 3px;
+}
+
+/* lined up with the buttons' text */
+.plot-source-tag {
+    padding: 0 7px;
+    border: 1px solid transparent;
+    color: #334155;
 }
 
 .plot-pick {

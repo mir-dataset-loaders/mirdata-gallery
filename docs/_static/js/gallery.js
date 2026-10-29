@@ -426,10 +426,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // colours: each selected dataset's colour, given when it joins (combine.js, nextColour)
     // focus: the dataset whose part of each plot is shown (its chip's name clicked), or null: stacked
     // typeFocus: the annotation type whose plots alone are shown (7. below), or null: all
-    // picks: the property a dataset adds to a combined plot, picked with the plot's buttons
-    // (charts.js, picksHtml), {plot's pickKey: {dataset title: property}}; one not picked adds
+    // picks: the property a dataset adds to a combined plot, picked in the plot's sources bubble
+    // (charts.js, sourcesHtml), {plot's pickKey: {dataset title: property}}; one not picked adds
     // its first (combine.js)
-    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null, typeFocus: null, picks: {} };
+    // openSources: the pickKey of the plot whose sources bubble is open (showSources), or null
+    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null, typeFocus: null, picks: {}, openSources: null };
     const combineBar = document.createElement("div");
     combineBar.className = "combine-bar";
     const combineBtn = document.createElement("button");
@@ -457,6 +458,7 @@ document.addEventListener("DOMContentLoaded", function () {
         combine.focus = null;
         combine.typeFocus = null;
         combine.picks = {};
+        combine.openSources = null;
         if (combine.on) {
             // the dataset on show is the first one of the combination, purple as in its panel
             if (activeItem && activeItem.card.style.display !== "none") join(activeItem);
@@ -578,12 +580,54 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!types.includes(combine.typeFocus)) combine.typeFocus = null; // its datasets all removed
         focusType(combinedPanel, combine.typeFocus);
         addStatsButton(combinedPanel);
+        showSources(combinedPanel);
         refreshStats();
     }
 
+    // Opens the sources bubble of the plot combine.openSources names in root
+    // (the combined panel, or the pop-up's copy), the others closed. One that
+    // would run past its plot grid's right edge opens leftwards instead.
+    function showSources(root) {
+        root.querySelectorAll(".plot[data-pick-key]").forEach((fig) => {
+            const open = fig.dataset.pickKey === combine.openSources;
+            const bubble = fig.querySelector(".plot-sources");
+            bubble.hidden = !open;
+            fig.querySelector(".plot-sources-btn").setAttribute("aria-expanded", String(open));
+            if (!open) return;
+            bubble.classList.remove("leftwards");
+            if (bubble.getBoundingClientRect().right > fig.closest(".plot-grid").getBoundingClientRect().right) {
+                bubble.classList.add("leftwards");
+            }
+        });
+    }
+
+    // The open sources bubble closes on a click anywhere outside it, or Esc
+    function closeSources() {
+        combine.openSources = null;
+        showSources(combinedPanel);
+        refreshStats();
+    }
+    document.addEventListener("pointerdown", (e) => {
+        if (combine.openSources !== null && !e.target.closest(".plot-sources, .plot-sources-btn")) closeSources();
+    });
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape" || combine.openSources === null) return;
+        e.preventDefault(); // just the bubble, not the pop-up around it too
+        closeSources();
+    });
+
     // A click in the combination's Statistics, on its panel or in the pop-up (9. below)
     function onCombinedClick(e) {
-        // a plot's button: that dataset adds this property to the plot
+        // a plot's sources button: its bubble opens, or closes
+        const sources = e.target.closest(".plot-sources-btn");
+        if (sources) {
+            const key = sources.closest(".plot").dataset.pickKey;
+            combine.openSources = combine.openSources === key ? null : key;
+            showSources(combinedPanel);
+            refreshStats();
+            return;
+        }
+        // a property's button in the bubble: that dataset adds it to the plot
         const pick = e.target.closest(".plot-pick");
         if (pick) {
             const { key, name, prop } = pick.dataset;
@@ -1019,6 +1063,7 @@ document.addEventListener("DOMContentLoaded", function () {
         copy.querySelector(".stats-expand")?.remove();
         statsDialog.querySelector(".stats-dialog-title").textContent = combined ? `${combine.selected.length} Datasets Combined` : activeItem.title;
         statsDialog.querySelector(".stats-dialog-body").replaceChildren(copy);
+        showSources(copy); // placed again: the pop-up is wider
     }
 
     infoColumn.addEventListener("click", (e) => {

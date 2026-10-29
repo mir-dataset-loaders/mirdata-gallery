@@ -217,9 +217,9 @@
     // plots}, in the order selected; slot its colour, nextColour). Plots of the
     // same type, field and shape (matchKey) are pooled into one, its source the
     // type, after how many datasets it holds when not all do. A dataset with
-    // several properties there adds one (pickOf); a pooled plot then has pickKey
-    // and choices, those datasets' choicesOf, for its buttons (charts.js,
-    // picksHtml; gallery.js keeps the picks). A plot no other dataset has, or one that
+    // several properties there adds one (pickOf). A pooled plot has pickKey and
+    // sources, every dataset's choicesOf, for its sources bubble (charts.js,
+    // sourcesHtml; gallery.js keeps the picks). A plot no other dataset has, or one that
     // cannot be pooled exactly, is shown on its own, in its own unit, its source
     // starting with its dataset, and so is every plot of a property not added.
     // Every plot has parts: each dataset's own data on the plot's bars, with its
@@ -242,8 +242,6 @@
             const choices = choicesOf(all, picks, pickKey);
             const members = all.filter((m) => choices.find((c) => c.name === m.name).pick === m.plot.prop);
             out.push(...all.filter((m) => !members.includes(m)).map((m) => alone(m, 2)));
-            const withChoice = choices.filter((c) => c.props.length > 1);
-            const buttons = withChoice.length ? { pickKey, choices: withChoice } : {}; // a pooled plot's only
             const plots = members.map((m) => m.plot);
             let merged = null; // {data, parts}
             if (members.length > 1) {
@@ -264,7 +262,7 @@
                 const counted = plots.every((p) => p.counted === plots[0].counted) ? plots[0].counted : "values";
                 const coverage = members.length < datasets.length ? `${members.length} of ${datasets.length} · ` : "";
                 const source = coverage + (plots[0].type || plots[0].source); // the audio's has no type
-                out.push({ ...plots[0], ...merged, ...buttons, counted, source, pooled: true, order: 0 });
+                out.push({ ...plots[0], ...merged, pickKey, sources: choices, counted, source, pooled: true, order: 0 });
             } else {
                 out.push(...members.map((m) => alone(m, 1)));
             }

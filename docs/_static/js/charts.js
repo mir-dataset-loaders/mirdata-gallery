@@ -603,36 +603,51 @@
         return "width" in data ? gridSvg(data, counted, parts, focus) : histogramSvg(data, counted, parts, focus);
     }
 
-    // The figures of a plot grid: each plot's title, its source and its chart,
-    // with focus (a dataset's name, Combine mode) showing that dataset's part
-    // of every combined plot.
+    // The figures of a plot grid: each plot's title (with a pooled plot's
+    // sources button, sourcesHtml), its source (one line, the whole of it on
+    // hover) and its chart, with focus (a dataset's name, Combine mode) showing
+    // that dataset's part of every combined plot.
     function plotGridHtml(plots, focus = null) {
         return plots
             .map(
                 (p) =>
                     // data-type: the annotation type ("" for the audio's), for gallery.js's type focus
-                    `<figure class="plot${p.circle ? " plot-circle" : ""}" data-type="${escapeHtml(p.type || "")}">` +
-                    `<figcaption><span class="plot-title">${escapeHtml(p.title)}</span>` +
-                    `<span class="plot-source">${escapeHtml(p.source)}</span>${picksHtml(p)}</figcaption>` +
+                    `<figure class="plot${p.circle ? " plot-circle" : ""}" data-type="${escapeHtml(p.type || "")}"` +
+                    `${p.sources ? ` data-pick-key="${escapeHtml(p.pickKey)}"` : ""}>` +
+                    `<figcaption>${sourcesHtml(p, `<span class="plot-title">${escapeHtml(p.title)}</span>`)}` +
+                    `<span class="plot-source" title="${escapeHtml(p.source)}">${escapeHtml(p.source)}</span></figcaption>` +
                     `${chartSvg(p.data, p.counted, p.parts, focus, p.circle)}</figure>`
             )
             .join("\n");
     }
 
-    // A combined plot's buttons (combine.js, choices): for each dataset with
-    // several properties it could add to the plot, one per property, the one it
-    // adds pressed; a click swaps it in (gallery.js)
-    function picksHtml(p) {
-        if (!p.choices) return "";
-        const sets = p.choices.map(({ name, props, pick }) => {
-            const buttons = props.map(
-                (prop) =>
-                    `<button class="plot-pick" data-key="${escapeHtml(p.pickKey)}" data-name="${escapeHtml(name)}"` +
-                    ` data-prop="${escapeHtml(prop)}" aria-pressed="${prop === pick}">${escapeHtml(prop)}</button>`
-            );
-            return `<span class="plot-pick-set">${escapeHtml(name)}: ${buttons.join("")}</span>`;
+    // A plot's title, and for a pooled one (combine.js, sources) a button at
+    // its right opening a bubble under it (gallery.js, showSources):
+    // which property each of its datasets adds, as a tag, or a button per
+    // property when it has several, the one it adds pressed (a click swaps it
+    // in, gallery.js). "⇄ sources" when there is a choice, "sources" when not.
+    function sourcesHtml(p, title) {
+        if (!p.sources) return title;
+        const choice = p.sources.some(({ props }) => props.length > 1);
+        const rows = p.sources.map(({ name, slot, props, pick }) => {
+            const dot = `<span class="combine-dot combine-${slot == null ? "other" : `c${slot}`}"></span>`;
+            const what =
+                props.length === 1
+                    ? `<span class="plot-source-tag">${escapeHtml(props[0])}</span>`
+                    : props
+                          .map(
+                              (prop) =>
+                                  `<button class="plot-pick" data-key="${escapeHtml(p.pickKey)}" data-name="${escapeHtml(name)}"` +
+                                  ` data-prop="${escapeHtml(prop)}" aria-pressed="${prop === pick}">${escapeHtml(prop)}</button>`
+                          )
+                          .join("");
+            return `<div class="plot-sources-row"><span class="plot-sources-name">${dot}${escapeHtml(name)}</span><span class="plot-sources-props">${what}</span></div>`;
         });
-        return `<span class="plot-picks">${sets.join("")}</span>`;
+        return (
+            `<span class="plot-title-line">${title}<button class="plot-sources-btn" aria-expanded="false">${choice ? "⇄ " : ""}sources</button></span>` +
+            `<div class="plot-sources" hidden><div class="plot-sources-title">Which property each dataset adds</div>` +
+            `<div class="plot-sources-grid">${rows.join('<div class="plot-sources-rule"></div>')}</div></div>`
+        );
     }
 
     const charts = {
