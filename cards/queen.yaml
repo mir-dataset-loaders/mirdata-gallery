@@ -1,0 +1,106 @@
+name: queen
+summary: Queen Dataset includes chord, key, and segmentation annotations for 51 songs
+  from Queen's Greatest Hits albums. The primary MIR task involves analyzing these
+  annotations for chord and key identification.
+annotations:
+- ChordData
+- KeyData
+- SectionData
+stats:
+  computed:
+    mode: local
+    index: 1422a1448f9b4b856099d7d583765b71
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 51
+    n_audio_files: 51
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 51
+    n_tracks_loaded: 51
+    tracks_with: {ChordData: 20, KeyData: 20, SectionData: 51}
+    annotations:
+      chords:
+        type: ChordData
+        n_tracks: 20
+        n_annotations: 20
+        labels: {A: 190, 'D:maj': 103, G: 101, D: 96, 'C:maj': 89, C: 81, 'G:maj': 73,
+          N: 71, 'E:min': 71, 'A:min': 70, 'Ab:maj': 61, D/5: 56, 'Bb:maj': 52, 'G:min': 51,
+          'C:min': 47, 'F:min': 46, 'Eb:maj': 40, Bb: 39, 'A:maj': 38, 'F:maj': 37,
+          G/3: 36, 'B:min': 36, E: 32, Eb: 31, 'Bb:7': 30, Bb/3: 27, B: 26, 'G:min7': 26,
+          'Eb:7': 26, A/3: 23, 'Bb:min': 22, Ab: 22, 'D:min': 22, D/3: 22, F: 21,
+          E/4: 21, 'Db:maj': 19, 'A:min7': 19, 'C:7': 14, 'G:7': 14, G/5: 14, 'Ab:min': 13,
+          'F:7': 12, 'D:min7/b7': 12, B/3: 10, F/3: 10, Eb/3: 10, 'B:maj': 10, 'F:min7': 9,
+          'A:(1,5)': 9, E/3: 9, 'D:7': 9, 'E:maj': 8, Ab/5: 8, 'Gb:7': 8, Ab/7: 8,
+          'G:min9': 8, Bb/2: 8, C/5: 7, 'G:(1,5)': 7, 'D:min7': 7, 'E:7': 7, C/b7: 7,
+          'E:maj(4)': 7, 'F#:(1,5)': 6, 'E:min7': 6, 'G:(1)': 5, 'A:(1)': 5, 'Eb:7/3': 5,
+          'Db:maj7': 5, 'A:7': 5, 'F#:min7': 5, 'B:9': 5, 'D:maj7': 5, 'D#:aug': 5,
+          'C:maj6': 5, 'C:min7': 4, F/5: 4, Eb/5: 4, 'F:min/7': 4, 'F:min/b7': 4,
+          'F:min/6': 4, 'Eb:dim': 4, 'F#:dim': 4, 'B:(1,5)': 4, 'G:dim': 4, 'F:min(6)': 4,
+          'B:min7': 4, 'G:min/b3': 4, 'Bb:7/3': 4, 'C:sus4(b7)': 4, 'C#:min': 4, 'E:min7/b7': 4,
+          'E:min6/6': 4, 'F:min/b3': 3, 'A:dim': 3, 'Bb:min/b3': 3, 'A:sus4': 3, 'C:(1)': 3,
+          D/b7: 3, Cb: 3, Bb/5: 3, 'E:min9': 3, 'A:7/3': 3, 'Bb:dim': 3, 'E:dim': 3,
+          'Ab:maj6': 3, E/5: 3, F#/4: 3, 'E:(1,5)': 3, 'D:sus4': 3, 'D:maj(9)': 3,
+          'C:maj7': 3, 'B:7': 3, 'Bb:maj6': 2, 'B:aug': 2, Db/5: 2, 'Gb:maj': 2, 'G:maj/5': 2,
+          'G:sus4': 2, 'D:aug': 2, C/3: 2, 'F#:7': 2, 'C:7/b7': 2, Db/2: 2, 'Ab:7': 2,
+          'C:min/5': 2, 'Bb:maj7': 2, C/7: 2, 'F#:min': 2, 'E:min/5': 2, 'Bb:maj(9)': 2,
+          'E:9(11)': 2, 'C:maj7/3': 2, 'A:min(9)': 2, 'F#:hdim7': 2, 'G:maj7/3': 2,
+          'F:(1,5,9)': 2, 'C#:dim': 1, 'F:min/3': 1, 'G:min/5': 1, Db/7: 1, 'B:(5)': 1,
+          F#: 1, 'G:7/3': 1, 'Bb:9(11)': 1, 'C:7(b9)': 1, 'Ab:dim': 1, 'E:(1,b7)': 1,
+          'Bb:aug': 1, 'F:(1)': 1, 'D:(1)': 1, 'Ab:7/5': 1, 'F#:maj': 1, 'G:maj6': 1,
+          G/4: 1, 'C:maj/3': 1, 'F:7/b7': 1, 'Bb:sus4': 1, D/7: 1, 'G:maj/3': 1, 'Db:maj9': 1,
+          'Eb:maj(13)': 1, Ab/3: 1, 'Ab:(1)': 1, 'Db:7': 1, 'Gb:min': 1, Eb/4: 1,
+          'Bb:min7': 1, 'B:(1)': 1, 'C:7/3': 1, 'D:maj6': 1, A/2: 1, 'E:sus4': 1,
+          'A:7/b7': 1, 'G:maj9': 1, 'C#:min7': 1, 'F#:sus4(b7)': 1, 'D:(4,b7,9)': 1,
+          'D:9(11)': 1, 'D:sus4(2)': 1, 'G:min7/5': 1, 'A:min7/5': 1, 'A:9/5': 1,
+          'E:7/3': 1, 'A:maj(9)': 1, 'E:7/b7': 1, D/4: 1, 'E:min/7': 1}
+        qualities: {maj: 1556, min: 420, '7': 155, min7: 100, N: 71, dim: 23, maj7: 19,
+          sus4: 16, maj6: 12, min9: 11, aug: 10, '9': 10, min6: 4, maj9: 2, hdim7: 2}
+      key:
+        type: KeyData
+        n_tracks: 20
+        n_annotations: 20
+        keys: {D: 11, G: 9, Eb: 7, F: 7, 'E:minor': 6, Ab: 6, 'B:minor': 5, A: 4,
+          C: 4, Bb: 3, 'Bb:minor': 2, N: 2, 'C:minor': 2, Db: 1, Cb: 1, B: 1, E: 1}
+        modes: {(none): 57, minor: 15}
+      sections:
+        type: SectionData
+        n_tracks: 51
+        n_annotations: 51
+        labels: {refrain: 124, verse: 103, silence: 100, intro: 48, bridge: 46, outro: 39,
+          break: 35, instrumental_solo: 21, versea: 13, section_z: 8, verseb: 8, section_y: 7,
+          refrain_(with_complete_ending): 6, verse_(instrumental_solo): 4, ad_lib: 3,
+          half_refrain: 3, half_bridge: 2, new_point: 2, refrain_(instrumental_solo): 2,
+          bridgea: 2, bridgeb: 2, refrain_(extended): 2, refrain_(with_instrumental_solo): 2,
+          breaka: 2, breakb: 2, instrumental: 2, half_intro: 1, verse_(instrumental): 1,
+          verse_(half_instrumental_solo): 1, verse_(half_instrumental): 1, half_verse: 1,
+          outro_(instrumental_solo): 1, bridge_(half_instrumental_solo): 1, verse_(guitar_solo): 1,
+          verse_(synths_solo): 1, section_x: 1, refrain_: 1, verse_(with_instrumental_solo): 1,
+          versec: 1, versed: 1}
+        section_interval_seconds:
+          unit: s
+          width: 1
+          counts: {0: 51, 1: 19, 2: 20, 3: 15, 4: 3, 5: 3, 6: 5, 7: 7, 8: 13, 9: 2,
+            10: 9, 11: 14, 12: 10, 13: 13, 14: 13, 15: 30, 16: 12, 17: 24, 18: 26,
+            19: 19, 20: 24, 21: 13, 22: 14, 23: 22, 24: 24, 25: 14, 26: 24, 27: 16,
+            28: 7, 29: 16, 30: 6, 31: 13, 32: 9, 33: 4, 34: 7, 35: 4, 36: 6, 37: 5,
+            38: 7, 39: 3, 40: 5, 41: 1, 42: 3, 43: 4, 44: 4, 45: 3, 47: 8, 48: 1,
+            49: 1, 50: 1, 51: 3, 52: 2, 53: 1, 54: 2, 55: 3, 56: 4, 58: 1, 59: 1,
+            63: 1, 65: 1, 68: 1, 76: 1, 77: 1, 79: 1, 91: 1, 96: 1}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+docstring_hash: e79f2c93f4582d3c2580a6151610a23c2e16673da982c762ac228ed714e2fe73
+bibtex: |-
+  @inproceedings{mauch2009beatles,
+      title={OMRAS2 metadata project 2009},
+      author={Mauch, Matthias and Cannam, Chris and Davies, Matthew and Dixon, Simon and Harte,
+      Christopher and Kolozali, Sefki and Tidhar, Dan and Sandler, Mark},
+      booktitle={12th International Society for Music Information Retrieval Conference},
+      year={2009},
+      series = {ISMIR}
+  }
+license: Unfortunately we couldn't find the license information for Queen dataset.

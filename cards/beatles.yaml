@@ -1,0 +1,188 @@
+name: beatles
+summary: The Beatles Dataset includes 179 songs with beat, metric position, chord,
+  key, and segmentation annotations, supporting tasks in music segmentation and analysis.
+annotations:
+- BeatData
+- ChordData
+- KeyData
+- SectionData
+stats:
+  computed:
+    mode: local
+    index: 6e1276bdab6de05446ddbbc75e6f6cbe
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 180
+    n_audio_files: 180
+  annotations:
+    status: incomplete
+    problems: []
+    n_tracks: 180
+    n_tracks_loaded: 180
+    tracks_with: {BeatData: 179, ChordData: 176, KeyData: 178, SectionData: 172}
+    annotations:
+      beats:
+        type: BeatData
+        n_tracks: 179
+        n_annotations: 179
+        meter: {2: 9, 3: 11, 4: 158, 12: 1}
+        tempo_from_beats:
+          unit: bpm
+          width: 1
+          counts: {66: 3, 67: 2, 69: 1, 71: 1, 72: 1, 74: 1, 75: 2, 77: 2, 80: 5,
+            83: 4, 84: 5, 86: 2, 87: 1, 88: 1, 89: 5, 90: 1, 92: 3, 93: 2, 94: 2,
+            95: 3, 96: 2, 97: 3, 99: 4, 100: 1, 101: 2, 103: 4, 105: 1, 106: 1, 107: 1,
+            109: 2, 110: 1, 112: 5, 113: 1, 114: 5, 117: 5, 120: 7, 122: 8, 123: 5,
+            126: 11, 129: 10, 132: 9, 135: 1, 136: 7, 138: 1, 139: 10, 143: 2, 147: 1,
+            151: 2, 152: 1, 156: 3, 161: 5, 164: 1, 166: 1, 171: 3, 172: 2, 178: 2,
+            179: 1, 184: 1}
+      chords:
+        type: ChordData
+        n_tracks: 176
+        n_annotations: 176
+        labels: {A: 1493, G: 1381, D: 1322, E: 1021, C: 966, B: 499, F: 461, N: 419,
+          'A:min': 365, 'E:min': 336, 'F#:min': 282, 'B:min': 282, Bb: 273, 'D:min': 197,
+          F#: 186, 'C#:min': 161, Ab: 153, Eb: 153, 'G:7': 150, 'D:7': 131, D/5: 120,
+          'A:7': 115, 'G:min': 102, 'A:min7': 94, Db: 89, 'E:7': 86, 'F:min': 84,
+          G/3: 76, C/5: 76, 'C:7': 73, 'F:7': 70, C#: 69, 'G#:min': 68, 'C:min': 54,
+          'F#:sus4': 52, 'Bb:min': 51, 'B:7': 51, 'F#:min7': 50, 'Bb:7': 44, G/5: 42,
+          A/3: 42, G#: 41, C/3: 40, Gb: 38, 'F:min7': 37, D/3: 36, 'B:min7': 35, 'E:9': 33,
+          'F:maj7': 33, 'E:min/5': 33, B/5: 33, C/7: 33, D/b7: 33, 'G:min/5': 32,
+          A/5: 31, 'D:maj6': 31, 'D:7(#9)': 30, 'E:min7': 29, 'D:min/b3': 28, E/5: 27,
+          'A:aug': 24, 'G:maj7/3': 24, 'G:min7': 23, 'D:min/2': 22, 'D:min/4': 22,
+          'G:maj7': 22, 'E:min/b3': 21, 'Ab:min': 21, 'D:min/5': 21, 'A:min/b7': 21,
+          'D:sus4': 20, 'F:min6': 20, 'G:minmaj7/b3': 20, 'E:maj6': 19, 'A:min/b3': 19,
+          'E:min/b7': 19, 'B:9': 18, 'C:min(*b3)': 18, B/7: 18, 'C:(1)': 18, 'C#:7': 17,
+          'C:9': 16, 'B:min/5': 16, 'Eb:7': 16, 'B:(1)': 16, 'F:maj6': 16, 'Eb:min': 15,
+          'A:7/b7': 15, 'E:aug': 15, 'G:aug': 15, 'C:maj7': 15, 'F:min/5': 15, 'D:maj7': 15,
+          'E:maj7': 14, 'D:9': 14, 'G:maj6/5': 14, E/3: 14, 'A:min/6': 14, 'F:dim': 14,
+          'F#:min/5': 14, A/b7: 14, G/2: 14, 'C#:min/b7': 14, 'F#:dim': 13, D/2: 13,
+          'E:min7/b7': 13, 'G#:min7': 12, 'D:sus4/5': 12, 'B:dim7': 12, 'Eb:aug': 12,
+          B/6: 12, 'C:aug': 11, 'F#:9': 11, 'B:dim': 11, 'Bb:maj(9)/9': 11, 'G#:hdim7': 11,
+          'C:maj6': 10, 'D#:min': 10, D/7: 10, F#/5: 10, 'D:min/b7': 10, 'A:maj6': 10,
+          Eb/5: 10, 'D:min7': 10, 'A:maj/9': 10, 'D:sus4(b7)': 10, 'C#:min/5': 9,
+          'A:9': 9, 'A:sus4': 9, 'G:min/b3': 9, E/7: 9, 'F:min6/5': 9, 'A:dim7': 9,
+          'E:(1)': 9, 'G:maj6/2': 9, 'D#:dim7': 9, 'Bb:min7': 8, D/6: 8, A/2: 8, 'E:sus4(b7)': 8,
+          'D:min9': 8, 'C:sus4': 8, F/5: 8, 'Ab:7': 8, 'B:hdim7/b7': 8, 'F:maj(9)': 8,
+          'D:min7(4)/b7': 8, 'C#:hdim7': 8, 'Ab:maj7': 8, 'C#:dim': 8, 'B:min/b3': 7,
+          'A:7(#9)': 7, 'Eb:9': 7, 'E:min6': 7, 'G#:7': 7, 'F:maj(9)/9': 7, 'G#:aug': 7,
+          'Eb:maj6': 7, 'E:min7/b3': 7, 'G:(1)': 7, 'C:9(*3)': 7, 'F#:7': 6, 'F:9': 6,
+          'D:7/5': 6, 'A:7/3': 6, E/b7: 6, 'A:7/5': 6, 'B:maj6': 6, 'B:maj7': 6, 'B:min/7': 6,
+          'B:min/b7': 6, 'B:min/6': 6, 'E:min/6': 6, 'A:maj(9)/3': 6, 'C:maj(9)': 6,
+          'G:maj/9': 6, 'Eb:min7': 6, Eb/3: 6, C/9: 6, 'F:aug': 6, F/6: 6, 'C:maj(#4)/5': 6,
+          'D:maj6/5': 6, 'G:min/b7': 6, 'C#:min7': 6, E/4: 5, 'F:maj/9': 5, 'G:sus4(2)': 5,
+          'D:maj(*1)/#1': 5, D#: 5, 'D#:hdim7': 5, 'D:dim': 5, 'D:dim7': 5, 'A:min/5': 5,
+          'G:sus4': 5, 'C#:maj7/3': 5, 'Ab:maj(2)/2': 5, 'C#:dim/b3': 5, 'F#:min9': 5,
+          'E:min7(4)': 5, 'G:9': 5, 'A:min9': 5, 'G:dim7': 4, 'F#:dim/b3': 4, 'D#:7': 4,
+          'D:(1)': 4, 'A:(1)': 4, 'B:aug': 4, 'F#:minmaj7': 4, 'E:maj(b9)': 4, 'Bb:maj/9': 4,
+          'Ab:aug': 4, 'E:7/5': 4, 'D:min7(2,*b3,4)': 4, 'D:(1,4)': 4, 'D#:(1,4)': 4,
+          'E:(1,4)': 4, 'A:7(13)': 4, F/3: 4, 'B:maj(*3)': 4, 'C#:sus4': 4, 'F#:hdim7': 4,
+          'D:maj(9)': 4, 'D:sus4(2)': 4, 'A:maj(*5)': 4, 'G:maj6/3': 4, Bb/3: 4, 'D:min7/4': 4,
+          F/9: 4, 'D:maj(2)': 4, Bb/7: 4, A/b3: 4, 'G:minmaj7/5': 4, E/2: 4, 'C:7/3': 4,
+          'Ab:maj9': 4, 'G:min/4': 4, 'D#:dim': 4, 'G:dim': 4, 'D:maj/2': 3, 'E:7(#9)': 3,
+          'E:7/3': 3, 'C:min6': 3, 'Ab:maj(9)': 3, 'G:sus4(2)/2': 3, C/6: 3, 'A:min7(*5,b6)': 3,
+          'B:sus4': 3, 'G:maj(*1)/5': 3, 'F#:hdim7/b7': 3, 'F#:aug': 3, 'Eb:7/b7': 3,
+          B/3: 3, 'D:min7/b7': 3, 'Db:7': 3, 'E:dim7/b3': 3, Db/5: 3, 'G:maj6': 3,
+          'A:sus4(2)': 3, 'C:maj(#11)': 3, 'F:(1)': 3, 'D:7/2': 3, 'Bb:maj7': 3, 'B:dim7/b9': 3,
+          'Bb:dim7/5': 3, 'Bb:min/b3': 3, 'B:aug/3': 2, 'G:minmaj7': 2, 'B:7(#9)': 2,
+          'E:maj6/b7': 2, 'F#:(1,4,b7)': 2, 'A:maj7': 2, 'A:maj7/5': 2, 'Db:min': 2,
+          'Ab:min7': 2, E/6: 2, 'D:min/6': 2, 'D#:dim/b5': 2, 'B:hdim7/b3': 2, Ab/5: 2,
+          'Eb:sus4': 2, 'Gb:min': 2, 'Bb:maj6': 2, 'F:maj(9)/5': 2, 'D:min7(4)/5': 2,
+          'F:maj(9)/6': 2, 'F:min6/b3': 2, 'A:aug/#5': 2, A/9: 2, 'A:min(2)': 2, 'E:min(*5)': 2,
+          'G:7/b2': 2, 'G:7/2': 2, 'G:7/b3': 2, 'A:min/4': 2, 'G:min(9)/b3': 2, 'G:9(*3)': 2,
+          'F:min/b7': 2, 'Eb:dim': 2, 'B:(6)': 2, 'F:maj(*3)': 2, F/7: 2, 'A:sus4/5': 2,
+          Bb/5: 2, A/4: 2, 'F:7(b9)': 2, 'C:dim7': 2, 'C:dim7/2': 2, 'A:min6': 2,
+          'E:min(9)': 2, 'E:aug(9,11)': 1, 'C#:min/4': 1, 'F#:7(#9)': 1, 'C:7/5': 1,
+          'G:maj6(9)': 1, 'C:maj9': 1, E/#4: 1, G/b7: 1, 'F:maj9': 1, 'G:sus4(b7)': 1,
+          'G:sus4/5': 1, 'F:maj9(*7)': 1, 'A:9(11)': 1, 'C:sus4/4': 1, 'B:maj/9': 1,
+          A/7: 1, A/6: 1, A/b6: 1, C/2: 1, G/#4: 1, 'E:sus4': 1, 'A:7(*5,13)': 1,
+          'G#:min7/b3': 1, 'G:9(*3,11)': 1, 'C:maj7/7': 1, 'C:maj6/5': 1, 'D:min7/b3': 1,
+          Eb/6: 1, 'A:min(*5)': 1, 'Bb:min/5': 1, C#/3: 1, 'Db:maj7': 1, 'Ab:maj6': 1,
+          'F:maj6/5': 1, 'G#:dim7': 1, 'B:(b3,5)': 1, 'G:7/3': 1, 'G:(1,5)': 1, 'D:9/5': 1,
+          'D:maj(*3)': 1, C/4: 1, 'F:min7/b3': 1, 'F#:min/b3': 1, 'F#:maj(9)': 1,
+          'A:(1,2,4)': 1, 'A:min7(*b3)': 1, 'D:min7(*b3)': 1, 'C:maj(2)': 1, 'E:min(*3)/5': 1,
+          'C#:maj7(*b5)': 1, 'E:min(*5)/b7': 1, 'F#:(1,4,b5)': 1, 'E:min(*b3)/5': 1,
+          'C:maj7(*5)': 1, 'E:min7(*5)/b7': 1, 'E:(1,2,5,b6)': 1, 'E:(1,5)': 1, 'E:(1,b7)/b7': 1,
+          'C#:(1,b3)': 1, 'C#:(1,b3)/b3': 1, 'G:(1,b3,4)/b3': 1, 'G:min(4)': 1, 'C:(1,5)': 1,
+          'E:sus4(2)': 1, 'E:min/3': 1, 'D:(1,5)': 1, 'G#:(1)': 1, 'D:maj(11)': 1,
+          Ab/7: 1, Ab/b7: 1, 'A:dim/b5': 1, 'A:dim7/b3': 1, 'F:7/b7': 1, Eb/2: 1,
+          'A:dim/b3': 1, Bb/b7: 1, 'Bb:(1)': 1, 'F#:dim/b7': 1, 'G:maj7/5': 1, 'G:(7)': 1,
+          'G:(6)': 1, 'Bb:maj': 1, 'Bb:maj7/5': 1, 'D:sus4(9)': 1, 'Bb:dim7/7': 1,
+          'E:min(2)': 1, E/b6: 1, 'G:dim/b3': 1, 'C:maj(4)': 1, 'F#:min6': 1}
+        qualities: {maj: 9193, min: 2462, '7': 890, N: 419, min7: 367, sus4: 156,
+          maj7: 155, maj6: 143, '9': 131, aug: 106, dim: 76, dim7: 55, min6: 44, hdim7: 41,
+          minmaj7: 30, min9: 18, maj9: 7}
+      key:
+        type: KeyData
+        n_tracks: 178
+        n_annotations: 178
+        keys: {A: 51, G: 40, E: 35, C: 28, D: 25, 'A:minor': 25, F: 13, 'E:minor': 11,
+          'D:minor': 9, 'C:minor': 8, B: 6, Eb: 6, Bb: 5, 'F:minor': 5, 'C#:minor': 4,
+          'F#:minor': 2, 'G:mixolydian': 2, F#: 1, 'D:aeolian': 1, 'Eb:minor': 1,
+          Ab: 1, 'A:mixolydian': 1, 'F:dorian': 1, Db: 1, 'D:mixolydian': 1}
+        modes: {(none): 212, minor: 65, mixolydian: 4, aeolian: 1, dorian: 1}
+      sections:
+        type: SectionData
+        n_tracks: 172
+        n_annotations: 172
+        labels: {verse: 502, silence: 307, refrain: 227, bridge: 165, intro: 145,
+          outro: 106, verse_(instrumental): 19, verse_(solo): 14, verse_(guitar_solo): 13,
+          verse': 12, verse_refrain: 9, outro_(fade-out): 7, chorus: 6, verse_a: 6,
+          break: 5, refrain_a: 5, verse_b: 5, interlude: 5, bridge_(instrumental): 5,
+          refrain_b: 4, versea: 4, verseb: 4, break_(instrumental): 4, verse_(initial): 3,
+          verse_(variant): 3, refrain_with_ending: 3, bridge_with_ending: 3, intro/verse: 3,
+          refrain_(instrumental): 3, mini_bridge: 3, mantra: 3, refrain': 3, second_verse: 3,
+          refrain_b_fade: 2, closing: 2, outro_(fade_out): 2, verse_: 2, verse_(original): 2,
+          verse_+_extention: 2, bridge-1: 2, verse_(variant_2): 2, verse_(half_solo): 2,
+          verse_(instrumental_solo): 2, instrumental: 2, verse/outro: 2, part_2: 2,
+          break_(guitar_solo): 2, verse_c_(guitar_solo): 2, intro': 2, outro_refrain: 2,
+          first_verse: 2, verse_repeat: 2, verse_outro: 1, verse_half_solo: 1, verse_guitar_solo: 1,
+          guitar_solo: 1, bridge_re_intro: 1, refrain_solo: 1, solo_break_(half-verse_+_refrain): 1,
+          refrain_(guitar_solo(: 1, verse_(half_guitar_solo): 1, verse_(half_vocal: 1,
+          outro_verse_(fade-out): 1, verse_(fade_out): 1, verse_(solo: 1, intro_+_refrain_(second_half): 1,
+          verse_(with_ending): 1, bridge-2: 1, verseguitar: 1, verse_(variant_1): 1,
+          verse_(variant_2_with_ending): 1, bridge_(solo): 1, verse_with_ending: 1,
+          sitar_solo: 1, refrian_with_ending: 1, verse/break: 1, outro_verse: 1, 1/2_intro/verse_(instrumental): 1,
+          1/2_intro/verse: 1, intro/outro_(fade-out): 1, interlude/outro: 1, new_point: 1,
+          full_bridge: 1, part_x: 1, part_y: 1, part_z_(fade-out): 1, bridge_(with_complete_ending): 1,
+          part_1_: 1, part_3_(with_complete_ending): 1, verse_(instrumental_intro): 1,
+          '11.3': 1, '11.4': 1, verse_(partly_instrumental): 1, bridge_outro_(fade-out): 1,
+          outro_bridge: 1, outro_verse_(instrumental): 1, refrain_(solo): 1, refrain_(fade-out): 1,
+          verse_with_outro_(fade-out): 1, half-intro: 1, verse_with_outro: 1, refrain_outro_(fade-out): 1,
+          (intro): 1, verse_(with_complete_ending): 1, refrain_(fade-in): 1, refrain''_(fade-out): 1,
+          coda: 1, coda/outro: 1, verse/verse'_(superimposed): 1, break_(piano_solo): 1,
+          bridge_instr: 1, verse_guitar: 1, verse_instr: 1, verse_piano: 1, outro_a: 1,
+          outro_b: 1, verse_b_guitar: 1, refrain_trans: 1, vocal: 1, postscript: 1,
+          verse_b_: 1, outro_verse_a: 1, spacer: 1, end_verse_(instrumental: 1, beginning: 1,
+          middle: 1, end: 1, special_bridge_(instrumental): 1, verse_(slow): 1, first_verse_variant: 1,
+          intro_redux: 1, first_outro: 1, second_outro: 1, outro_(double_fade-out): 1,
+          verse_(solo)_with_ending: 1, solo/verse': 1, verse_(solo)_repeat: 1, part_1: 1,
+          part_3: 1, part_4: 1, bridge_extension: 1, c: 1, half_verse_(climax): 1,
+          refrain_(with_ending): 1}
+        section_interval_seconds:
+          unit: s
+          width: 1
+          counts: {0: 148, 1: 40, 2: 19, 3: 45, 4: 65, 5: 45, 6: 28, 7: 42, 8: 39,
+            9: 31, 10: 39, 11: 69, 12: 57, 13: 61, 14: 106, 15: 116, 16: 73, 17: 76,
+            18: 40, 19: 52, 20: 82, 21: 69, 22: 66, 23: 45, 24: 31, 25: 23, 26: 16,
+            27: 34, 28: 23, 29: 17, 30: 26, 31: 11, 32: 10, 33: 12, 34: 14, 35: 4,
+            36: 7, 37: 2, 38: 3, 39: 2, 40: 2, 41: 5, 42: 4, 43: 6, 44: 6, 45: 1,
+            46: 3, 49: 1, 50: 1, 51: 2, 52: 2, 53: 1, 54: 1, 59: 1, 61: 1, 63: 1,
+            67: 2, 69: 1, 73: 1, 75: 1, 77: 1, 78: 1, 86: 1, 89: 1, 94: 1, 116: 1,
+            187: 1, 326: 1}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {chords: 4, key: 1, sections: 8}
+docstring_hash: 956d38991edd897964d6b734a714acff631e3aa426d42f9bf216561562ec3f96
+bibtex: |-
+  @inproceedings{mauch2009beatles,
+      title={OMRAS2 metadata project 2009},
+      author={Mauch, Matthias and Cannam, Chris and Davies, Matthew and Dixon, Simon and Harte,
+      Christopher and Kolozali, Sefki and Tidhar, Dan and Sandler, Mark},
+      booktitle={12th International Society for Music Information Retrieval Conference},
+      year={2009},
+      series = {ISMIR}
+  }
+license: Unfortunately we couldn't find the license information for the Beatles dataset.

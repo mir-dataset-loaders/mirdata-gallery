@@ -1,0 +1,87 @@
+name: cante100
+summary: cante100 includes 100 tracks with 10 style families, annotated sections of
+  vocal presence, and F0 and note transcriptions; the primary MIR task involves style
+  classification and vocal analysis.
+annotations:
+- F0Data
+- NoteData
+stats:
+  computed:
+    mode: local
+    index: 0da98091223c1349ae2d60c5c0aabeed
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 100
+    n_audio_files: 100
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 100
+    n_tracks_loaded: 100
+    tracks_with: {F0Data: 100, NoteData: 100}
+    annotations:
+      melody:
+        type: F0Data
+        n_tracks: 100
+        n_annotations: 100
+        frequencies:
+          unit: hz
+          width: 10
+          counts: {120: 9275, 130: 30432, 140: 35916, 150: 22792, 160: 44458, 170: 68918,
+            180: 127821, 190: 163325, 200: 214846, 210: 173275, 220: 176639, 230: 191788,
+            240: 212041, 250: 189971, 260: 245871, 270: 232183, 280: 222207, 290: 187347,
+            300: 179573, 310: 145575, 320: 160633, 330: 157727, 340: 164855, 350: 134682,
+            360: 145026, 370: 118869, 380: 119219, 390: 118894, 400: 120181, 410: 90812,
+            420: 84558, 430: 31280, 440: 38070, 450: 31683, 460: 25217, 470: 19524,
+            480: 11724, 490: 13999, 500: 11281, 510: 11479, 520: 12643, 530: 8870,
+            540: 7545, 550: 8261, 560: 8113, 570: 6661, 580: 6596, 590: 7078, 600: 7438,
+            610: 7967, 620: 7024, 630: 4211, 640: 5941, 650: 4564, 660: 3261, 670: 4412,
+            680: 2555, 690: 2467, 700: 789, 710: 339}
+      notes:
+        type: NoteData
+        n_tracks: 100
+        n_annotations: 100
+        pitches:
+          unit: hz
+          width: 10
+          counts: {160: 14, 170: 79, 180: 193, 190: 384, 200: 811, 220: 795, 230: 1127,
+            240: 1657, 260: 2381, 270: 2710, 290: 2726, 310: 2551, 320: 2547, 340: 2687,
+            360: 2552, 390: 1838, 410: 1676, 440: 741, 460: 571, 490: 212, 520: 202,
+            550: 79, 580: 31, 620: 26, 650: 6, 690: 11}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+docstring_hash: 8d979ee58812d60106650be5fffa235f815e40ac6f600df833ceeedffc9893f0
+bibtex: |-
+  @dataset{nadine_kroher_2018_1322542,
+    author       = {Nadine Kroher and
+                    José Miguel Díaz-Báñez and
+                    Joaquin Mora and
+                    Emilia Gómez},
+    title        = {cante100 Metadata},
+    month        = jul,
+    year         = 2018,
+    publisher    = {Zenodo},
+    version      = {1.0},
+    doi          = {10.5281/zenodo.1322542},
+    url          = {https://doi.org/10.5281/zenodo.1322542}
+  },
+  @dataset{nadine_kroher_2018_1324183,
+    author       = {Nadine Kroher and
+                    José Miguel Díaz-Báñez and
+                    Joaquin Mora and
+                    Emilia Gómez},
+    title        = {cante100 Audio},
+    month        = jul,
+    year         = 2018,
+    publisher    = {Zenodo},
+    version      = {1.0},
+    doi          = {10.5281/zenodo.1324183},
+    url          = {https://doi.org/10.5281/zenodo.1324183}
+  }
+license: |-
+  The provided datasets are offered free of charge for internal non-commercial use.
+  We do not grant any rights for redistribution or modification. All data collections
+  were gathered by the COFLA team. COFLA 2015. All rights reserved.
