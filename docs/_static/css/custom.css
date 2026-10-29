@@ -1236,6 +1236,93 @@ body:has(#mirdata-gallery) footer p {
     color: #7928ca;
 }
 
+/* Statistics, larger (gallery.js, 9.): the button at the end of a panel's
+   Statistics title, and the pop-up it opens, nearly the whole window over the
+   page dimmed, its body scrolling; its plots fill its width */
+.stats-expand {
+    float: right;
+    padding: 0 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #ffffff;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.stats-expand:hover {
+    border-color: #a054d8;
+    color: #7928ca;
+}
+
+.stats-dialog {
+    width: 95vw;
+    height: 95vh;
+    max-width: none;
+    max-height: none;
+    margin: auto; /* centred: the theme's reset would put it in the corner */
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.35);
+}
+
+.stats-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.stats-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.stats-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.stats-dialog-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.stats-close {
+    border: none;
+    background: none;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.stats-close:hover {
+    color: #1e293b;
+}
+
+.stats-dialog-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+}
+
+/* the box itself, without its frame: the pop-up is the frame */
+.stats-dialog-body .panel-box {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+/* the page behind stays still */
+body:has(.stats-dialog[open]) {
+    overflow: hidden;
+}
+
 /* A y tick's line across the chart, behind the bars (charts.js, barsSvg) */
 .plot-gridline {
     stroke: #cbd5e1;

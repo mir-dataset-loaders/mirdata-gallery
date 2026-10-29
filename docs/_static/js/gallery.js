@@ -469,6 +469,7 @@ document.addEventListener("DOMContentLoaded", function () {
             cardData.forEach((d) => d.btn.classList.remove("active"));
             selectCard(last);
             applyFilters(false); // the first visible one instead, if the filters hide it
+            refreshStats(); // the pop-up, when open, shows that one's Statistics now
         }
     });
 
@@ -576,9 +577,12 @@ document.addEventListener("DOMContentLoaded", function () {
         flashScrollbar(infoColumn);
         if (!types.includes(combine.typeFocus)) combine.typeFocus = null; // its datasets all removed
         focusType(combinedPanel, combine.typeFocus);
+        addStatsButton(combinedPanel);
+        refreshStats();
     }
 
-    combinedPanel.addEventListener("click", (e) => {
+    // A click in the combination's Statistics, on its panel or in the pop-up (9. below)
+    function onCombinedClick(e) {
         // a plot's button: that dataset adds this property to the plot
         const pick = e.target.closest(".plot-pick");
         if (pick) {
@@ -596,7 +600,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         const remove = e.target.closest(".combine-remove");
         if (remove) removeCombined(combine.selected[Number(remove.dataset.index)]);
-    });
+    }
+    combinedPanel.addEventListener("click", onCombinedClick);
 
     // 5. Apply filtering logic
     // Whether a dataset passes one pill filter: nothing selected, or any / all
@@ -971,4 +976,64 @@ document.addEventListener("DOMContentLoaded", function () {
     const scrollers = [document.getElementById("left-sidebar"), listColumn, infoColumn].filter(Boolean);
     scrollers.forEach((el) => el.addEventListener("scroll", () => flashScrollbar(el), { passive: true }));
     window.addEventListener("load", () => scrollers.forEach(flashScrollbar));
+
+    // 9. Statistics, larger: a button at the end of a panel's Statistics title
+    // (one with plots) opens the box in a pop-up over the page, at the pop-up's
+    // width, so its plots scale up with it (custom.css, .stats-dialog). The
+    // pop-up always shows a copy of the Statistics on show (refreshStats, run
+    // whenever the combination's are redrawn and when Combine switches off):
+    // clicks in it work as on the combined panel (onCombinedClick). ×, Esc or a
+    // click outside it closes it.
+    function addStatsButton(panel) {
+        const grid = panel.querySelector(".plot-grid");
+        if (!grid || !grid.children.length) return;
+        grid.closest(".panel-box")
+            .querySelector(".box-title")
+            .insertAdjacentHTML("beforeend", '<button class="stats-expand" title="Show larger" aria-label="Show the statistics larger">⤢</button>');
+    }
+    cards.forEach(addStatsButton);
+
+    // in the panel column, so the panel's styles and hover text (6. above) work in it too;
+    // shown open, a dialog is drawn over the whole page wherever it is
+    const statsDialog = document.createElement("dialog");
+    statsDialog.className = "stats-dialog";
+    statsDialog.innerHTML =
+        '<div class="stats-dialog-head"><span class="stats-dialog-title"></span>' +
+        '<button class="stats-close" title="Close" aria-label="Close">×</button></div>' +
+        '<div class="stats-dialog-body"></div>';
+    infoColumn.appendChild(statsDialog);
+
+    // The pop-up's copy of the Statistics on show (the combination's, or the
+    // dataset's), under its name; closes the pop-up when there are none
+    function refreshStats() {
+        if (!statsDialog.open) return;
+        const combined = combinedPanel.style.display !== "none";
+        const panel = combined ? combinedPanel : activeItem && activeItem.card;
+        const grid = panel && panel.querySelector(".plot-grid");
+        if (!grid) {
+            statsDialog.close();
+            return;
+        }
+        const copy = grid.closest(".panel-box").cloneNode(true);
+        copy.querySelector(".stats-expand")?.remove();
+        statsDialog.querySelector(".stats-dialog-title").textContent = combined ? `${combine.selected.length} Datasets Combined` : activeItem.title;
+        statsDialog.querySelector(".stats-dialog-body").replaceChildren(copy);
+    }
+
+    infoColumn.addEventListener("click", (e) => {
+        if (!e.target.closest(".stats-expand")) return;
+        statsDialog.append(tip); // the hover box shows over the pop-up only from inside it
+        statsDialog.showModal();
+        refreshStats();
+    });
+    statsDialog.addEventListener("click", (e) => {
+        // the dialog itself is hit only outside its content: the backdrop
+        if (e.target === statsDialog || e.target.closest(".stats-close")) statsDialog.close();
+        else onCombinedClick(e);
+    });
+    statsDialog.addEventListener("close", () => {
+        hideTip();
+        document.body.appendChild(tip);
+    });
+    statsDialog.querySelector(".stats-dialog-body").addEventListener("scroll", hideTip);
 });
