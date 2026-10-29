@@ -421,8 +421,10 @@
 
     // A chord or key field ([label, count] pairs) as a circle of fifths
     // (CIRCLES[circle]): a cell per root (slice) and quality or mode (ring),
-    // shaded by its count, linear, the most used cell darkest and a used one
-    // never fainter than FAINTEST. A cell no label falls in is left blank. The
+    // shaded by the square root of its count, so a darker cell always holds
+    // more but the ones far below the most used (maj, mostly) still show; the
+    // most used cell darkest and a used one never fainter than FAINTEST. A cell
+    // no label falls in is left blank. The
     // rings have equal areas (ringEdges), so only the shade says how much; each
     // ring's name and share are written over it (RING_NAMES_AT). Labels
     // without a root (N, X) are written in the middle.
@@ -454,7 +456,7 @@
             );
         }
         cells.forEach((cell, i) => {
-            const shade = Math.max(FAINTEST, cell.count / highest).toFixed(3);
+            const shade = Math.max(FAINTEST, Math.sqrt(cell.count / highest)).toFixed(3);
             let start = cell.slice * 30 - 15;
             const drawn = pieces[i]
                 .filter((piece) => piece.count)
