@@ -621,14 +621,13 @@
             .join("\n");
     }
 
-    // A plot's title, and for a pooled one (combine.js, sources) a button at
-    // its right opening a bubble under it (gallery.js, showSources):
-    // which property each of its datasets adds, as a tag, or a button per
-    // property when it has several, the one it adds pressed (a click swaps it
-    // in, gallery.js). "⇄ sources" when there is a choice, "sources" when not.
+    // A plot's title, and for a pooled one with a choice (combine.js, sources)
+    // a button at its right opening a bubble under it (gallery.js,
+    // showSources): which property each of its datasets adds, as a tag, or a
+    // button per property when it has several, the one it adds pressed (a
+    // click swaps it in, gallery.js)
     function sourcesHtml(p, title) {
         if (!p.sources) return title;
-        const choice = p.sources.some(({ props }) => props.length > 1);
         const rows = p.sources.map(({ name, slot, props, pick }) => {
             const dot = `<span class="combine-dot combine-${slot == null ? "other" : `c${slot}`}"></span>`;
             const what =
@@ -644,7 +643,7 @@
             return `<div class="plot-sources-row"><span class="plot-sources-name">${dot}${escapeHtml(name)}</span><span class="plot-sources-props">${what}</span></div>`;
         });
         return (
-            `<span class="plot-title-line">${title}<button class="plot-sources-btn" aria-expanded="false">${choice ? "⇄ " : ""}sources</button></span>` +
+            `<span class="plot-title-line">${title}<button class="plot-sources-btn" aria-expanded="false">⇄ sources</button></span>` +
             `<div class="plot-sources" hidden><div class="plot-sources-title">Which property each dataset adds</div>` +
             `<div class="plot-sources-grid">${rows.join('<div class="plot-sources-rule"></div>')}</div></div>`
         );
