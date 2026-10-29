@@ -54,7 +54,7 @@
     const CX = CIRCLE_WIDTH / 2, CY = CIRCLE_HEIGHT / 2, OUTER = CIRCLE_HEIGHT / 2 - 17, HOLE = 16;
     const RING_NAMES_AT = -15; // the angle the ring names are written along, over the cells: between F and C
     const FAINTEST = 0.08; // the shade of a cell used least, so it never looks unused
-    const MAX_CELL_LABELS = 10; // labels a cell's hover text lists; the rest as "… and 4 more"
+    const MAX_TIP_LABELS = 10; // labels a hover text lists (a circle cell's, an "(other)" bar's); the rest as "… and 4 more"
 
     const GROUPED = new Intl.NumberFormat("en-US"); // 1,000
 
@@ -337,11 +337,14 @@
         if (pairs.every(([label]) => typeof label === "number")) {
             return [...pairs].sort((a, b) => a[0] - b[0]);
         }
-        const named = pairs
-            .map(([label, count]) => [String(label), count])
-            .sort((a, b) => b[1] - a[1]); // stable: a tie keeps the stored order
+        const named = mostCommon(pairs);
         const rest = named.slice(MAX_LABELS).reduce((sum, [, count]) => sum + count, 0);
         return named.slice(0, MAX_LABELS).concat(rest ? [[OTHER, rest]] : []);
+    }
+
+    // A counts field's labels as text, most common first (a tie keeps the stored order)
+    function mostCommon(pairs) {
+        return pairs.map(([label, count]) => [String(label), count]).sort((a, b) => b[1] - a[1]);
     }
 
     // Which number labels a chart writes when they do not all fit under their
@@ -364,13 +367,18 @@
     // Every bar has its label under it: flat when every label fits under its
     // bar, else tilted, smaller and cut to MAX_LABEL_CHARS; numbers that do not
     // fit (a wide polyphony) are written flat, only every few (numberStep).
-    // Hovering a bar shows the whole label and its count. parts (combine.js,
-    // each a dataset's own pairs) stack the bars by dataset, or show one
-    // dataset in focus (its name).
+    // Hovering a bar shows the whole label and its count; the "(other)" bar's
+    // also lists the labels it holds, most common first (labelLines). parts
+    // (combine.js, each a dataset's own pairs) stack the bars by dataset, or
+    // show one dataset in focus (its name).
     function countsSvg(pairs, counted, parts = null, focus = null) {
         const bars = countBars(pairs);
         const pieces = parts && stacks(parts, (data) => countsUnder(bars, data), bars.map(([, count]) => count), focus);
-        const tips = bars.map(([label, count], i) => barTip(String(label), count, counted, pieces && pieces[i]));
+        const folded = labelLines(mostCommon(pairs).slice(MAX_LABELS), ownCounts(parts));
+        const tips = bars.map(([label, count], i) => {
+            const tip = barTip(String(label), count, counted, pieces && pieces[i]);
+            return label === OTHER ? [tip, ...folded].join("\n") : tip;
+        });
         const { out, slot, base } = barsSvg(
             bars.map(([, count]) => count),
             tips,
@@ -432,8 +440,7 @@
         const pieces = parts
             ? stacks(parts, (data) => countsIn(cells, data, circle), counts, focus)
             : counts.map((count) => [{ slot: 0, count }]); // one dataset: its colour, as a combination's first
-        // each dataset's own label counts, for the hover text of a combined circle
-        const own = parts && parts.length > 1 ? parts.map(({ name, data }) => ({ name, counts: new Map(data.map(([label, count]) => [String(label), count])) })) : null;
+        const own = ownCounts(parts);
 
         const out = [`<svg class="plot-svg plot-circle-svg" viewBox="0 0 ${CIRCLE_WIDTH} ${CIRCLE_HEIGHT}" role="img">`];
         for (let slice = 0; slice < FIFTHS.length; slice++) {
@@ -567,17 +574,24 @@
         return share >= 10 ? `${Math.round(share)}%` : share >= 0.1 ? `${share.toFixed(1)}%` : "<0.1%";
     }
 
-    // Labels for a hover text, one a line, "G:7: 80", at most MAX_CELL_LABELS,
+    // Each dataset's own label counts (a combined plot's parts), for labelLines;
+    // null for a plot of one dataset
+    function ownCounts(parts) {
+        if (!parts || parts.length < 2) return null;
+        return parts.map(({ name, data }) => ({ name, counts: new Map(data.map(([label, count]) => [String(label), count])) }));
+    }
+
+    // Labels for a hover text, one a line, "G:7: 80", at most MAX_TIP_LABELS,
     // then "… and 4 more"; with each dataset's own counts (own, a combined
-    // circle's) that have the label, "G:7: 80 (rwc_popular: 50, guitarset: 30)"
+    // plot's) that have the label, "G:7: 80 (rwc_popular: 50, guitarset: 30)"
     function labelLines(labels, own = null) {
-        const lines = labels.slice(0, MAX_CELL_LABELS).map(([label, count]) => {
+        const lines = labels.slice(0, MAX_TIP_LABELS).map(([label, count]) => {
             const line = `${label}: ${GROUPED.format(count)}`;
             if (!own) return line;
             const each = own.filter((d) => d.counts.get(label)).map((d) => `${d.name}: ${GROUPED.format(d.counts.get(label))}`);
             return `${line} (${each.join(", ")})`;
         });
-        const more = labels.length - MAX_CELL_LABELS;
+        const more = labels.length - MAX_TIP_LABELS;
         return more > 0 ? [...lines, `… and ${more} more`] : lines;
     }
 
