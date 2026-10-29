@@ -125,13 +125,13 @@
 
     // A bar's hover text: what it is (its range or label) and its count,
     // "60–80 bpm: 84 tracks". With several datasets, their counts too,
-    // " (a 36, b 48)"; with one in focus, its count of the whole instead,
+    // " (a: 36, b: 48)"; with one in focus, its count of the whole instead,
     // "60–80 bpm: a 36 of 84 tracks".
     function barTip(what, count, counted, pieces) {
         const total = `${GROUPED.format(count)} ${counted}`;
         if (pieces && pieces.at(-1).rest) return `${what}: ${pieces[0].name} ${GROUPED.format(pieces[0].count)} of ${total}`;
         if (!pieces || pieces.length < 2) return `${what}: ${total}`;
-        const named = pieces.filter((p) => p.count).map((p) => `${p.name} ${GROUPED.format(p.count)}`);
+        const named = pieces.filter((p) => p.count).map((p) => `${p.name}: ${GROUPED.format(p.count)}`);
         return named.length ? `${what}: ${total} (${named.join(", ")})` : `${what}: ${total}`;
     }
 
