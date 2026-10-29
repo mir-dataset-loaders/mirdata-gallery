@@ -31,20 +31,23 @@ from sphinx.util.nodes import nested_parse_with_titles
 logger = logging.getLogger(__name__)
 
 MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest as "…"
-# The plotted fields of each annotation type, in plot order. A counts field not
-# listed is not plotted ("parts" counts where the annotations came from, not
-# what they hold); a grid or histogram not listed is plotted after the listed ones.
+# The plotted fields of each annotation type, in plot order, with their titles
+# ("audio": the audio's, plotted first). A counts field not listed is not
+# plotted ("parts" counts where the annotations came from, not what they hold);
+# a grid or histogram not listed is plotted after the listed ones, titled from
+# its name.
 PLOT_FIELDS = {
-    "BeatData": ["tempo_from_beats", "meter"],
-    "ChordData": ["labels"],
-    "EventData": ["events"],
-    "F0Data": ["frequencies"],
-    "KeyData": ["keys"],
-    "LyricData": ["lyric_unit", "lyrics_per_track"],
-    "MultiF0Data": ["frequencies", "polyphony"],
-    "NoteData": ["pitches"],
-    "SectionData": ["labels", "section_interval_seconds"],
-    "TempoData": ["tempo"],
+    "audio": {"duration_histogram": "Track duration"},
+    "BeatData": {"tempo_from_beats": "Tempo", "meter": "Meter"},
+    "ChordData": {"labels": "Chords"},
+    "EventData": {"events": "Events"},
+    "F0Data": {"frequencies": "Pitch (F0)"},
+    "KeyData": {"keys": "Keys"},
+    "LyricData": {"lyric_unit": "Lyric unit", "lyrics_per_track": "Lyrics per track"},
+    "MultiF0Data": {"frequencies": "Pitches (multi-F0)", "polyphony": "Notes at once"},
+    "NoteData": {"pitches": "Note pitch"},
+    "SectionData": {"labels": "Section labels", "section_interval_seconds": "Section length"},
+    "TempoData": {"tempo": "Tempo"},
 }
 
 # The label fields drawn as a circle of fifths instead of bars (charts.js,
@@ -330,7 +333,7 @@ def ordered_plots(stats, with_beat_tempo=False):
 
 def annotation_plots(prop, entry, skip=()):
     """The plots of one annotation entry, its grids and counts in PLOT_FIELDS order, but the fields in skip."""
-    order = PLOT_FIELDS.get(entry["type"], [])
+    order = list(PLOT_FIELDS.get(entry["type"], {}))
     # counts only when PLOT_FIELDS names them: "parts" is counts too, but not a plot
     fields = [
         key
@@ -401,13 +404,12 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
         counted = "annotations"
     else:
         counted = "segments" if circle else "values"
-    words = (
-        field.removesuffix("_histogram")
-        .removesuffix("_per_annotation")
-        .replace("_", " ")
-    )
+    title = PLOT_FIELDS.get(ann_type or "audio", {}).get(field)
+    if title is None:  # a field PLOT_FIELDS does not name: from its name
+        words = field.removesuffix("_histogram").removesuffix("_per_annotation").replace("_", " ")
+        title = words[:1].upper() + words[1:]
     return {
-        "title": words[:1].upper() + words[1:],
+        "title": title,
         "source": source,
         "data": data,
         "counted": counted,
