@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Search Input
     const search = document.createElement("input");
     search.type = "text";
-    search.placeholder = "Search datasets...";
+    search.placeholder = "Search dataset name...";
     search.className = "filter-search";
     search.addEventListener("input", (e) => {
         state.searchQuery = e.target.value.toLowerCase().trim();
@@ -421,8 +421,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // combination or removes it, and the panel shows the combination
     // (combine.js works out its text). Cmd-click or Ctrl-click switches it on
     // too. A combination of one shows that dataset's own panel, and removing
-    // datasets down to one switches Combine off, on that one. Filters only
-    // change the list: a dataset they hide stays in the combination.
+    // datasets down to one switches Combine off, on that one. A dataset the
+    // filters hide leaves the panel too, but stays in the combination with its
+    // colour and picks, back when the filters let it through again
+    // (shownCombined).
     // colours: each selected dataset's colour, given when it joins (combine.js, nextColour)
     // focus: the dataset whose part of each plot is shown (its chip's name clicked), or null: stacked
     // typeFocus: the annotation type whose plots alone are shown (7. below), or null: all
@@ -512,28 +514,38 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // The combined datasets the filters let through: the ones the panel shows
+    function shownCombined() {
+        return combine.selected.filter((d) => matched.includes(d));
+    }
+
     function showCombination() {
-        const selected = combine.selected;
-        if (selected.length > 1) {
+        const shown = shownCombined();
+        if (shown.length > 1) {
             selectCard(null); // hides the dataset on show
-            fillCombinedPanel(selected);
+            fillCombinedPanel();
             combinedPanel.style.display = "flex";
         } else {
-            // one (Combine just switched on): its own panel; none: nothing
+            // one (Combine just switched on, or the filters hide the rest): its own panel; none: nothing
             combinedPanel.style.display = "none";
-            selectCard(selected[0] || null);
+            selectCard(shown[0] || null);
+            refreshStats();
         }
-        cardData.forEach((d) => d.btn.classList.toggle("active", selected.includes(d)));
+        cardData.forEach((d) => d.btn.classList.toggle("active", combine.selected.includes(d)));
     }
 
     // The combined panel: its title and the datasets' names, At a glance, and
     // Statistics: the datasets again (a chip each: a click on its name focuses
     // it, one more shows them all again, and × removes it; its dot is the
-    // dataset's colour in the plots, so the chips are the legend), each
-    // dataset's notes, and the plots pooled from theirs (combine.js), stacked
-    // by dataset or showing the focused one's part
-    function fillCombinedPanel(selected) {
+    // dataset's colour in the plots, so the chips are the legend), the ones the
+    // filters hide, each dataset's notes, and the plots pooled from theirs
+    // (combine.js), stacked by dataset or showing the focused one's part (none
+    // while the filters hide it)
+    function fillCombinedPanel() {
         const escape = mirdataCharts.escapeHtml;
+        const selected = shownCombined();
+        const hidden = combine.selected.filter((d) => !selected.includes(d));
+        const focus = selected.includes(combine.focus) ? combine.focus.title : null;
         const datasets = selected.map((d) => ({ name: d.title, slot: combine.colours.get(d), plots: d.plots }));
         const slots = datasets.map((d) => d.slot);
         const chips = selected
@@ -571,9 +583,10 @@ document.addEventListener("DOMContentLoaded", function () {
             `<div class="box-title">Annotation types</div><div class="glance-tags">${tags || "—"}</div></div>` +
             '<div class="panel-box"><div class="box-title">Statistics</div>' +
             `<div class="combine-chips">${chips}</div>` +
+            (hidden.length ? `<p class="combine-hidden">Hidden by the filters: ${hidden.map((d) => escape(d.title)).join(", ")}</p>` : "") +
             '<p class="combine-chips-hint">Click a name to focus it in the plots</p>' +
             notes.map((text) => `<p class="stats-note">${escape(text)}</p>`).join("") +
-            (plots.length ? `<div class="plot-grid">${mirdataCharts.plotGridHtml(plots, combine.focus && combine.focus.title)}</div>` : "") +
+            (plots.length ? `<div class="plot-grid">${mirdataCharts.plotGridHtml(plots, focus)}</div>` : "") +
             "</div>";
         moveTips(combinedPanel);
         flashScrollbar(infoColumn);
@@ -632,18 +645,19 @@ document.addEventListener("DOMContentLoaded", function () {
         if (pick) {
             const { key, name, prop } = pick.dataset;
             combine.picks[key] = { ...combine.picks[key], [name]: prop };
-            fillCombinedPanel(combine.selected);
+            fillCombinedPanel();
             return;
         }
+        // a chip's index: its place among the datasets shown
         const name = e.target.closest(".combine-name");
         if (name) {
-            const item = combine.selected[Number(name.dataset.index)];
+            const item = shownCombined()[Number(name.dataset.index)];
             combine.focus = combine.focus === item ? null : item;
-            fillCombinedPanel(combine.selected);
+            fillCombinedPanel();
             return;
         }
         const remove = e.target.closest(".combine-remove");
-        if (remove) removeCombined(combine.selected[Number(remove.dataset.index)]);
+        if (remove) removeCombined(shownCombined()[Number(remove.dataset.index)]);
     }
     combinedPanel.addEventListener("click", onCombinedClick);
 
@@ -788,10 +802,11 @@ document.addEventListener("DOMContentLoaded", function () {
         showPage();
         counter.textContent = `Showing ${matched.length} of ${cardData.length}`;
         listCount.textContent = matched.length === 1 ? "1 Dataset" : `${matched.length} Datasets`;
-        if (combine.on) return; // Combine mode: the filters only change the list
-        // Keep the dataset on show if the filters let it through (on whatever
-        // page), otherwise show the first one
-        selectCard(activeItem && matched.includes(activeItem) ? activeItem : matched[0] || null);
+        // Combine mode: the combined datasets the filters let through; otherwise
+        // keep the dataset on show if they let it through (on whatever page),
+        // or show the first one
+        if (combine.on) showCombination();
+        else selectCard(activeItem && matched.includes(activeItem) ? activeItem : matched[0] || null);
     }
     applyFilters();
 
@@ -1061,7 +1076,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         const copy = grid.closest(".panel-box").cloneNode(true);
         copy.querySelector(".stats-expand")?.remove();
-        statsDialog.querySelector(".stats-dialog-title").textContent = combined ? `${combine.selected.length} Datasets Combined` : activeItem.title;
+        statsDialog.querySelector(".stats-dialog-title").textContent = combined ? `${shownCombined().length} Datasets Combined` : activeItem.title;
         statsDialog.querySelector(".stats-dialog-body").replaceChildren(copy);
         showSources(copy); // placed again: the pop-up is wider
     }

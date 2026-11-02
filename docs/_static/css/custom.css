@@ -905,6 +905,13 @@ body:has(#mirdata-gallery) footer p {
     color: #64748b;
 }
 
+/* The combined datasets the filters hide, between the chips and the hint */
+#content .gallery-cards-information .combine-hidden {
+    margin: 0 0 4px;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
 .combine-chip {
     display: inline-flex;
     align-items: center;
