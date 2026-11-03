@@ -51,7 +51,7 @@ How to use the Gallery
        <h3>Read</h3>
        <p>Know what a dataset holds before you download it.</p>
        <ul>
-         <li>Overview and facts: tracks, sample rate, duration, license.</li>
+         <li>Overview of dataset: tracks, sample rate, duration, license.</li>
          <li>Charts of the audio and annotations; hover a bar for its value.</li>
          <li>Click an annotation type to focus on its charts; <b>⤢</b> shows them larger.</li>
          <li>The BibTeX citation and the code to load it.</li>
