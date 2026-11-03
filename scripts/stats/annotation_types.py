@@ -14,7 +14,9 @@ import numpy as np
 # The official mirdata annotation types (BeatData, ChordData, ... TempoData): the
 # only ones the stats cover. Properties the card detection labels otherwise
 # (Instrument, Genre) are ignored.
-ANNOTATION_TYPES = {cls.__name__ for cls in mirdata.annotations.Annotation.__subclasses__()}
+ANNOTATION_TYPES = {
+    cls.__name__ for cls in mirdata.annotations.Annotation.__subclasses__()
+}
 # grid() bin width per unit, the same for every dataset so the gallery can add
 # datasets up bin by bin; any other unit (words, syllables, ...) counts whole numbers
 GRID_WIDTHS = {"bpm": 1, "s": 1, "hz": 10, "midi": 1}
@@ -108,7 +110,9 @@ def is_empty(value):
 class Stat:
     """Accumulates one annotation type over the tracks of a dataset."""
 
-    annotation = mirdata.annotations.Annotation  # the mirdata class this Stat reads; set by each subclass
+    annotation = (
+        mirdata.annotations.Annotation
+    )  # the mirdata class this Stat reads; set by each subclass
 
     def __init__(self):
         self.n_tracks = 0  # tracks whose annotation was read
@@ -157,7 +161,9 @@ class Tempo(Stat):
         self.bpm.extend(float(t) for t in value.tempos)
 
     def result(self):
-        return {"tempo": grid(self.bpm, "bpm")}  # annotated by hand, unlike tempo_from_beats
+        return {
+            "tempo": grid(self.bpm, "bpm")
+        }  # annotated by hand, unlike tempo_from_beats
 
 
 class Beats(Stat):
@@ -173,10 +179,10 @@ class Beats(Stat):
         self.meter = Counter()  # tracks per beats-per-bar count (3, 4, ...)
 
     def read(self, value):
-        bpm = self.beat_bpm(value)
+        bpm, change = self.beat_tempo(value)
         if bpm is not None:
             self.bpm.append(bpm)
-            self.changes.append(self.tempo_change(value))
+            self.changes.append(change)
         meter = self.beat_meter(value)
         if meter is not None:
             self.meter[meter] += 1
@@ -189,21 +195,16 @@ class Beats(Stat):
         }
         return {
             "meter": dict(sorted(self.meter.items())),
-            "tempo_from_beats": grid(self.bpm, "bpm"),  # 60 / median beat gap, not annotated
+            "tempo_from_beats": grid(
+                self.bpm, "bpm"
+            ),  # 60 / median beat gap, not annotated
             "tempo_changes": changes if self.bpm else None,
         }
 
     @staticmethod
-    def beat_bpm(beats):
-        """Tempo of one BeatData: 60 / its median beat gap; None without clock times or with fewer than 2 beats."""
-        times = to_seconds(beats.times, beats.time_unit)
-        if times is None or len(times) < 2:
-            return None
-        return 60.0 / float(np.median(np.diff(times)))
-
-    @staticmethod
-    def tempo_change(beats):
-        """How much one BeatData's tempo changes from start to end, in %; None without clock times or with fewer than 2 beats.
+    def beat_tempo(beats):
+        """Tempo of one BeatData (60 / its median beat gap) and how much it changes from start
+        to end, in %; (None, None) without clock times or with fewer than 2 beats.
 
         The start is the first TEMPO_EDGE of the track (first beat to last), the
         end its last, each with the tempo 60 / its median gap. A gap is where it
@@ -211,13 +212,15 @@ class Beats(Stat):
         """
         times = to_seconds(beats.times, beats.time_unit)
         if times is None or len(times) < 2:
-            return None
+            return None, None
         gaps = np.diff(times)
         at = ((times[:-1] + times[1:]) / 2 - times[0]) / (times[-1] - times[0])
         start, end = at < TEMPO_EDGE, at > 1 - TEMPO_EDGE
         start[0] = end[-1] = True  # however short the track
+        bpm = 60.0 / float(np.median(gaps))
         # tempo is 60 / gap: the end tempo over the start tempo is the start gap over the end gap
-        return (float(np.median(gaps[start])) / float(np.median(gaps[end])) - 1) * 100
+        change = (float(np.median(gaps[start])) / float(np.median(gaps[end])) - 1) * 100
+        return bpm, change
 
     @staticmethod
     def beat_meter(beats):
@@ -303,7 +306,9 @@ class F0(Stat):
         else:
             voiced = np.asarray(f0.voicing, dtype=float) > 0
         voiced &= frequencies > 0
-        return mirdata.annotations.convert_pitch_units(frequencies[voiced], f0.frequency_unit, "hz")
+        return mirdata.annotations.convert_pitch_units(
+            frequencies[voiced], f0.frequency_unit, "hz"
+        )
 
 
 class MultiF0(Stat):
@@ -313,14 +318,20 @@ class MultiF0(Stat):
 
     def __init__(self):
         super().__init__()
-        self.frequencies = []  # one array per annotation: every pitch of every frame, in Hz
-        self.polyphony = Counter()  # frames per number of pitches; silent frames left out
+        self.frequencies = (
+            []
+        )  # one array per annotation: every pitch of every frame, in Hz
+        self.polyphony = (
+            Counter()
+        )  # frames per number of pitches; silent frames left out
 
     def read(self, value):
         frames = self.sounding_frames(value)
         self.polyphony.update(len(pitches) for pitches in frames)
         if frames:  # converted once per annotation, not frame by frame
-            hz = mirdata.annotations.convert_pitch_units(np.concatenate(frames), value.frequency_unit, "hz")
+            hz = mirdata.annotations.convert_pitch_units(
+                np.concatenate(frames), value.frequency_unit, "hz"
+            )
             self.frequencies.append(hz)
 
     def result(self):
@@ -353,7 +364,9 @@ class Notes(Stat):
     def __init__(self):
         super().__init__()
         self.pitches = []  # one array per annotation, in self.unit
-        self.unit = None  # the loader's pitch unit: every track of a property has the same
+        self.unit = (
+            None  # the loader's pitch unit: every track of a property has the same
+        )
 
     def read(self, value):
         self.unit = value.pitch_unit
@@ -363,7 +376,9 @@ class Notes(Stat):
     def result(self):
         pitches = np.concatenate(self.pitches) if self.pitches else []
         if self.unit == "midi":
-            pitches = np.rint(pitches)  # to the nearest note, as GuitarSet gives 43.98 for a 44
+            pitches = np.rint(
+                pitches
+            )  # to the nearest note, as GuitarSet gives 43.98 for a 44
         return {"pitches": grid(pitches, self.unit)}
 
 
@@ -407,7 +422,10 @@ class Keys(Stat):
         self.modes.update(self.key_mode(k) for k in keys)
 
     def result(self):
-        return {"keys": dict(self.keys.most_common()), "modes": dict(self.modes.most_common())}
+        return {
+            "keys": dict(self.keys.most_common()),
+            "modes": dict(self.modes.most_common()),
+        }
 
     @staticmethod
     def key_mode(key):
@@ -423,7 +441,9 @@ class Lyrics(Stat):
     def __init__(self):
         super().__init__()
         self.lyric_unit = Counter()
-        self.lyrics_per_track = []  # one value per track: its words, syllables, ... over all its annotations
+        self.lyrics_per_track = (
+            []
+        )  # one value per track: its words, syllables, ... over all its annotations
         self.track_lyrics = 0
 
     def add(self, value):
@@ -438,7 +458,9 @@ class Lyrics(Stat):
         self.track_lyrics += len(value.lyrics)
 
     def result(self):
-        unit = max(self.lyric_unit, key=self.lyric_unit.get) if self.lyric_unit else None
+        unit = (
+            max(self.lyric_unit, key=self.lyric_unit.get) if self.lyric_unit else None
+        )
         return {
             "lyric_unit": dict(self.lyric_unit.most_common()),
             "lyrics_per_track": grid(self.lyrics_per_track, unit),

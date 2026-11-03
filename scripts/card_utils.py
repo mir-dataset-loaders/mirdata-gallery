@@ -125,7 +125,8 @@ def print_to_do(results, command):
             part_stats = result.get(part)
             if part_stats and part_stats.get("status") in groups:
                 why = (
-                    part_stats.get("problems") or [part_stats.get("error") or "see its errors"]
+                    part_stats.get("problems")
+                    or [part_stats.get("error") or "see its errors"]
                 )[0]
                 groups[part_stats["status"]].append((name, part, why))
     titles = {

@@ -186,11 +186,15 @@ def test_notes():
         " not 65)"
     )
 
-    in_hz = annotations.NoteData(two_notes, "s", np.array([440.0, 0.0]), "hz")  # 0: no pitch
+    in_hz = annotations.NoteData(
+        two_notes, "s", np.array([440.0, 0.0]), "hz"
+    )  # 0: no pitch
     higher = annotations.NoteData(two_notes, "s", np.array([880.0, 1760.0]), "hz")
     result = collect(Notes(), in_hz, higher).result()
     expected = {"pitches": grid([440.0, 880.0, 1760.0], "hz")}
-    assert result == expected, "Hz pitches should be counted in Hz, without the 0s (no pitch)"
+    assert (
+        result == expected
+    ), "Hz pitches should be counted in Hz, without the 0s (no pitch)"
 
 
 def test_sections():
@@ -256,7 +260,9 @@ def test_events():
 def test_every_label_is_kept():
     rare = [f"event{i}" for i in range(40)]
     result = collect(Events(), events(*rare, "kick", "kick", "kick")).result()
-    assert len(result["events"]) == 41, "every label should be kept, however many there are"
+    assert (
+        len(result["events"]) == 41
+    ), "every label should be kept, however many there are"
     assert "(other)" not in result["events"], "no labels should be folded into (other)"
     assert list(result["events"])[0] == "kick", "labels should come most common first"
 
@@ -319,7 +325,9 @@ def test_chord_quality():
         "G:7": "7",
     }
     for label, quality in expected.items():
-        assert Chords.chord_quality(label) == quality, f"{label} should have quality {quality}"
+        assert (
+            Chords.chord_quality(label) == quality
+        ), f"{label} should have quality {quality}"
 
 
 def test_bar_lengths():
@@ -330,33 +338,37 @@ def test_bar_lengths():
     assert Beats.bar_lengths([]) == [], "no positions should give no bars"
 
 
-def test_tempo_change():
-    change = Beats.tempo_change(beats_from_gaps(*[0.5] * 10, *[0.4] * 10))
+def test_beat_tempo():
+    _, change = Beats.beat_tempo(beats_from_gaps(*[0.5] * 10, *[0.4] * 10))
     assert change == pytest.approx(25.0), (
         "change should be the end tempo over the start tempo, minus 1, in %: the start"
         " from the gaps in the first 10% of the track, the end from the last 10%"
     )
-    change = Beats.tempo_change(beats_from_gaps(*[0.4] * 10, *[0.5] * 10))
+    _, change = Beats.beat_tempo(beats_from_gaps(*[0.4] * 10, *[0.5] * 10))
     assert change == pytest.approx(-20.0), "slowing down should give a negative change"
-    change = Beats.tempo_change(beats_from_gaps(0.5, 0.7, 0.5, *[0.5] * 27))
+    _, change = Beats.beat_tempo(beats_from_gaps(0.5, 0.7, 0.5, *[0.5] * 27))
     assert change == pytest.approx(
         0.0
     ), "one odd gap should not move the start or end: each is 60 / the median gap"
-    change = Beats.tempo_change(beats_from_gaps(*[0.5] * 10, *[0.4] * 10, *[0.5] * 10))
+    _, change = Beats.beat_tempo(beats_from_gaps(*[0.5] * 10, *[0.4] * 10, *[0.5] * 10))
     assert change == pytest.approx(
         0.0
     ), "a tempo change between the first and last 10% should not count"
-    change = Beats.tempo_change(beats_from_gaps(0.5, 0.4))
+    _, change = Beats.beat_tempo(beats_from_gaps(0.5, 0.4))
     assert change == pytest.approx(
         25.0
     ), "each edge should hold at least its first / last gap, however short the track"
-    assert Beats.tempo_change(beats([0, 0.5])) == pytest.approx(
+    assert Beats.beat_tempo(beats([0, 0.5]))[1] == pytest.approx(
         0.0
     ), "2 beats should be enough for a change"
-    assert Beats.tempo_change(beats([0.0])) is None, "one beat should give no change"
-    assert (
-        Beats.tempo_change(beats([0, 1, 2], time_unit="ticks")) is None
-    ), "times not in a clock unit should give no change"
+    assert Beats.beat_tempo(beats([0.0])) == (
+        None,
+        None,
+    ), "one beat should give no tempo and no change"
+    assert Beats.beat_tempo(beats([0, 1, 2], time_unit="ticks")) == (
+        None,
+        None,
+    ), "times not in a clock unit should give no tempo and no change"
 
 
 def test_grid():
@@ -366,7 +378,11 @@ def test_grid():
         "each value should count under its whole number rounded down (133.7 under 133);"
         " empty bins should be left out"
     )
-    assert list(result["counts"]) == [101, 120, 133], "bins should be sorted, lowest first"
+    assert list(result["counts"]) == [
+        101,
+        120,
+        133,
+    ], "bins should be sorted, lowest first"
     assert all(
         isinstance(start, int) for start in result["counts"]
     ), "whole-number bin starts should be ints"

@@ -48,7 +48,10 @@ def read_tracks(ds, verbose=False):
     # typed by their return hint: a value of another type is an error, not a wrong guess
     declared = card_builder.annotation_properties(ds, guess=False)
     track_ids = ds.track_ids
-    stats = {prop: annotation_types.STATS[ann_type]() for prop, ann_type in properties.items()}
+    stats = {
+        prop: annotation_types.STATS[ann_type]()
+        for prop, ann_type in properties.items()
+    }
     # annotation type -> ids of tracks with at least one such annotation
     tracks_with = {}
     skipped = {}  # guessed property -> why its values could not be used
