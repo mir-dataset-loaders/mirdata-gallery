@@ -144,6 +144,7 @@
     }
 
     const isGrid = (data) => !Array.isArray(data) && "width" in data; // {unit, width, counts as [start, count] pairs}
+    const isPoints = (data) => !Array.isArray(data) && "points" in data; // {points: [[x, y], ...]}
 
     // Grids of one width added up, bin by bin, lowest first; null when their
     // widths differ (a bin is never split)
@@ -186,9 +187,9 @@
     }
 
     // What plots must share, past their type and field, to be pooled: counts
-    // any; a grid its unit; a histogram its unit, any time units matching (timeBins)
+    // and points any; a grid its unit; a histogram its unit, any time units matching (timeBins)
     const shapeKey = (data) =>
-        Array.isArray(data) ? "counts" : isGrid(data) ? `grid ${data.unit}` : SECONDS[data.unit] ? "time" : data.unit;
+        Array.isArray(data) ? "counts" : isPoints(data) ? "points" : isGrid(data) ? `grid ${data.unit}` : SECONDS[data.unit] ? "time" : data.unit;
     const matchKey = (p) => [p.type, p.field, shapeKey(p.data)].join("|");
     // the audio's first, then the types A–Z, then the circles (types A–Z), as gallery.py's ordered_plots
     const typeRank = (p) => (p.circle ? `2${p.type}` : p.type ? `1${p.type}` : "0");
@@ -247,6 +248,9 @@
             if (members.length > 1) {
                 if (Array.isArray(plots[0].data)) {
                     merged = { data: poolCounts(plots.map((p) => p.data)), parts: members.map((m) => part(m, m.plot.data)) };
+                } else if (isPoints(plots[0].data)) {
+                    // every dataset's dots on one scatter
+                    merged = { data: { points: plots.flatMap((p) => p.data.points) }, parts: members.map((m) => part(m, m.plot.data)) };
                 } else if (isGrid(plots[0].data)) {
                     const data = poolGrids(plots.map((p) => p.data));
                     if (data) merged = { data, parts: members.map((m) => part(m, m.plot.data)) };

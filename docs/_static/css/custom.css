@@ -1059,11 +1059,14 @@ body:has(#mirdata-gallery) footer p {
     opacity: 0.4;
 }
 
-/* Statistics: three small plots in a row, every plot the same size */
+/* Statistics: small plots in a row, the same size but the ones two columns wide */
 .plot-grid {
     display: grid;
     /* as many as fit at 170px each, at most 4 (a column is never under a quarter, less the gaps) */
     grid-template-columns: repeat(auto-fill, minmax(max(170px, calc((100% - 3 * 10px) / 4)), 1fr));
+    /* a two-column plot that does not fit at the end of a row goes to the next,
+       and the plots after it fill the gap it leaves */
+    grid-auto-flow: row dense;
     gap: 10px;
     margin: 4px 0 8px;
 }
@@ -1160,14 +1163,23 @@ body:has(#mirdata-gallery) footer p {
     stroke: none;
 }
 
-/* A chord or key circle (charts.js, circleSvg) spans two columns; the circles
-   come after the bar plots (gallery.py, combine.js), the first on a new row */
-.plot-grid .plot-circle {
+/* The tempo changes scatter (charts.js, tempoChangesSvg) spans two columns */
+.plot-grid .plot-wide {
     grid-column: span 2;
 }
 
-.plot-grid .plot:not(.plot-circle) + .plot-circle {
-    grid-column: 1 / span 2;
+/* A chord or key circle (charts.js, circleSvg) spans two columns too; the
+   circles go in a block of their own under the other plots (plotGridHtml), on
+   the grid's columns, so none moves up into a gap the dense flow leaves */
+.plot-grid .plot-circles {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    row-gap: 10px;
+}
+
+.plot-grid .plot-circle {
+    grid-column: span 2;
 }
 
 /* Every cell's outline, so the unused ones show as blank cells */
@@ -1186,6 +1198,46 @@ body:has(#mirdata-gallery) footer p {
 .plot-circle-svg .circle-root {
     font-weight: 600;
     fill: #334155;
+}
+
+/* The tempo changes scatter (charts.js, tempoChangesSvg): the steady band and
+   the 0 line; the lines over the zones leave the hover to the zone under them */
+.changes-band {
+    fill: #f1f5f9;
+    fill-opacity: 0.8; /* the hovered zone's shade shows through */
+}
+
+.changes-zero {
+    stroke: #94a3b8;
+    stroke-width: 0.5;
+}
+
+/* The y label, two lines: smaller than the x axis unit, as the y numbers */
+.plot-changes-svg .changes-y-label {
+    font-size: 7px;
+}
+
+.plot-changes-svg .changes-band,
+.plot-changes-svg .changes-zero,
+.plot-changes-svg .plot-gridline,
+.plot-changes-svg .plot-axis {
+    pointer-events: none;
+}
+
+/* See-through dots, so where they pile up shows darker; the others' pale grey
+   ones a little stronger, so they still show */
+.changes-dot {
+    fill-opacity: 0.45;
+}
+
+.changes-dot.combine-rest {
+    fill-opacity: 0.7;
+}
+
+.plot-changes-svg g:hover .changes-dot {
+    fill-opacity: 1;
+    stroke: #1e293b;
+    stroke-width: 0.4;
 }
 
 /* A ring's name over its cells, a white edge keeping it readable on any

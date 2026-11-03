@@ -34,11 +34,11 @@ MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest
 # The plotted fields of each annotation type, in plot order, with their titles
 # ("audio": the audio's, plotted first). A counts field not listed is not
 # plotted ("parts" counts where the annotations came from, not what they hold);
-# a grid or histogram not listed is plotted after the listed ones, titled from
-# its name.
+# a grid, histogram or points not listed is plotted after the listed ones,
+# titled from its name.
 PLOT_FIELDS = {
     "audio": {"duration_histogram": "Track duration"},
-    "BeatData": {"tempo_from_beats": "Tempo", "meter": "Meter"},
+    "BeatData": {"tempo_from_beats": "Tempo", "tempo_changes": "Tempo changes", "meter": "Meter"},
     "ChordData": {"labels": "Chords"},
     "EventData": {"events": "Events"},
     "F0Data": {"frequencies": "Pitch (F0)"},
@@ -283,7 +283,7 @@ def status_notes(stats):
 
 
 def ordered_plots(stats, with_beat_tempo=False):
-    """Every grid, histogram and counts field to plot, in display order.
+    """Every grid, histogram, points and counts field to plot, in display order.
 
     The audio duration comes first, then the plots grouped by annotation type,
     A–Z. Inside a type, the entry (track property) with the most annotations
@@ -332,14 +332,14 @@ def ordered_plots(stats, with_beat_tempo=False):
 
 
 def annotation_plots(prop, entry, skip=()):
-    """The plots of one annotation entry, its grids and counts in PLOT_FIELDS order, but the fields in skip."""
+    """The plots of one annotation entry, its grids, points and counts in PLOT_FIELDS order, but the fields in skip."""
     order = list(PLOT_FIELDS.get(entry["type"], {}))
     # counts only when PLOT_FIELDS names them: "parts" is counts too, but not a plot
     fields = [
         key
         for key, value in entry.items()
         if key not in skip
-        and (is_grid(value) or (key in order and is_counts(value)))
+        and (is_grid(value) or is_points(value) or (key in order and is_counts(value)))
     ]
     fields.sort(key=lambda key: order.index(key) if key in order else len(order))
     return [
@@ -374,6 +374,15 @@ def is_histogram(value):
     )
 
 
+def is_points(value):
+    """{x: [...], y: [...]}, the i-th of each a point: Beats' tempo_changes {tempo, change}."""
+    return (
+        isinstance(value, dict)
+        and len(value) == 2
+        and all(isinstance(v, list) and v for v in value.values())
+    )
+
+
 def is_counts(value):
     """{label: count} with at least one count above 0."""
     return (
@@ -385,7 +394,7 @@ def is_counts(value):
 
 
 def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_type=None):
-    """What one plot needs: data is a grid, a histogram or counts. counted names what the bars count, for the hover text.
+    """What one plot needs: data is a grid, a histogram, points or counts. counted names what the bars (or dots) count, for the hover text.
 
     prop, type and field (None for the audio's) are what Combine mode matches
     the plots of several datasets by. circle names the rings of a field drawn
@@ -396,6 +405,8 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
         total = sum(data["counts"].values())
     elif is_histogram(data):
         total = sum(data["counts"])
+    elif is_points(data):
+        total = len(next(iter(data.values())))
     else:
         total = sum(data.values())
     if total == n_tracks:
@@ -432,11 +443,14 @@ def plot_grid(plots):
 
 def page_data(data):
     """A plot's data as the page gets it: the counts of a counts field or a grid
-    as [label, count] pairs, so number labels (meter, bin starts) stay numbers."""
+    as [label, count] pairs, so number labels (meter, bin starts) stay numbers;
+    points as {points: [[x, y], ...]}, a pair per point."""
     if is_grid(data):
         return {**data, "counts": list(data["counts"].items())}
     if is_histogram(data):
         return data
+    if is_points(data):
+        return {"points": [list(point) for point in zip(*data.values())]}
     return list(data.items())
 
 

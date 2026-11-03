@@ -3,7 +3,8 @@
 // gallery.py puts each panel's plots on its plot grid (data-plots), gallery.js
 // draws them with plotGridHtml. A plot is {title, source, counted, data, circle}: data
 // is a grid {unit, width, counts as [start, count] pairs}, a counts field as
-// [label, count] pairs, or a histogram {unit, edges, counts} (the audio durations)
+// [label, count] pairs, a histogram {unit, edges, counts} (the audio durations),
+// or points {points: [[x, y], ...]} (the tempo changes, drawn as a scatter)
 // (and a combined one from combine.js has parts; it is
 // stacked by dataset, or shows one dataset in focus against the whole).
 // Every function returns SVG or HTML text, so tests/charts.test.js runs in Node.
@@ -55,6 +56,17 @@
     const RING_NAMES_AT = -15; // the angle the ring names are written along, over the cells: between F and C
     const FAINTEST = 0.08; // the shade of a cell used least, so it never looks unused
     const MAX_TIP_LABELS = 10; // labels a hover text lists (a circle cell's, an "(other)" bar's); the rest as "… and 4 more"
+
+    // The tempo changes scatter (tempoChangesSvg): two columns wide (custom.css,
+    // plot-wide) at a bar chart's height, with room on the left for its y label
+    // (Y_LABEL, a line each, turned) and more numbers under the x axis. A track
+    // whose tempo changes by at most BAND % from start to end is steady; DOT is
+    // a dot's radius
+    const WIDE_WIDTH = 2 * WIDTH, WIDE_LEFT = 46, WIDE_X_TICKS = 6;
+    const Y_LABEL = ["tempo changes", "end vs. start (%)"];
+    const BAND = 5;
+    const DOT = 1.5;
+    const ZONES = [["speeds up", `> +${BAND}%`], ["steady", `±${BAND}%`], ["slows down", `< -${BAND}%`]];
 
     const GROUPED = new Intl.NumberFormat("en-US"); // 1,000
 
@@ -224,10 +236,11 @@
         return out.join("");
     }
 
-    // The unit written under the x axis (at base, barsSvg's), in the middle
-    function unitSvg(unit, base) {
+    // The unit written under the x axis (at base, barsSvg's), in the middle; of a
+    // chart width wide, its plot starting at left
+    function unitSvg(unit, base, left = LEFT, width = WIDTH) {
         return (
-            `<text class="plot-unit" x="${(LEFT + (WIDTH - LEFT - RIGHT) / 2).toFixed(1)}" y="${base + 20}"` +
+            `<text class="plot-unit" x="${(left + (width - left - RIGHT) / 2).toFixed(1)}" y="${base + 20}"` +
             ` text-anchor="middle">${escapeHtml(unit)}</text>`
         );
     }
@@ -419,6 +432,112 @@
         return bars.map(([label]) => (label === OTHER ? total - named : own.get(String(label)) || 0));
     }
 
+    // Round numbers from lo to hi: the multiples of the smallest step of 1, 2 or
+    // 5 × 10ⁿ giving at most `most`, e.g. -50, 0, 50, 100
+    function rangeTicks(lo, hi, most) {
+        for (let e = -1; ; e++) {
+            for (const m of [1, 2, 5]) {
+                const step = m * 10 ** e;
+                const first = Math.ceil(lo / step), n = Math.floor(hi / step) - first + 1;
+                if (n <= most) return Array.from({ length: n }, (_, i) => Number(((first + i) * step).toFixed(6)));
+            }
+        }
+    }
+
+    // A tempo change's zone (ZONES): speeds up, steady or slows down
+    const zoneOf = (change) => (change > BAND ? ZONES[0][0] : change < -BAND ? ZONES[2][0] : ZONES[1][0]);
+
+    // A tempo change as a hover text writes it: +14.0%, 0.0%, -3.2%
+    const signed = (change) => `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
+
+    // Beats' tempo changes ({points: [[tempo, change in %], ...]}, a dot per
+    // track) as a scatter, two columns wide: the median tempo along the x axis,
+    // how much the tempo changes from the start to the end up the y axis, both
+    // fitting every dot.
+    //
+    // The pale band is ±BAND %, steady; hovering above it, on it or under it
+    // shows how many tracks speed up, stay steady or slow down (barTip). The
+    // dots are see-through, so where they pile up shows darker; the ones on the
+    // same spot are one dot, and hovering a dot shows its tempo and change
+    // (and how many, for a pile). parts (combine.js, each a dataset's own
+    // points) colour the dots by dataset; with one in focus (its name), the
+    // others are pale grey, underneath.
+    function tempoChangesSvg(data, counted, parts = null, focus = null) {
+        const tempos = data.points.map(([tempo]) => tempo), changes = data.points.map(([, change]) => change);
+        const xLo = Math.min(...tempos), xHi = Math.max(...tempos), xPad = (xHi - xLo) * 0.04 || 1;
+        const yLo = Math.min(-BAND, ...changes), yHi = Math.max(BAND, ...changes), yPad = (yHi - yLo) * 0.06;
+        const [x0, x1, y0, y1] = [xLo - xPad, xHi + xPad, yLo - yPad, yHi + yPad];
+        const left = WIDE_LEFT, right = WIDE_WIDTH - RIGHT;
+        const plotWidth = right - left, plotHeight = HEIGHT - TOP - BOTTOM, base = TOP + plotHeight;
+        const X = (tempo) => left + ((tempo - x0) / (x1 - x0)) * plotWidth;
+        const Y = (change) => base - ((change - y0) / (y1 - y0)) * plotHeight;
+        const out = [`<svg class="plot-svg plot-changes-svg" viewBox="0 0 ${WIDE_WIDTH} ${HEIGHT}" role="img">`];
+
+        // the zones, under everything: above the band, the band, under it
+        const zoneCounts = (own) => ZONES.map(([zone]) => own.points.filter(([, change]) => zoneOf(change) === zone).length);
+        const totals = zoneCounts(data);
+        const pieces = parts && stacks(parts, zoneCounts, totals, focus);
+        const edges = [y1, BAND, -BAND, y0]; // the zones' tops and bottoms, top first
+        ZONES.forEach(([zone, range], i) => {
+            const tip = barTip(`${zone} (${range})`, totals[i], counted, pieces && pieces[i]);
+            out.push(
+                `<g><title>${escapeHtml(tip)}</title><rect class="plot-hit" x="${left}" y="${Y(edges[i]).toFixed(1)}"` +
+                    ` width="${plotWidth}" height="${(Y(edges[i + 1]) - Y(edges[i])).toFixed(1)}"/></g>`
+            );
+        });
+        out.push(
+            `<rect class="changes-band" x="${left}" y="${Y(BAND).toFixed(1)}" width="${plotWidth}"` +
+                ` height="${(Y(-BAND) - Y(BAND)).toFixed(1)}"/>`
+        );
+        for (const tick of rangeTicks(y0, y1, MAX_Y_TICKS)) {
+            const y = Y(tick).toFixed(1);
+            out.push(
+                `<line class="plot-gridline" x1="${left}" y1="${y}" x2="${right}" y2="${y}"/>` +
+                    `<text class="plot-label plot-y-label" x="${left - 2}" y="${y}" text-anchor="end"` +
+                    ` dominant-baseline="middle">${number(tick)}%</text>`
+            );
+        }
+        out.push(`<line class="changes-zero" x1="${left}" y1="${Y(0).toFixed(1)}" x2="${right}" y2="${Y(0).toFixed(1)}"/>`);
+        out.push(`<line class="plot-axis" x1="${left}" y1="${base}" x2="${right}" y2="${base}"/>`);
+        for (const tick of rangeTicks(x0, x1, WIDE_X_TICKS)) {
+            out.push(
+                `<text class="plot-label" x="${X(tick).toFixed(1)}" y="${base + 10}"` +
+                    ` text-anchor="middle">${number(tick)}</text>`
+            );
+        }
+        out.push(unitSvg("bpm", base, left, WIDE_WIDTH));
+        // the y label, turned to read upwards, left of the numbers
+        Y_LABEL.forEach((line, i) => {
+            out.push(
+                `<text class="plot-unit changes-y-label" transform="translate(${5 + 7.5 * i} ${TOP + plotHeight / 2}) rotate(-90)"` +
+                    ` text-anchor="middle" dominant-baseline="middle">${escapeHtml(line)}</text>`
+            );
+        });
+
+        // the dots, a pile per spot; the dataset in focus last, on top
+        const own = parts || [{ slot: 0, data }]; // one dataset: its colour, as a combination's first
+        const order = focus == null ? own : [...own.filter((p) => p.name !== focus), ...own.filter((p) => p.name === focus)];
+        for (const part of order) {
+            const colour = focus != null && part.name !== focus ? "rest" : part.slot == null ? "other" : `c${part.slot}`;
+            const who = own.length > 1 ? ` · ${part.name}` : "";
+            const piles = new Map();
+            for (const [tempo, change] of part.data.points) {
+                const key = `${tempo}|${change}`;
+                piles.set(key, { tempo, change, n: (piles.has(key) ? piles.get(key).n : 0) + 1 });
+            }
+            for (const { tempo, change, n } of piles.values()) {
+                const point = `${number(tempo)} bpm · ${signed(change)} (${zoneOf(change)})`;
+                const tip = n > 1 ? `${GROUPED.format(n)} ${counted}${who}\n${point}` : `${point}${who}`;
+                out.push(
+                    `<g><title>${escapeHtml(tip)}</title><circle class="changes-dot combine-${colour}"` +
+                        ` cx="${X(tempo).toFixed(2)}" cy="${Y(change).toFixed(2)}" r="${DOT}"/></g>`
+                );
+            }
+        }
+        out.push("</svg>");
+        return out.join("");
+    }
+
     // A chord or key field ([label, count] pairs) as a circle of fifths
     // (CIRCLES[circle]): a cell per root (slice) and quality or mode (ring),
     // shaded by the square root of its count, so a darker cell always holds
@@ -598,29 +717,37 @@
     }
 
     // A plot's chart: a circle when gallery.py names its rings (circle), else
-    // by the shape of its data: counts pairs, a grid (it has a width), or a histogram
+    // by the shape of its data: counts pairs, points, a grid (it has a width), or a histogram
     function chartSvg(data, counted, parts, focus, circle) {
         if (circle) return circleSvg(data, circle, counted, parts, focus);
         if (Array.isArray(data)) return countsSvg(data, counted, parts, focus);
+        if ("points" in data) return tempoChangesSvg(data, counted, parts, focus);
         return "width" in data ? gridSvg(data, counted, parts, focus) : histogramSvg(data, counted, parts, focus);
     }
 
     // The figures of a plot grid: each plot's title (with a pooled plot's
     // sources button, sourcesHtml), its source (one line, the whole of it on
     // hover) and its chart, with focus (a dataset's name, Combine mode) showing
-    // that dataset's part of every combined plot.
+    // that dataset's part of every combined plot. A scatter (points) is two
+    // columns wide (plot-wide); the circles, two columns wide too, go together
+    // in a block of their own under the others (custom.css, plot-circles).
     function plotGridHtml(plots, focus = null) {
-        return plots
-            .map(
-                (p) =>
-                    // data-type: the annotation type ("" for the audio's), for gallery.js's type focus
-                    `<figure class="plot${p.circle ? " plot-circle" : ""}" data-type="${escapeHtml(p.type || "")}"` +
-                    `${p.sources ? ` data-pick-key="${escapeHtml(p.pickKey)}"` : ""}>` +
-                    `<figcaption>${sourcesHtml(p, `<span class="plot-title">${escapeHtml(p.title)}</span>`)}` +
-                    `<span class="plot-source" title="${escapeHtml(p.source)}">${escapeHtml(p.source)}</span></figcaption>` +
-                    `${chartSvg(p.data, p.counted, p.parts, focus, p.circle)}</figure>`
-            )
-            .join("\n");
+        const wide = (p) => !Array.isArray(p.data) && "points" in p.data;
+        const figures = (list) =>
+            list
+                .map(
+                    (p) =>
+                        // data-type: the annotation type ("" for the audio's), for gallery.js's type focus
+                        `<figure class="plot${p.circle ? " plot-circle" : wide(p) ? " plot-wide" : ""}" data-type="${escapeHtml(p.type || "")}"` +
+                        `${p.sources ? ` data-pick-key="${escapeHtml(p.pickKey)}"` : ""}>` +
+                        `<figcaption>${sourcesHtml(p, `<span class="plot-title">${escapeHtml(p.title)}</span>`)}` +
+                        `<span class="plot-source" title="${escapeHtml(p.source)}">${escapeHtml(p.source)}</span></figcaption>` +
+                        `${chartSvg(p.data, p.counted, p.parts, focus, p.circle)}</figure>`
+                )
+                .join("\n");
+        const circles = plots.filter((p) => p.circle);
+        const others = figures(plots.filter((p) => !p.circle));
+        return circles.length ? `${others}\n<div class="plot-circles">${figures(circles)}</div>` : others;
     }
 
     // A plot's title, and for a pooled one with a choice (combine.js, sources)
@@ -653,7 +780,7 @@
 
     const charts = {
         WIDTH, LEFT, RIGHT, TOP, MAX_LABELS, MAX_LABEL_CHARS, MIN_SLOTS,
-        escapeHtml, number, yTicks, shortNumber, histogramSvg, gridSvg, countBars, countsSvg, circleSvg, cellOf, chartSvg, plotGridHtml,
+        escapeHtml, number, yTicks, shortNumber, histogramSvg, gridSvg, countBars, countsSvg, tempoChangesSvg, circleSvg, cellOf, chartSvg, plotGridHtml,
     };
     if (typeof module !== "undefined" && module.exports) {
         module.exports = charts; // Node, for the tests
