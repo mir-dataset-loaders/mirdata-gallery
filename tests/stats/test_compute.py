@@ -66,10 +66,17 @@ def test_compute(fake_mirdata):
     ), "only annotation properties should get an entry"
 
     beats = ann["annotations"]["beats"]
-    fields = {"type", "n_tracks", "n_annotations", "meter", "tempo_from_beats"}
+    fields = {
+        "type",
+        "n_tracks",
+        "n_annotations",
+        "meter",
+        "tempo_from_beats",
+        "tempo_changes",
+    }
     assert set(beats) == fields, (
-        "a BeatData entry should have exactly type, n_tracks, n_annotations, meter"
-        " and tempo_from_beats"
+        "a BeatData entry should have exactly type, n_tracks, n_annotations, meter,"
+        " tempo_from_beats and tempo_changes"
     )
     assert (
         beats["type"] == "BeatData"
@@ -84,6 +91,10 @@ def test_compute(fake_mirdata):
     assert (
         beats["tempo_from_beats"] == tempo
     ), "tempo should pool one value per track on one 1-bpm grid"
+    tempo_changes = {"tempo": [120, 80, 240], "change": [0, 0, 0]}
+    assert (
+        beats["tempo_changes"] == tempo_changes
+    ), "tempo_changes should list each track's tempo and change, in track order"
 
     chords = ann["annotations"]["chords"]
     fields = {"type", "n_tracks", "n_annotations", "labels", "qualities"}

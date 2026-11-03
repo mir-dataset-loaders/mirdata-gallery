@@ -72,9 +72,9 @@ ANNOTATION_FIELDS = {
 }
 # The fields of an annotation entry, by type, besides type, n_tracks,
 # n_annotations and the optional parts.
-COUNTS, GRID = "counts", "grid"
+COUNTS, GRID, POINTS = "counts", "grid", "points"
 ENTRY_FIELDS = {
-    "BeatData": {"tempo_from_beats": GRID, "meter": COUNTS},
+    "BeatData": {"tempo_from_beats": GRID, "tempo_changes": POINTS, "meter": COUNTS},
     "ChordData": {"labels": COUNTS, "qualities": COUNTS},
     "EventData": {"events": COUNTS},
     "F0Data": {"frequencies": GRID},
@@ -136,6 +136,26 @@ def check_grid(value, where):
     assert filled, f"{where} counts should be whole numbers > 0 (empty bins left out)"
 
 
+def check_points(value, where):
+    if value is None:
+        return  # no values to plot, e.g. no track with two beats
+    two = isinstance(value, dict) and len(value) == 2
+    assert two, f"{where} should be two lists, {{x: [...], y: [...]}}"
+    lists = list(value.values())
+    filled = all(isinstance(v, list) and v for v in lists)
+    assert filled, f"{where} should hold two non-empty lists"
+    numbers = all(
+        isinstance(n, (int, float)) and not isinstance(n, bool)
+        for v in lists
+        for n in v
+    )
+    assert numbers, f"{where} lists should be numbers"
+    paired = len(lists[0]) == len(lists[1])
+    assert (
+        paired
+    ), f"{where} lists should be the same length: the i-th of each is a point"
+
+
 def check_entry(prop, entry):
     where = f"annotations.{prop}"
     ann_type = entry.get("type")
@@ -149,9 +169,9 @@ def check_entry(prop, entry):
     assert enough, f"{where} should have at least one annotation per track"
     if "parts" in entry:
         check_counts(entry["parts"], f"{where}.parts")
+    checks = {COUNTS: check_counts, GRID: check_grid, POINTS: check_points}
     for field, kind in fields.items():
-        check = check_grid if kind == GRID else check_counts
-        check(entry[field], f"{where}.{field}")
+        checks[kind](entry[field], f"{where}.{field}")
 
 
 def check_part(part, value, fields):

@@ -5,6 +5,7 @@ the exact bins are checked by hand only in test_grid*.
 """
 
 import numpy as np
+import pytest
 from mirdata import annotations
 
 from stats.annotation_types import (
@@ -33,6 +34,11 @@ def beats(times, positions=None, time_unit="s", position_unit="bar_index"):
     return annotations.BeatData(
         np.array(times, dtype=float), time_unit, np.array(positions), position_unit
     )
+
+
+def beats_from_gaps(*gaps):
+    """Beats from 0 s on, the given gaps apart."""
+    return beats(np.concatenate([[0.0], np.cumsum(gaps)]))
 
 
 def events(*labels):
@@ -67,6 +73,7 @@ def test_beats():
     every_half_second = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5]
     bars_of_4 = [1, 2, 3, 4, 1, 2, 3, 4, 1, 2]  # two bars of 4, then 2 beats of a third
     in_ms = beats([0, 1000, 2000, 3000, 4000, 5000], [1, 2, 3, 1, 2, 3], time_unit="ms")
+    speeding_up = beats_from_gaps(*[0.6] * 5, *[0.45] * 5)  # 100 bpm, then 133.3 bpm
     result = collect(
         Beats(),
         beats(every_half_second, bars_of_4),  # 120 bpm, meter 4
@@ -74,8 +81,9 @@ def test_beats():
         beats([0, 0.25, 0.5], [1, 2, 3], position_unit="global_index"),  # 240 bpm
         beats([0.0]),  # one beat
         beats([0, 1, 2], time_unit="ticks"),
+        speeding_up,  # median gap 0.525 s, no positions
     ).result()
-    tempo = grid([120.0, 60.0, 240.0], "bpm")
+    tempo = grid([120.0, 60.0, 240.0, 60 / 0.525], "bpm")
     assert result["tempo_from_beats"] == tempo, (
         "tempo should be 60 / the median beat gap, one per annotation, with ms read as s/1000;"
         " one beat or a non-clock unit (ticks) should give no tempo"
@@ -84,6 +92,22 @@ def test_beats():
         "meter should be each track's most common bar length (a short last bar does not"
         " change it); positions that are not bar_index should give no meter"
     )
+    tempo_changes = {"tempo": [120, 60, 240, 114.3], "change": [0, 0, 0, 33.3]}
+    assert result["tempo_changes"] == tempo_changes, (
+        "tempo_changes should list the tempo and the change in % of each annotation that"
+        " has a tempo, the i-th of each together, in the order read, rounded to 0.1"
+    )
+
+
+def test_beats_no_tempo():
+    one_beat, ticks = beats([0.0]), beats([0, 1, 2], time_unit="ticks")
+    result = collect(Beats(), one_beat, ticks).result()
+    assert (
+        result["tempo_from_beats"] is None
+    ), "with no annotation that has a tempo, tempo_from_beats should be null"
+    assert (
+        result["tempo_changes"] is None
+    ), "with no annotation that has a tempo, tempo_changes should be null"
 
 
 def test_chords():
@@ -304,6 +328,35 @@ def test_bar_lengths():
     bars = Beats.bar_lengths([0, 0, 1, 2, 1, 2])
     assert bars == [2, 2], "position 0 (a beat outside any bar) should be skipped"
     assert Beats.bar_lengths([]) == [], "no positions should give no bars"
+
+
+def test_tempo_change():
+    change = Beats.tempo_change(beats_from_gaps(*[0.5] * 10, *[0.4] * 10))
+    assert change == pytest.approx(25.0), (
+        "change should be the end tempo over the start tempo, minus 1, in %: the start"
+        " from the gaps in the first 10% of the track, the end from the last 10%"
+    )
+    change = Beats.tempo_change(beats_from_gaps(*[0.4] * 10, *[0.5] * 10))
+    assert change == pytest.approx(-20.0), "slowing down should give a negative change"
+    change = Beats.tempo_change(beats_from_gaps(0.5, 0.7, 0.5, *[0.5] * 27))
+    assert change == pytest.approx(
+        0.0
+    ), "one odd gap should not move the start or end: each is 60 / the median gap"
+    change = Beats.tempo_change(beats_from_gaps(*[0.5] * 10, *[0.4] * 10, *[0.5] * 10))
+    assert change == pytest.approx(
+        0.0
+    ), "a tempo change between the first and last 10% should not count"
+    change = Beats.tempo_change(beats_from_gaps(0.5, 0.4))
+    assert change == pytest.approx(
+        25.0
+    ), "each edge should hold at least its first / last gap, however short the track"
+    assert Beats.tempo_change(beats([0, 0.5])) == pytest.approx(
+        0.0
+    ), "2 beats should be enough for a change"
+    assert Beats.tempo_change(beats([0.0])) is None, "one beat should give no change"
+    assert (
+        Beats.tempo_change(beats([0, 1, 2], time_unit="ticks")) is None
+    ), "times not in a clock unit should give no change"
 
 
 def test_grid():
