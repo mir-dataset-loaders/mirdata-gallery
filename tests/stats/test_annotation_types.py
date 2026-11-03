@@ -41,6 +41,12 @@ def beats_from_gaps(*gaps):
     return beats(np.concatenate([[0.0], np.cumsum(gaps)]))
 
 
+def bars(*lengths):
+    """Beats in bars of the given lengths: bar_index positions 1, 2, ... in each."""
+    positions = [p for n in lengths for p in range(1, n + 1)]
+    return beats(range(len(positions)), positions)
+
+
 def events(*labels):
     return annotations.EventData(
         intervals(*[(i, i + 1) for i in range(len(labels))]), "s", list(labels), "open"
@@ -71,9 +77,12 @@ def test_tempo():
 
 def test_beats():
     every_half_second = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5]
-    bars_of_4 = [1, 2, 3, 4, 1, 2, 3, 4, 1, 2]  # two bars of 4, then 2 beats of a third
+    bars_of_4 = [1, 2, 3, 4, 1, 2, 3, 4, 1, 2]  # two bars of 4, then 2 beats
     in_ms = beats([0, 1000, 2000, 3000, 4000, 5000], [1, 2, 3, 1, 2, 3], time_unit="ms")
     speeding_up = beats_from_gaps(*[0.6] * 5, *[0.45] * 5)  # 100 bpm, then 133.3 bpm
+    one_change = beats(
+        range(15), [1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4], time_unit="ticks"
+    )  # bars of 4 3 4 4, no tempo
     result = collect(
         Beats(),
         beats(every_half_second, bars_of_4),  # 120 bpm, meter 4
@@ -82,13 +91,14 @@ def test_beats():
         beats([0.0]),  # one beat
         beats([0, 1, 2], time_unit="ticks"),
         speeding_up,  # median gap 0.525 s, no positions
+        one_change,
     ).result()
     tempo = grid([120.0, 60.0, 240.0, 60 / 0.525], "bpm")
     assert result["tempo_from_beats"] == tempo, (
         "tempo should be 60 / the median beat gap, one per annotation, with ms read as s/1000;"
         " one beat or a non-clock unit (ticks) should give no tempo"
     )
-    assert result["meter"] == {3: 1, 4: 1}, (
+    assert result["meter"] == {3: 1, 4: 2}, (
         "meter should be each track's most common bar length (a short last bar does not"
         " change it); positions that are not bar_index should give no meter"
     )
@@ -97,9 +107,13 @@ def test_beats():
         "tempo_changes should list the tempo and the change in % of each annotation that"
         " has a tempo, the i-th of each together, in the order read, rounded to 0.1"
     )
+    assert result["meter_changes"] == {0: 2, 1: 1}, (
+        "meter_changes should count the tracks by how many times each leaves its"
+        " meter"
+    )
 
 
-def test_beats_no_tempo():
+def test_beats_empty():
     one_beat, ticks = beats([0.0]), beats([0, 1, 2], time_unit="ticks")
     result = collect(Beats(), one_beat, ticks).result()
     assert (
@@ -108,6 +122,10 @@ def test_beats_no_tempo():
     assert (
         result["tempo_changes"] is None
     ), "with no annotation that has a tempo, tempo_changes should be null"
+    assert result["meter"] == {}, "with no bar_index positions, meter should be empty"
+    assert (
+        result["meter_changes"] == {}
+    ), "with no bar_index positions, meter_changes should be empty, like meter"
 
 
 def test_chords():
@@ -336,6 +354,38 @@ def test_bar_lengths():
     bars = Beats.bar_lengths([0, 0, 1, 2, 1, 2])
     assert bars == [2, 2], "position 0 (a beat outside any bar) should be skipped"
     assert Beats.bar_lengths([]) == [], "no positions should give no bars"
+
+
+def test_beat_meter():
+    meter = Beats.beat_meter(bars(4, 4, 3, 4, 4))
+    assert meter == (4, 1), (
+        "the meter should be the most common bar length, and one bar of another length"
+        " one change"
+    )
+    meter = Beats.beat_meter(bars(4, 4, 3, 3, 4, 4))
+    assert meter == (4, 1), "a run of the same odd length should count once"
+    meter = Beats.beat_meter(bars(4, 4, 3, 3, 2, 4, 4))
+    assert meter == (4, 2), (
+        "switching to another odd length should count again; going back to the meter"
+        " should not"
+    )
+    meter = Beats.beat_meter(bars(4, 3, 4, 4, 5, 4))
+    assert meter == (4, 2), "every time the bars leave the meter should count"
+    meter = Beats.beat_meter(bars(2, 4, 4, 4, 1))
+    assert meter == (4, 0), (
+        "a first or last bar shorter than the meter may be cut short (a pickup, the last"
+        " downbeat) and should not count"
+    )
+    meter = Beats.beat_meter(bars(8, 4, 4, 4))
+    assert meter == (4, 1), (
+        "a first bar longer than the meter should count: a pickup or a cut-short bar"
+        " is always shorter"
+    )
+    meter = Beats.beat_meter(beats([0, 1, 2], [1, 2, 3], position_unit="global_index"))
+    assert meter == (None, None), (
+        "positions that are not bar_index, like global_index, should give no meter"
+        " and no changes"
+    )
 
 
 def test_beat_tempo():

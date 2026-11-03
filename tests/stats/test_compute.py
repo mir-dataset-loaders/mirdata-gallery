@@ -71,12 +71,13 @@ def test_compute(fake_mirdata):
         "n_tracks",
         "n_annotations",
         "meter",
+        "meter_changes",
         "tempo_from_beats",
         "tempo_changes",
     }
     assert set(beats) == fields, (
         "a BeatData entry should have exactly type, n_tracks, n_annotations, meter,"
-        " tempo_from_beats and tempo_changes"
+        " meter_changes, tempo_from_beats and tempo_changes"
     )
     assert (
         beats["type"] == "BeatData"
@@ -87,6 +88,10 @@ def test_compute(fake_mirdata):
     assert beats["n_annotations"] == 3, "n_annotations should count every annotation"
     meter = {3: 1, 4: 2}
     assert beats["meter"] == meter, "meter should count the tracks per beats-per-bar"
+    meter_changes = {0: 3}
+    assert (
+        beats["meter_changes"] == meter_changes
+    ), "meter_changes should count the tracks per number of meter changes"
     tempo = grid([80, 120, 240], "bpm")
     assert (
         beats["tempo_from_beats"] == tempo

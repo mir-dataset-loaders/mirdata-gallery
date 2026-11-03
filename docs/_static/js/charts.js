@@ -1,9 +1,9 @@
 // The Statistics charts: every plot as an SVG bar chart, or a chord or key
 // field as a circle of fifths, drawn in the page.
 // gallery.py puts each panel's plots on its plot grid (data-plots), gallery.js
-// draws them with plotGridHtml. A plot is {title, source, counted, data, circle}: data
+// draws them with plotGridHtml. A plot is {title, source, counted, data, circle, numbers}: data
 // is a grid {unit, width, counts as [start, count] pairs}, a counts field as
-// [label, count] pairs, a histogram {unit, edges, counts} (the audio durations),
+// [label, count] pairs (whole numbers drawn as numbers says, numbersSvg), a histogram {unit, edges, counts} (the audio durations),
 // or points {points: [[x, y], ...]} (the tempo changes, drawn as a scatter)
 // (and a combined one from combine.js has parts; it is
 // stacked by dataset, or shows one dataset in focus against the whole).
@@ -432,6 +432,42 @@
         return bars.map(([label]) => (label === OTHER ? total - named : own.get(String(label)) || 0));
     }
 
+    // A counts field of whole numbers from 0 ([number, count] pairs) as an SVG
+    // bar chart, drawn the way gallery.py's NUMBER_FIELDS says (numbers, {last,
+    // noun, unit}): a bar for every number under last, empty ones too, then one
+    // for last and up, "≥5", each named under it, and the unit under the axis.
+    // Hovering a bar shows its count, "2 changes: 8 tracks"; the "≥5" bar's also
+    // lists the numbers it holds (labelLines). parts (combine.js, each a
+    // dataset's own pairs) stack the bars by dataset, or show one dataset in
+    // focus (its name).
+    function numbersSvg(pairs, numbers, counted, parts = null, focus = null) {
+        const { last, noun, unit } = numbers;
+        const countsOf = (data) => {
+            const counts = Array(last + 1).fill(0);
+            for (const [n, count] of data) counts[Math.min(n, last)] += count;
+            return counts;
+        };
+        const counts = countsOf(pairs);
+        const pieces = parts && stacks(parts, countsOf, counts, focus);
+        const names = counts.map((_, n) => (n < last ? String(n) : `≥${last}`));
+        const held = pairs.filter(([n]) => n >= last).sort((a, b) => a[0] - b[0]);
+        const heldLines = labelLines(held.map(([n, count]) => [String(n), count]), ownCounts(parts));
+        const tips = counts.map((count, n) => {
+            const tip = barTip(`${names[n]} ${noun}${n === 1 ? "" : "s"}`, count, counted, pieces && pieces[n]);
+            return n === last ? [tip, ...heldLines].join("\n") : tip;
+        });
+        const { out, slot, base } = barsSvg(counts, tips, pieces);
+        names.forEach((name, i) => {
+            out.push(
+                `<text class="plot-label" x="${(LEFT + (i + 0.5) * slot).toFixed(1)}" y="${base + 10}"` +
+                    ` text-anchor="middle">${escapeHtml(name)}</text>`
+            );
+        });
+        out.push(unitSvg(unit, base));
+        out.push("</svg>");
+        return out.join("");
+    }
+
     // Round numbers from lo to hi: the multiples of the smallest step of 1, 2 or
     // 5 × 10ⁿ giving at most `most`, e.g. -50, 0, 50, 100
     function rangeTicks(lo, hi, most) {
@@ -716,10 +752,12 @@
         return more > 0 ? [...lines, `… and ${more} more`] : lines;
     }
 
-    // A plot's chart: a circle when gallery.py names its rings (circle), else
-    // by the shape of its data: counts pairs, points, a grid (it has a width), or a histogram
-    function chartSvg(data, counted, parts, focus, circle) {
+    // A plot's chart: a circle when gallery.py names its rings (circle), whole
+    // numbers when it says how to draw them (numbers), else by the shape of its
+    // data: counts pairs, points, a grid (it has a width), or a histogram
+    function chartSvg(data, counted, parts, focus, circle, numbers) {
         if (circle) return circleSvg(data, circle, counted, parts, focus);
+        if (numbers) return numbersSvg(data, numbers, counted, parts, focus);
         if (Array.isArray(data)) return countsSvg(data, counted, parts, focus);
         if ("points" in data) return tempoChangesSvg(data, counted, parts, focus);
         return "width" in data ? gridSvg(data, counted, parts, focus) : histogramSvg(data, counted, parts, focus);
@@ -742,7 +780,7 @@
                         `${p.sources ? ` data-pick-key="${escapeHtml(p.pickKey)}"` : ""}>` +
                         `<figcaption>${sourcesHtml(p, `<span class="plot-title">${escapeHtml(p.title)}</span>`)}` +
                         `<span class="plot-source" title="${escapeHtml(p.source)}">${escapeHtml(p.source)}</span></figcaption>` +
-                        `${chartSvg(p.data, p.counted, p.parts, focus, p.circle)}</figure>`
+                        `${chartSvg(p.data, p.counted, p.parts, focus, p.circle, p.numbers)}</figure>`
                 )
                 .join("\n");
         const circles = plots.filter((p) => p.circle);
@@ -780,7 +818,7 @@
 
     const charts = {
         WIDTH, LEFT, RIGHT, TOP, MAX_LABELS, MAX_LABEL_CHARS, MIN_SLOTS,
-        escapeHtml, number, yTicks, shortNumber, histogramSvg, gridSvg, countBars, countsSvg, tempoChangesSvg, circleSvg, cellOf, chartSvg, plotGridHtml,
+        escapeHtml, number, yTicks, shortNumber, histogramSvg, gridSvg, countBars, countsSvg, numbersSvg, tempoChangesSvg, circleSvg, cellOf, chartSvg, plotGridHtml,
     };
     if (typeof module !== "undefined" && module.exports) {
         module.exports = charts; // Node, for the tests

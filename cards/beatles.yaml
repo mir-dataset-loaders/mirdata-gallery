@@ -27,6 +27,8 @@ stats:
         n_tracks: 179
         n_annotations: 179
         meter: {2: 9, 3: 11, 4: 158, 12: 1}
+        meter_changes: {0: 120, 1: 23, 2: 6, 3: 10, 4: 5, 5: 1, 6: 4, 8: 1, 9: 2,
+          11: 2, 12: 1, 13: 1, 14: 1, 16: 1, 18: 1}
         tempo_from_beats:
           unit: bpm
           width: 1

@@ -25,6 +25,7 @@ stats:
         n_tracks: 35
         n_annotations: 35
         meter: {4: 35}
+        meter_changes: {0: 35}
         tempo_from_beats:
           unit: bpm
           width: 1

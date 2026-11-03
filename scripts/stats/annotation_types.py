@@ -167,8 +167,8 @@ class Tempo(Stat):
 
 
 class Beats(Stat):
-    """Tempo from the beat intervals, how much it changes from start to end, and the meter
-    as beats per bar (3/4 and 3/8 both count as 3)."""
+    """Tempo from the beat intervals, how much it changes from start to end, the meter
+    as beats per bar (3/4 and 3/8 both count as 3), and how many times it changes."""
 
     annotation = mirdata.annotations.BeatData
 
@@ -177,15 +177,17 @@ class Beats(Stat):
         self.bpm = []  # one value per annotation, reported as tempo_from_beats
         self.changes = []  # the change in % of each bpm, at the same index
         self.meter = Counter()  # tracks per beats-per-bar count (3, 4, ...)
+        self.meter_changes = Counter()  # tracks per number of meter changes (0, 1, ...)
 
     def read(self, value):
         bpm, change = self.beat_tempo(value)
         if bpm is not None:
             self.bpm.append(bpm)
             self.changes.append(change)
-        meter = self.beat_meter(value)
+        meter, meter_changes = self.beat_meter(value)
         if meter is not None:
             self.meter[meter] += 1
+            self.meter_changes[meter_changes] += 1
 
     def result(self):
         # each annotation's tempo and change in %, the i-th of each together, in read order
@@ -195,6 +197,7 @@ class Beats(Stat):
         }
         return {
             "meter": dict(sorted(self.meter.items())),
+            "meter_changes": dict(sorted(self.meter_changes.items())),
             "tempo_from_beats": grid(
                 self.bpm, "bpm"
             ),  # 60 / median beat gap, not annotated
@@ -224,14 +227,30 @@ class Beats(Stat):
 
     @staticmethod
     def beat_meter(beats):
-        """Beats per bar of one BeatData, or None without bar_index positions."""
+        """Beats per bar of one BeatData and how many times its bars switch to another
+        length (going back to the meter is not a change); (None, None) without bar_index
+        positions.
+
+        A first / last bar shorter than the meter is left out: it may be cut short.
+        """
         if beats.positions is None or beats.position_unit != "bar_index":
-            return None
+            return None, None
         lengths = Beats.bar_lengths(beats.positions)
         if not lengths:
-            return None
+            return None, None
         # the most common bar length: one odd bar does not change a track's meter
-        return Counter(lengths).most_common(1)[0][0]
+        meter = Counter(lengths).most_common(1)[0][0]
+        # a pickup, or the song ending on a downbeat
+        if lengths[0] < meter:
+            lengths = lengths[1:]
+        if lengths and lengths[-1] < meter:
+            lengths = lengths[:-1]
+        changes, last = 0, meter
+        for length in lengths:
+            if length != meter and length != last:  # switched to another odd length
+                changes += 1
+            last = length
+        return meter, changes
 
     @staticmethod
     def bar_lengths(positions):

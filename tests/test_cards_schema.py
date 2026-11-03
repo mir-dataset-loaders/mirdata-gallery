@@ -74,7 +74,12 @@ ANNOTATION_FIELDS = {
 # n_annotations and the optional parts.
 COUNTS, GRID, POINTS = "counts", "grid", "points"
 ENTRY_FIELDS = {
-    "BeatData": {"tempo_from_beats": GRID, "tempo_changes": POINTS, "meter": COUNTS},
+    "BeatData": {
+        "tempo_from_beats": GRID,
+        "tempo_changes": POINTS,
+        "meter": COUNTS,
+        "meter_changes": COUNTS,
+    },
     "ChordData": {"labels": COUNTS, "qualities": COUNTS},
     "EventData": {"events": COUNTS},
     "F0Data": {"frequencies": GRID},

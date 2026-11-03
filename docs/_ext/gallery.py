@@ -38,7 +38,12 @@ MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest
 # titled from its name.
 PLOT_FIELDS = {
     "audio": {"duration_histogram": "Track duration"},
-    "BeatData": {"tempo_from_beats": "Tempo", "tempo_changes": "Tempo changes", "meter": "Meter"},
+    "BeatData": {
+        "tempo_from_beats": "Tempo",
+        "tempo_changes": "Tempo changes",
+        "meter": "Meter",
+        "meter_changes": "Meter changes",
+    },
     "ChordData": {"labels": "Chords"},
     "EventData": {"events": "Events"},
     "F0Data": {"frequencies": "Pitch (F0)"},
@@ -54,6 +59,14 @@ PLOT_FIELDS = {
 # circleSvg), and its rings: a ring per chord quality or per key mode. The
 # rings show what the qualities and modes fields would, so those are not plotted.
 CIRCLE_FIELDS = {("ChordData", "labels"): "chords", ("KeyData", "keys"): "keys"}
+
+# The counts fields whose labels are whole numbers from 0 (charts.js, countsSvg):
+# a bar for every number up to last, empty ones too, the ones from last on in
+# one "≥ last" bar; noun is what one number counts (hover "2 changes"), unit the
+# axis label. The card keeps every number, so last can change without a recompute.
+NUMBER_FIELDS = {
+    ("BeatData", "meter_changes"): {"last": 5, "noun": "change", "unit": "changes per track"},
+}
 
 # --- Card rendering ----------------------------------------------------------
 
@@ -398,7 +411,8 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
 
     prop, type and field (None for the audio's) are what Combine mode matches
     the plots of several datasets by. circle names the rings of a field drawn
-    as a circle (CIRCLE_FIELDS), whose labels count segments.
+    as a circle (CIRCLE_FIELDS), whose labels count segments; numbers is how a
+    counts field of whole numbers is drawn (NUMBER_FIELDS), or None.
     """
     circle = CIRCLE_FIELDS.get((ann_type, field))
     if is_grid(data):
@@ -428,6 +442,7 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
         "type": ann_type,
         "field": field,
         "circle": circle,
+        "numbers": NUMBER_FIELDS.get((ann_type, field)),
     }
 
 

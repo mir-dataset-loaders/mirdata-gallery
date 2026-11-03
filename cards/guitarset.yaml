@@ -39,6 +39,7 @@ stats:
         n_tracks: 360
         n_annotations: 360
         meter: {4: 360}
+        meter_changes: {0: 360}
         tempo_from_beats:
           unit: bpm
           width: 1
