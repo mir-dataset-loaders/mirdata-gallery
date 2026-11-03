@@ -240,64 +240,51 @@ header img[alt="Logo"] {
 }
 
 /* The splitter between the list and the panel (gallery.js): 24px of room
-   between them, a line with a grip in its middle shown on hover, purple while
-   dragged */
+   between them, all of it draggable, with a bar in it, purple while dragged */
 .gallery-splitter {
     flex: 0 0 24px;
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     cursor: col-resize;
     touch-action: none;
     outline: none;
 }
 
+/* The bar: half the gallery's height, in the middle of the blank between the
+   list's rows and the panel (--bar-shift: the list's scrollbar room and
+   padding, gallery.js, widen that blank on the left) */
 .gallery-splitter::before {
     content: "";
     position: absolute;
-    top: 25%; /* half the gallery's height, around the grip */
+    top: 25%;
     bottom: 25%;
     left: 50%;
-    width: 2px;
-    transform: translateX(-50%);
-    border-radius: 1px;
-    background: #e2e8f0;
-    opacity: 0;
-    transition: opacity 0.15s;
-}
-
-/* The grip: as wide and round as the scrollbars (8px) */
-.gallery-splitter::after {
-    content: "";
-    position: relative;
-    width: 8px;
-    height: 40px;
-    border-radius: 4px;
+    width: 6px;
+    transform: translateX(calc(-50% + var(--bar-shift, 0px)));
+    border-radius: 3px;
     background: #cbd5e1;
-    opacity: 0;
+    opacity: 0.3; /* full on hover, focus or drag */
     transition: opacity 0.15s;
 }
 
 .gallery-splitter:hover::before,
-.gallery-splitter:hover::after,
 .gallery-splitter:focus-visible::before,
-.gallery-splitter:focus-visible::after,
-.gallery-splitter.dragging::before,
-.gallery-splitter.dragging::after {
+.gallery-splitter.dragging::before {
     opacity: 1;
 }
 
-.gallery-splitter.dragging::before,
-.gallery-splitter.dragging::after {
+.gallery-splitter.dragging::before {
     background: #a054d8;
 }
 
-/* Nothing to drag (a wide window: the list and the panel both at their
-   widest): only the room between them */
+/* Nothing to drag (the list's share leaves it no more than its 350px): only
+   the room between them, without the bar */
 .gallery-splitter.idle {
     cursor: default;
     pointer-events: none;
+}
+
+.gallery-splitter.idle::before {
+    display: none;
 }
 
 /* The scrollbars of the filters, the list and the panel: thin, and hidden
@@ -507,8 +494,8 @@ body:has(#mirdata-gallery) footer p {
 }
 
 /* Column 2: the dataset list. 350px to 687px; it takes the width the panel
-   leaves once the panel is at its 850px (687px is what a 27" monitor leaves;
-   wider windows keep a blank on the right). Its columns follow its own width
+   leaves once the panel is at its 850px (687px is what the page at its
+   widest leaves, .container above). Its columns follow its own width
    (the container queries below the table's rules). */
 .gallery-datasets-list {
     container: dataset-list / inline-size;
@@ -893,7 +880,8 @@ body:has(#mirdata-gallery) footer p {
 }
 
 /* Column 3: the panel, 850px, narrower (down to 400px) when the window has
-   no room for it (wider, the charts and their text grow too big) */
+   no room for it (wider, the charts and their text grow too big; only when
+   the splitter narrows the list, gallery.js) */
 .gallery-cards-information {
     flex: 0 1 850px;
     min-width: 400px;
