@@ -4,6 +4,8 @@ summary: The Candombe dataset includes over 2 hours of stereo audio from 35 perf
   structures in traditional Candombe music.
 annotations:
 - BeatData
+tasks:
+- Beat Tracking
 stats:
   computed:
     mode: local

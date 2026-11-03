@@ -10,6 +10,13 @@ annotations:
 - KeyData
 - MultiF0Data
 - NoteData
+tasks:
+- Beat Tracking
+- Chord Recognition
+- Key Estimation
+- Melody Extraction
+- Multi-pitch Estimation
+- Music Transcription
 stats:
   computed:
     mode: local

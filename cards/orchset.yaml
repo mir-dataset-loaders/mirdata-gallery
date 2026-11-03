@@ -4,6 +4,8 @@ summary: The Orchset dataset includes 64 audio excerpts of symphonic music with 
 annotations:
 - F0Data
 - Instrument
+tasks:
+- Melody Extraction
 stats:
   computed:
     mode: local

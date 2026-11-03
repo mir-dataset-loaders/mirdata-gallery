@@ -5,6 +5,9 @@ summary: The dataset includes 28 solo Carnatic varnam recordings featuring 7 rā
 annotations:
 - KeyData
 - SectionData
+tasks:
+- Key Estimation
+- Music Structure Analysis
 stats:
   computed:
     mode: local

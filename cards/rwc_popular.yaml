@@ -9,6 +9,12 @@ annotations:
 - Instrument
 - NoteData
 - TempoData
+tasks:
+- Beat Tracking
+- Chord Recognition
+- Melody Extraction
+- Music Transcription
+- Tempo Estimation
 stats:
   computed:
     mode: local

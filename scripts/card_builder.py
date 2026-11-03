@@ -38,6 +38,22 @@ FALLBACK_MAP = {
     "instrument": "Instrument",
 }
 
+# The MIR tasks each annotation type supports, by the names MIR papers use.
+# EventData is too generic to name one; Genre and Instrument have none yet.
+TASKS = {
+    "BeatData": ["Beat Tracking"],
+    "ChordData": ["Chord Recognition"],
+    "F0Data": ["Melody Extraction"],
+    "KeyData": ["Key Estimation"],
+    "LyricData": ["Lyrics Transcription", "Lyrics-to-Audio Alignment"],
+    "MultiF0Data": ["Multi-pitch Estimation"],
+    "NoteData": ["Music Transcription"],
+    "SectionData": ["Music Structure Analysis"],
+    "TempoData": ["Tempo Estimation"],
+}
+# A loader with a MultiTrack class has the stems to separate
+MULTITRACK_TASK = "Source Separation"
+
 
 def build_card(ds, summary=None, docstring_hash=None, stats=None):
     """The card dict for one initialized dataset; keys in card order.
@@ -50,6 +66,7 @@ def build_card(ds, summary=None, docstring_hash=None, stats=None):
         "name": ds.name,
         "summary": summary,
         "annotations": annotations(ds),
+        "tasks": tasks(ds),
         "stats": stats,
         "docstring_hash": docstring_hash,
         "bibtex": bibtex(ds),
@@ -71,6 +88,14 @@ def annotations(ds):
     # Dedicated genre datasets (gtzan_genre, acousticbrainz_genre, ...)
     if ds.name.endswith("_genre"):
         found.add("Genre")
+    return sorted(found)
+
+
+def tasks(ds):
+    """Sorted list of MIR tasks: those of the card's annotation types, plus Source Separation for a multitrack loader."""
+    found = {task for t in annotations(ds) for task in TASKS.get(t, [])}
+    if getattr(ds, "_multitrack_class", None):
+        found.add(MULTITRACK_TASK)
     return sorted(found)
 
 

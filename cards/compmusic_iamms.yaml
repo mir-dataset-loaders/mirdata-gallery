@@ -6,6 +6,10 @@ annotations:
 - F0Data
 - KeyData
 - SectionData
+tasks:
+- Key Estimation
+- Melody Extraction
+- Music Structure Analysis
 stats:
   computed:
     mode: local

@@ -4,13 +4,20 @@ import mirdata
 import pytest
 
 import fake_dataset_loader
-from card_builder import annotation_properties, annotations, build_card, clean_text
+from card_builder import (
+    annotation_properties,
+    annotations,
+    build_card,
+    clean_text,
+    tasks,
+)
 from fake_dataset_loader import DATA_HOME
 
 FIELDS = [
     "name",
     "summary",
     "annotations",
+    "tasks",
     "stats",
     "docstring_hash",
     "bibtex",
@@ -33,6 +40,8 @@ def test_build_card(ds):
     assert card["bibtex"] == bibtex, "bibtex should come from the loader"
     types = ["BeatData", "ChordData"]
     assert card["annotations"] == types, "annotations should list the Track's types"
+    found = ["Beat Tracking", "Chord Recognition"]
+    assert card["tasks"] == found, "tasks should be those of the Track's types"
     assert card["summary"] == "Three tracks.", "summary should be passed through"
     assert card["docstring_hash"] == "d0c", "docstring_hash should be passed through"
     assert card["stats"] is stats, "stats should be passed through"
@@ -54,6 +63,26 @@ def test_annotations(ds):
     assert (
         "NoteData" not in found
     ), "a type the Track does not have should not be listed"
+
+
+def test_tasks(ds, monkeypatch):
+    found = ["Beat Tracking", "Chord Recognition"]
+    assert tasks(ds) == found, "tasks should be those of the annotation types, sorted"
+    ds.name = "fake_genre"
+    assert tasks(ds) == found, "Genre should not add a task"
+
+    # no return hints: "lyric" and "event" in the names make LyricData and EventData
+    flag = property(lambda self: False)
+    monkeypatch.setattr(fake_dataset_loader.Track, "lyrics", flag, raising=False)
+    monkeypatch.setattr(fake_dataset_loader.Track, "events", flag, raising=False)
+    both = ["Lyrics Transcription", "Lyrics-to-Audio Alignment"]
+    assert tasks(ds) == found + both, (
+        "a type with two tasks should add both; EventData should add none"
+    )
+
+    ds._multitrack_class = mirdata.core.MultiTrack
+    separation = "Source Separation"
+    assert separation in tasks(ds), "a multitrack loader should add Source Separation"
 
 
 def test_annotation_properties(ds):

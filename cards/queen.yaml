@@ -6,6 +6,10 @@ annotations:
 - ChordData
 - KeyData
 - SectionData
+tasks:
+- Chord Recognition
+- Key Estimation
+- Music Structure Analysis
 stats:
   computed:
     mode: local

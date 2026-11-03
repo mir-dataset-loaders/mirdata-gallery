@@ -4,6 +4,9 @@ summary: The dataset includes 890 Billboard chart slots with audio features and 
 annotations:
 - ChordData
 - SectionData
+tasks:
+- Chord Recognition
+- Music Structure Analysis
 stats:
   computed:
     mode: local

@@ -5,6 +5,9 @@ summary: cante100 includes 100 tracks with 10 style families, annotated sections
 annotations:
 - F0Data
 - NoteData
+tasks:
+- Melody Extraction
+- Music Transcription
 stats:
   computed:
     mode: local
