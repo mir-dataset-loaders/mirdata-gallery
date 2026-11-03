@@ -67,9 +67,16 @@ header img[alt="Logo"] {
 }
 
 #content section#home>section {
-    max-width: 760px;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 1100px;
+    margin: 0 auto 40px;
+}
+
+/* The section titles: the gallery panels' purple */
+#content section#home>section>h2 {
+    font-size: 1.35rem;
+    color: #a054d8;
+    border: none;
+    margin: 0 0 14px;
 }
 
 .landing-hero {
@@ -116,6 +123,95 @@ header img[alt="Logo"] {
 .landing-button.secondary {
     background: #ffffff;
     color: #7928ca !important;
+}
+
+/* How to use: four cards in a row, two on a narrow screen */
+.landing-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.landing-step {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px;
+    background: #ffffff;
+}
+
+.landing-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #f3e8ff;
+    color: #7928ca;
+    font-weight: 700;
+}
+
+#content .landing-step h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 10px 0 4px;
+}
+
+#content .landing-step p {
+    margin: 0;
+    color: #475569;
+    font-size: 0.95rem;
+}
+
+/* The card's how-to points, under its one-line purpose; as specific as the
+   theme's #content ul:not(.search)>li, which spaces them 24px apart */
+#content .landing-step ul:not(.search) {
+    margin: 10px 0 0 18px;
+}
+
+#content .landing-step ul:not(.search)>li {
+    margin: 4px 0 0;
+    color: #475569;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+/* Using Mirdata: the text beside the Python code, one above the other on a narrow screen */
+.landing-quickstart {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+/* RST's container class meets the theme's .container (centred, padded): undone here */
+#content .landing-quickstart.container,
+#content .landing-quickstart .container {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
+.landing-quickstart-text>p:first-child,
+.landing-quickstart-code pre {
+    margin-top: 0;
+}
+
+@media (max-width: 900px) {
+    .landing-steps {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .landing-quickstart {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* A phone: one card a row, so the points keep a readable line length */
+@media (max-width: 600px) {
+    .landing-steps {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ==========================================================================
