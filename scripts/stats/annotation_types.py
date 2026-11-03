@@ -18,6 +18,8 @@ ANNOTATION_TYPES = {cls.__name__ for cls in mirdata.annotations.Annotation.__sub
 # grid() bin width per unit, the same for every dataset so the gallery can add
 # datasets up bin by bin; any other unit (words, syllables, ...) counts whole numbers
 GRID_WIDTHS = {"bpm": 1, "s": 1, "hz": 10, "midi": 1}
+# The start and the end of a track for Beats.tempo_change: its first and last 10%
+TEMPO_EDGE = 0.1
 
 
 # ------------------------------------------------------------------ helpers
@@ -159,27 +161,36 @@ class Tempo(Stat):
 
 
 class Beats(Stat):
-    """Tempo from the beat intervals, and the meter as beats per bar (3/4 and 3/8 both count as 3)."""
+    """Tempo from the beat intervals, how much it changes from start to end, and the meter
+    as beats per bar (3/4 and 3/8 both count as 3)."""
 
     annotation = mirdata.annotations.BeatData
 
     def __init__(self):
         super().__init__()
         self.bpm = []  # one value per annotation, reported as tempo_from_beats
+        self.changes = []  # the change in % of each bpm, at the same index
         self.meter = Counter()  # tracks per beats-per-bar count (3, 4, ...)
 
     def read(self, value):
         bpm = self.beat_bpm(value)
         if bpm is not None:
             self.bpm.append(bpm)
+            self.changes.append(self.tempo_change(value))
         meter = self.beat_meter(value)
         if meter is not None:
             self.meter[meter] += 1
 
     def result(self):
+        # each annotation's tempo and change in %, the i-th of each together, in read order
+        changes = {
+            "tempo": [_number(round(bpm, 1)) for bpm in self.bpm],
+            "change": [_number(round(c, 1)) for c in self.changes],
+        }
         return {
             "meter": dict(sorted(self.meter.items())),
             "tempo_from_beats": grid(self.bpm, "bpm"),  # 60 / median beat gap, not annotated
+            "tempo_changes": changes if self.bpm else None,
         }
 
     @staticmethod
@@ -189,6 +200,24 @@ class Beats(Stat):
         if times is None or len(times) < 2:
             return None
         return 60.0 / float(np.median(np.diff(times)))
+
+    @staticmethod
+    def tempo_change(beats):
+        """How much one BeatData's tempo changes from start to end, in %; None without clock times or with fewer than 2 beats.
+
+        The start is the first TEMPO_EDGE of the track (first beat to last), the
+        end its last, each with the tempo 60 / its median gap. A gap is where it
+        is halfway, and each edge holds at least its first / last gap.
+        """
+        times = to_seconds(beats.times, beats.time_unit)
+        if times is None or len(times) < 2:
+            return None
+        gaps = np.diff(times)
+        at = ((times[:-1] + times[1:]) / 2 - times[0]) / (times[-1] - times[0])
+        start, end = at < TEMPO_EDGE, at > 1 - TEMPO_EDGE
+        start[0] = end[-1] = True  # however short the track
+        # tempo is 60 / gap: the end tempo over the start tempo is the start gap over the end gap
+        return (float(np.median(gaps[start])) / float(np.median(gaps[end])) - 1) * 100
 
     @staticmethod
     def beat_meter(beats):
