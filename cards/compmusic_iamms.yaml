@@ -1,0 +1,108 @@
+name: compmusic_iamms
+summary: The compmusic_iamms dataset includes audio excerpts from Carnatic and Hindustani
+  music, with annotations for melodic sections, nyas events, and pitch/tonic features,
+  aimed at developing methods for computing melodic similarity.
+annotations:
+- F0Data
+- KeyData
+- SectionData
+stats:
+  computed:
+    mode: local
+    index: 3c8843f87b0fea83715058c5d8a84c22
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 32
+    n_audio_files: 32
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 32
+    n_tracks_loaded: 32
+    tracks_with: {F0Data: 32, SectionData: 32}
+    annotations:
+      pitch:
+        type: F0Data
+        n_tracks: 32
+        n_annotations: 32
+        frequencies:
+          unit: hz
+          width: 10
+          counts: {60: 76, 70: 903, 80: 1121, 90: 4367, 100: 14031, 110: 19998, 120: 23968,
+            130: 61527, 140: 88208, 150: 94593, 160: 123878, 170: 144626, 180: 138588,
+            190: 252806, 200: 218331, 210: 147698, 220: 206581, 230: 223161, 240: 150543,
+            250: 172146, 260: 311590, 270: 234476, 280: 149744, 290: 256756, 300: 167734,
+            310: 117535, 320: 99231, 330: 102251, 340: 65690, 350: 65949, 360: 90354,
+            370: 47444, 380: 113395, 390: 77508, 400: 55040, 410: 37103, 420: 22574,
+            430: 25293, 440: 24835, 450: 13453, 460: 16260, 470: 22397, 480: 17865,
+            490: 15936, 500: 9105, 510: 8461, 520: 12070, 530: 6376, 540: 4818, 550: 3997,
+            560: 2938, 570: 2444, 580: 3516, 590: 4757, 600: 2924, 610: 1178, 620: 932,
+            630: 508, 640: 608, 650: 621, 660: 304, 670: 519, 680: 273, 690: 505,
+            700: 303, 710: 447, 720: 201, 730: 133, 740: 136, 750: 121, 760: 183,
+            770: 437, 780: 199, 790: 221, 800: 97, 810: 106, 820: 148, 830: 105, 840: 180,
+            850: 110, 860: 136, 870: 115, 880: 330, 890: 326, 900: 266, 910: 237,
+            920: 281, 930: 266, 940: 684, 950: 434, 960: 168, 970: 330, 980: 226,
+            990: 206, 1000: 122, 1010: 218, 1020: 233, 1030: 159, 1040: 308, 1050: 178,
+            1060: 74, 1070: 132, 1080: 35, 1090: 22, 1100: 97, 1110: 45, 1120: 56,
+            1130: 15, 1140: 27, 1150: 2, 1160: 26, 1170: 33, 1180: 6, 1190: 1, 1220: 1,
+            1230: 2, 1420: 3, 1430: 2, 1440: 7, 1450: 20, 1460: 1, 1510: 1}
+      pitch_finetuned:
+        type: F0Data
+        n_tracks: 32
+        n_annotations: 32
+        frequencies:
+          unit: hz
+          width: 10
+          counts: {0: 770, 10: 75, 20: 70, 30: 39, 40: 48, 50: 48, 60: 181, 70: 3498,
+            80: 2534, 90: 8526, 100: 22119, 110: 27695, 120: 36438, 130: 89553, 140: 124076,
+            150: 132418, 160: 154183, 170: 197055, 180: 195830, 190: 314773, 200: 270775,
+            210: 177752, 220: 241783, 230: 262280, 240: 179018, 250: 223732, 260: 346096,
+            270: 275777, 280: 178490, 290: 279244, 300: 175371, 310: 138011, 320: 93613,
+            330: 114111, 340: 75012, 350: 73466, 360: 92237, 370: 59890, 380: 108439,
+            390: 87541, 400: 61346, 410: 40126, 420: 18158, 430: 31816, 440: 21503,
+            450: 12705, 460: 17301, 470: 16447, 480: 19463, 490: 12144, 500: 7659,
+            510: 7040, 520: 9075, 530: 5440, 540: 3582, 550: 2678, 560: 2129, 570: 2169,
+            580: 2934, 590: 3335, 600: 1644, 610: 473, 620: 238, 630: 220, 640: 139,
+            650: 114, 660: 86, 670: 189, 680: 95, 690: 67, 700: 54, 710: 65, 720: 23,
+            730: 14, 740: 18, 750: 36, 760: 57, 770: 33, 780: 6, 790: 6, 800: 10,
+            810: 7, 820: 25, 830: 9, 840: 26, 850: 7, 860: 11, 870: 18, 880: 33, 890: 41,
+            900: 20, 910: 17, 920: 19, 930: 15, 940: 124, 950: 13, 960: 8, 970: 11,
+            980: 8, 990: 6, 1000: 7, 1010: 8, 1020: 8, 1030: 6, 1040: 9}
+      sections:
+        type: SectionData
+        n_tracks: 32
+        n_annotations: 32
+        labels: {'1043': 139, '1047': 80, '1046': 62, '1042': 42, '8000': 35, '2001': 33,
+          '3000': 32, '1000': 31, '5000': 26, '1044': 22}
+        section_interval_seconds:
+          unit: s
+          width: 1
+          counts: {0: 93, 1: 304, 2: 51, 3: 31, 4: 12, 5: 6, 6: 3, 7: 1, 8: 1}
+      sections_finetuned:
+        type: SectionData
+        n_tracks: 32
+        n_annotations: 32
+        labels: {'1043': 154, '1047': 87, '1046': 77, '1042': 62, '1044': 47, '2001': 46,
+          '8000': 45, '1000': 39, '3000': 38, '5000': 31}
+        section_interval_seconds:
+          unit: s
+          width: 1
+          counts: {0: 178, 1: 349, 2: 61, 3: 19, 4: 13, 5: 5, 6: 1}
+    skipped:
+      tonic: not a mirdata KeyData object (got float)
+      tonic_finetuned: not a mirdata KeyData object (got float)
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+docstring_hash: 866df86f968d3c67435fb5d5915c2370c1868b1dd9420b3b1787f0af5e9833c7
+bibtex: |-
+  @inproceedings{gulati2015improving,
+    author    = {Sankalp Gulati and Joan Serr{\`a} and Xavier Serra},
+    title     = {Improving melodic similarity in Indian art music using culture-specific melodic characteristics},
+    booktitle = {Proceedings of the 16th International Society for Music Information Retrieval Conference (ISMIR)},
+    pages     = {680--686},
+    year      = {2015},
+    address   = {Malaga, Spain}
+  }
+license: Creative Commons Attribution Non Commercial Share Alike 4.0 International.

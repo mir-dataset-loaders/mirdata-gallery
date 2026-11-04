@@ -67,9 +67,16 @@ header img[alt="Logo"] {
 }
 
 #content section#home>section {
-    max-width: 760px;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 1100px;
+    margin: 0 auto 40px;
+}
+
+/* The section titles: the gallery panels' purple */
+#content section#home>section>h2 {
+    font-size: 1.35rem;
+    color: #a054d8;
+    border: none;
+    margin: 0 0 14px;
 }
 
 .landing-hero {
@@ -118,6 +125,95 @@ header img[alt="Logo"] {
     color: #7928ca !important;
 }
 
+/* How to use: four cards in a row, two on a narrow screen */
+.landing-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.landing-step {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px;
+    background: #ffffff;
+}
+
+.landing-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #f3e8ff;
+    color: #7928ca;
+    font-weight: 700;
+}
+
+#content .landing-step h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 10px 0 4px;
+}
+
+#content .landing-step p {
+    margin: 0;
+    color: #475569;
+    font-size: 0.95rem;
+}
+
+/* The card's how-to points, under its one-line purpose; as specific as the
+   theme's #content ul:not(.search)>li, which spaces them 24px apart */
+#content .landing-step ul:not(.search) {
+    margin: 10px 0 0 18px;
+}
+
+#content .landing-step ul:not(.search)>li {
+    margin: 4px 0 0;
+    color: #475569;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+/* Using Mirdata: the text beside the Python code, one above the other on a narrow screen */
+.landing-quickstart {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+/* RST's container class meets the theme's .container (centred, padded): undone here */
+#content .landing-quickstart.container,
+#content .landing-quickstart .container {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
+.landing-quickstart-text>p:first-child,
+.landing-quickstart-code pre {
+    margin-top: 0;
+}
+
+@media (max-width: 900px) {
+    .landing-steps {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .landing-quickstart {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* A phone: one card a row, so the points keep a readable line length */
+@media (max-width: 600px) {
+    .landing-steps {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ==========================================================================
    Gallery layout: filters (left sidebar), dataset list, panel
    ========================================================================== */
@@ -144,64 +240,51 @@ header img[alt="Logo"] {
 }
 
 /* The splitter between the list and the panel (gallery.js): 24px of room
-   between them, a line with a grip in its middle shown on hover, purple while
-   dragged */
+   between them, all of it draggable, with a bar in it, purple while dragged */
 .gallery-splitter {
     flex: 0 0 24px;
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     cursor: col-resize;
     touch-action: none;
     outline: none;
 }
 
+/* The bar: half the gallery's height, in the middle of the blank between the
+   list's rows and the panel (--bar-shift: the list's scrollbar room and
+   padding, gallery.js, widen that blank on the left) */
 .gallery-splitter::before {
     content: "";
     position: absolute;
-    top: 25%; /* half the gallery's height, around the grip */
+    top: 25%;
     bottom: 25%;
     left: 50%;
-    width: 2px;
-    transform: translateX(-50%);
-    border-radius: 1px;
-    background: #e2e8f0;
-    opacity: 0;
-    transition: opacity 0.15s;
-}
-
-/* The grip: as wide and round as the scrollbars (8px) */
-.gallery-splitter::after {
-    content: "";
-    position: relative;
-    width: 8px;
-    height: 40px;
-    border-radius: 4px;
+    width: 6px;
+    transform: translateX(calc(-50% + var(--bar-shift, 0px)));
+    border-radius: 3px;
     background: #cbd5e1;
-    opacity: 0;
+    opacity: 0.3; /* full on hover, focus or drag */
     transition: opacity 0.15s;
 }
 
 .gallery-splitter:hover::before,
-.gallery-splitter:hover::after,
 .gallery-splitter:focus-visible::before,
-.gallery-splitter:focus-visible::after,
-.gallery-splitter.dragging::before,
-.gallery-splitter.dragging::after {
+.gallery-splitter.dragging::before {
     opacity: 1;
 }
 
-.gallery-splitter.dragging::before,
-.gallery-splitter.dragging::after {
+.gallery-splitter.dragging::before {
     background: #a054d8;
 }
 
-/* Nothing to drag (a wide window: the list and the panel both at their
-   widest): only the room between them */
+/* Nothing to drag (the list's share leaves it no more than its 350px): only
+   the room between them, without the bar */
 .gallery-splitter.idle {
     cursor: default;
     pointer-events: none;
+}
+
+.gallery-splitter.idle::before {
+    display: none;
 }
 
 /* The scrollbars of the filters, the list and the panel: thin, and hidden
@@ -411,8 +494,8 @@ body:has(#mirdata-gallery) footer p {
 }
 
 /* Column 2: the dataset list. 350px to 687px; it takes the width the panel
-   leaves once the panel is at its 850px (687px is what a 27" monitor leaves;
-   wider windows keep a blank on the right). Its columns follow its own width
+   leaves once the panel is at its 850px (687px is what the page at its
+   widest leaves, .container above). Its columns follow its own width
    (the container queries below the table's rules). */
 .gallery-datasets-list {
     container: dataset-list / inline-size;
@@ -797,7 +880,8 @@ body:has(#mirdata-gallery) footer p {
 }
 
 /* Column 3: the panel, 850px, narrower (down to 400px) when the window has
-   no room for it (wider, the charts and their text grow too big) */
+   no room for it (wider, the charts and their text grow too big; only when
+   the splitter narrows the list, gallery.js) */
 .gallery-cards-information {
     flex: 0 1 850px;
     min-width: 400px;
@@ -901,6 +985,13 @@ body:has(#mirdata-gallery) footer p {
 
 #content .gallery-cards-information .combine-chips-hint {
     margin: 0 0 14px;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+/* The combined datasets the filters hide, between the chips and the hint */
+#content .gallery-cards-information .combine-hidden {
+    margin: 0 0 4px;
     font-size: 0.8rem;
     color: #64748b;
 }
@@ -1052,11 +1143,14 @@ body:has(#mirdata-gallery) footer p {
     opacity: 0.4;
 }
 
-/* Statistics: three small plots in a row, every plot the same size */
+/* Statistics: small plots in a row, the same size but the ones two columns wide */
 .plot-grid {
     display: grid;
     /* as many as fit at 170px each, at most 4 (a column is never under a quarter, less the gaps) */
     grid-template-columns: repeat(auto-fill, minmax(max(170px, calc((100% - 3 * 10px) / 4)), 1fr));
+    /* a two-column plot that does not fit at the end of a row goes to the next,
+       and the plots after it fill the gap it leaves */
+    grid-auto-flow: row dense;
     gap: 10px;
     margin: 4px 0 8px;
 }
@@ -1147,10 +1241,315 @@ body:has(#mirdata-gallery) footer p {
     filter: brightness(0.85);
 }
 
-/* Thin bars touch (charts.js, barsSvg: a count per MIDI value): no white gap
+/* Thin bars touch (charts.js, barsSvg: a grid's many bins): no white gap
    between their thin pieces either */
 .plot-gapless .plot-piece {
     stroke: none;
+}
+
+/* The tempo changes scatter (charts.js, tempoChangesSvg) spans two columns */
+.plot-grid .plot-wide {
+    grid-column: span 2;
+}
+
+/* A chord or key circle (charts.js, circleSvg) spans two columns too; the
+   circles go in a block of their own under the other plots (plotGridHtml), on
+   the grid's columns, so none moves up into a gap the dense flow leaves */
+.plot-grid .plot-circles {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    row-gap: 10px;
+}
+
+.plot-grid .plot-circle {
+    grid-column: span 2;
+}
+
+/* Every cell's outline, so the unused ones show as blank cells */
+.circle-cell {
+    fill: none;
+    stroke: #e2e8f0;
+    stroke-width: 0.5;
+}
+
+/* A hovered cell is outlined: its shade may be too faint to darken */
+.plot-circle-svg g:hover .plot-piece {
+    stroke: #1e293b;
+    stroke-width: 0.8;
+}
+
+.plot-circle-svg .circle-root {
+    font-weight: 600;
+    fill: #334155;
+}
+
+/* The tempo changes scatter (charts.js, tempoChangesSvg): the steady band and
+   the 0 line; the lines over the zones leave the hover to the zone under them */
+.changes-band {
+    fill: #f1f5f9;
+    fill-opacity: 0.8; /* the hovered zone's shade shows through */
+}
+
+.changes-zero {
+    stroke: #94a3b8;
+    stroke-width: 0.5;
+}
+
+/* The y label, two lines: smaller than the x axis unit, as the y numbers */
+.plot-changes-svg .changes-y-label {
+    font-size: 7px;
+}
+
+.plot-changes-svg .changes-band,
+.plot-changes-svg .changes-zero,
+.plot-changes-svg .plot-gridline,
+.plot-changes-svg .plot-axis {
+    pointer-events: none;
+}
+
+/* See-through dots, so where they pile up shows darker; the others' pale grey
+   ones a little stronger, so they still show */
+.changes-dot {
+    fill-opacity: 0.45;
+}
+
+.changes-dot.combine-rest {
+    fill-opacity: 0.7;
+}
+
+.plot-changes-svg g:hover .changes-dot {
+    fill-opacity: 1;
+    stroke: #1e293b;
+    stroke-width: 0.4;
+}
+
+/* A ring's name over its cells, a white edge keeping it readable on any
+   shade; the cells under it still take the hover */
+.plot-circle-svg .circle-ring {
+    font-size: 5px;
+    fill: #1e293b;
+    stroke: #ffffff;
+    stroke-width: 2px;
+    stroke-linejoin: round;
+    paint-order: stroke;
+    pointer-events: none;
+}
+
+/* N, X in the circle's empty middle */
+.plot-circle-svg .circle-middle {
+    font-size: 7px;
+}
+
+/* Combine mode: a pooled plot's sources (charts.js, sourcesHtml; gallery.js,
+   showSources): a button right after its title, and the bubble it
+   opens under the title, over the plots, listing each dataset's property: a
+   tag, or a button per property when it has several, the one it adds pressed */
+#content .plot figcaption {
+    position: relative;
+}
+
+.plot-title-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.plot-title-line .plot-title {
+    min-width: 0;
+}
+
+.plot-sources-btn {
+    flex-shrink: 0;
+    padding: 0 7px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    background: #ffffff;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: #7928ca;
+    cursor: pointer;
+}
+
+.plot-sources-btn:hover,
+.plot-sources-btn[aria-expanded="true"] {
+    background: #faf5ff;
+    border-color: #a054d8;
+}
+
+.plot-sources {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 20;
+    width: max-content;
+    max-width: 360px;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+/* one that would run past the plots' right edge opens from its plot's right edge */
+.plot-sources.leftwards {
+    left: auto;
+    right: 0;
+}
+
+.plot-sources-title {
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* the datasets' names in one column, their properties in the next */
+.plot-sources-grid {
+    display: grid;
+    grid-template-columns: max-content auto;
+    align-items: baseline; /* a name level with the first line of its buttons */
+    row-gap: 5px;
+}
+
+.plot-sources-row {
+    display: contents;
+}
+
+/* a faint line across both columns between datasets, so wrapped buttons stay with theirs */
+.plot-sources-rule {
+    grid-column: 1 / -1;
+    border-top: 1px solid #f1f5f9;
+}
+
+.plot-sources-name {
+    padding-right: 12px;
+    color: #334155;
+}
+
+.plot-sources-name .combine-dot {
+    vertical-align: -1px;
+}
+
+.plot-sources-props {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+/* lined up with the buttons' text */
+.plot-source-tag {
+    padding: 0 7px;
+    border: 1px solid transparent;
+    color: #334155;
+}
+
+.plot-pick {
+    padding: 0 7px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    background: #ffffff;
+    font: inherit;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.plot-pick:hover {
+    border-color: #a054d8;
+}
+
+.plot-pick[aria-pressed="true"] {
+    background: #faf5ff;
+    border-color: #a054d8;
+    color: #7928ca;
+}
+
+/* Statistics, larger (gallery.js, 9.): the button at the end of a panel's
+   Statistics title, and the pop-up it opens, nearly the whole window over the
+   page dimmed, its body scrolling; its plots fill its width */
+.stats-expand {
+    float: right;
+    padding: 0 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #ffffff;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.stats-expand:hover {
+    border-color: #a054d8;
+    color: #7928ca;
+}
+
+.stats-dialog {
+    width: 95vw;
+    height: 95vh;
+    max-width: none;
+    max-height: none;
+    margin: auto; /* centred: the theme's reset would put it in the corner */
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.35);
+}
+
+.stats-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.stats-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.stats-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.stats-dialog-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.stats-close {
+    border: none;
+    background: none;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.stats-close:hover {
+    color: #1e293b;
+}
+
+.stats-dialog-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+}
+
+/* the box itself, without its frame: the pop-up is the frame */
+.stats-dialog-body .panel-box {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+/* the page behind stays still */
+body:has(.stats-dialog[open]) {
+    overflow: hidden;
 }
 
 /* A y tick's line across the chart, behind the bars (charts.js, barsSvg) */
@@ -1175,7 +1574,8 @@ body:has(#mirdata-gallery) footer p {
     font-size: 7px;
 }
 
-/* A bar's hover text, shown at once above the cursor (gallery.js) */
+/* A bar's hover text, shown at once right of the cursor (gallery.js); a circle
+   cell's has one label a line */
 .plot-tip {
     display: none;
     position: fixed;
@@ -1186,7 +1586,7 @@ body:has(#mirdata-gallery) footer p {
     background: #1e293b;
     color: #ffffff;
     font-size: 0.8rem;
-    white-space: nowrap;
+    white-space: pre;
 }
 
 /* "Try it with mirdata": a dark code block (this one only), copy icon always

@@ -31,26 +31,42 @@ from sphinx.util.nodes import nested_parse_with_titles
 logger = logging.getLogger(__name__)
 
 MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest as "…"
-# The plotted fields of each annotation type, in plot order. A counts field not
-# listed is not plotted ("parts" counts where the annotations came from, not
-# what they hold); a histogram not listed is plotted after the listed ones.
+# The plotted fields of each annotation type, in plot order, with their titles
+# ("audio": the audio's, plotted first). A counts field not listed is not
+# plotted ("parts" counts where the annotations came from, not what they hold);
+# a grid, histogram or points not listed is plotted after the listed ones,
+# titled from its name.
 PLOT_FIELDS = {
-    "BeatData": ["tempo_from_beats", "meter"],
-    "ChordData": ["labels", "qualities"],
-    "EventData": ["events"],
-    "F0Data": ["frequencies"],
-    "KeyData": ["keys", "modes"],
-    "LyricData": ["lyric_unit", "lyrics_per_track"],
-    "MultiF0Data": ["frequencies", "polyphony"],
-    "NoteData": ["pitches"],
-    "SectionData": ["labels", "section_interval_seconds"],
-    "TempoData": ["tempo"],
+    "audio": {"duration_histogram": "Track duration"},
+    "BeatData": {
+        "tempo_from_beats": "Tempo",
+        "tempo_changes": "Tempo changes",
+        "meter": "Meter",
+        "meter_changes": "Meter changes",
+    },
+    "ChordData": {"labels": "Chords"},
+    "EventData": {"events": "Events"},
+    "F0Data": {"frequencies": "Pitch (F0)"},
+    "KeyData": {"keys": "Keys"},
+    "LyricData": {"lyric_unit": "Lyric unit", "lyrics_per_track": "Lyrics per track"},
+    "MultiF0Data": {"frequencies": "Pitches (multi-F0)", "polyphony": "Notes at once"},
+    "NoteData": {"pitches": "Note pitch"},
+    "SectionData": {"labels": "Section labels", "section_interval_seconds": "Section length"},
+    "TempoData": {"tempo": "Tempo"},
 }
 
-# The unit written under the axis of a counts field whose labels are numbers in
-# a unit (a histogram has its own). NoteData pitches are counts only when the
-# loader gives MIDI: Hz pitches are a histogram.
-COUNT_UNITS = {("NoteData", "pitches"): "MIDI"}
+# The label fields drawn as a circle of fifths instead of bars (charts.js,
+# circleSvg), and its rings: a ring per chord quality or per key mode. The
+# rings show what the qualities and modes fields would, so those are not plotted.
+CIRCLE_FIELDS = {("ChordData", "labels"): "chords", ("KeyData", "keys"): "keys"}
+
+# The counts fields whose labels are whole numbers from 0 (charts.js, countsSvg):
+# a bar for every number up to last, empty ones too, the ones from last on in
+# one "≥ last" bar; noun is what one number counts (hover "2 changes"), unit the
+# axis label. The card keeps every number, so last can change without a recompute.
+NUMBER_FIELDS = {
+    ("BeatData", "meter_changes"): {"last": 5, "noun": "change", "unit": "changes per track"},
+}
 
 # --- Card rendering ----------------------------------------------------------
 
@@ -280,13 +296,14 @@ def status_notes(stats):
 
 
 def ordered_plots(stats, with_beat_tempo=False):
-    """Every histogram and counts field to plot, in display order.
+    """Every grid, histogram, points and counts field to plot, in display order.
 
     The audio duration comes first, then the plots grouped by annotation type,
     A–Z. Inside a type, the entry (track property) with the most annotations
     comes first, then the others; each entry's plots in PLOT_FIELDS
-    order. An annotated tempo (TempoData) replaces the tempo derived from beats,
-    unless with_beat_tempo (Combine mode hides neither).
+    order. The circles (CIRCLE_FIELDS) come last, in the same order, on rows
+    of their own. An annotated tempo (TempoData) replaces the tempo derived
+    from beats, unless with_beat_tempo (Combine mode hides neither).
     """
     plots = []
     audio = stats.get("audio") or {}
@@ -303,7 +320,7 @@ def ordered_plots(stats, with_beat_tempo=False):
     by_type = {}
     entries = (stats.get("annotations") or {}).get("annotations") or {}
     annotated_tempo = any(
-        e["type"] == "TempoData" and is_histogram(e.get("tempo"))
+        e["type"] == "TempoData" and is_grid(e.get("tempo"))
         for e in entries.values()
     )
     skip = {"tempo_from_beats"} if annotated_tempo and not with_beat_tempo else set()
@@ -324,18 +341,18 @@ def ordered_plots(stats, with_beat_tempo=False):
             if prop != best[0]
             for p in entry_plots
         )
-    return plots
+    return [p for p in plots if not p["circle"]] + [p for p in plots if p["circle"]]
 
 
 def annotation_plots(prop, entry, skip=()):
-    """The plots of one annotation entry, its histograms and counts in PLOT_FIELDS order, but the fields in skip."""
-    order = PLOT_FIELDS.get(entry["type"], [])
+    """The plots of one annotation entry, its grids, points and counts in PLOT_FIELDS order, but the fields in skip."""
+    order = list(PLOT_FIELDS.get(entry["type"], {}))
     # counts only when PLOT_FIELDS names them: "parts" is counts too, but not a plot
     fields = [
         key
         for key, value in entry.items()
         if key not in skip
-        and (is_histogram(value) or (key in order and is_counts(value)))
+        and (is_grid(value) or is_points(value) or (key in order and is_counts(value)))
     ]
     fields.sort(key=lambda key: order.index(key) if key in order else len(order))
     return [
@@ -352,11 +369,30 @@ def annotation_plots(prop, entry, skip=()):
     ]
 
 
+def is_grid(value):
+    """{unit, width, counts: {bin start: count}}, scripts/stats/annotation_types.py's grid."""
+    return (
+        isinstance(value, dict)
+        and set(value) == {"unit", "width", "counts"}
+        and bool(value["counts"])
+    )
+
+
 def is_histogram(value):
+    """{unit, edges, counts}: only the audio durations, added to the cards by hand."""
     return (
         isinstance(value, dict)
         and set(value) == {"unit", "edges", "counts"}
         and bool(value["counts"])
+    )
+
+
+def is_points(value):
+    """{x: [...], y: [...]}, the i-th of each a point: Beats' tempo_changes {tempo, change}."""
+    return (
+        isinstance(value, dict)
+        and len(value) == 2
+        and all(isinstance(v, list) and v for v in value.values())
     )
 
 
@@ -371,31 +407,42 @@ def is_counts(value):
 
 
 def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_type=None):
-    """What one plot needs: data is a histogram or counts. counted names what the bars count, for the hover text.
+    """What one plot needs: data is a grid, a histogram, points or counts. counted names what the bars (or dots) count, for the hover text.
 
     prop, type and field (None for the audio's) are what Combine mode matches
-    the plots of several datasets by. unit is a counts field's (COUNT_UNITS).
+    the plots of several datasets by. circle names the rings of a field drawn
+    as a circle (CIRCLE_FIELDS), whose labels count segments; numbers is how a
+    counts field of whole numbers is drawn (NUMBER_FIELDS), or None.
     """
-    total = sum(data["counts"]) if is_histogram(data) else sum(data.values())
-    counted = (
-        "tracks"
-        if total == n_tracks
-        else "annotations" if total == n_annotations else "values"
-    )
-    words = (
-        field.removesuffix("_histogram")
-        .removesuffix("_per_annotation")
-        .replace("_", " ")
-    )
+    circle = CIRCLE_FIELDS.get((ann_type, field))
+    if is_grid(data):
+        total = sum(data["counts"].values())
+    elif is_histogram(data):
+        total = sum(data["counts"])
+    elif is_points(data):
+        total = len(next(iter(data.values())))
+    else:
+        total = sum(data.values())
+    if total == n_tracks:
+        counted = "tracks"
+    elif total == n_annotations:
+        counted = "annotations"
+    else:
+        counted = "segments" if circle else "values"
+    title = PLOT_FIELDS.get(ann_type or "audio", {}).get(field)
+    if title is None:  # a field PLOT_FIELDS does not name: from its name
+        words = field.removesuffix("_histogram").removesuffix("_per_annotation").replace("_", " ")
+        title = words[:1].upper() + words[1:]
     return {
-        "title": words[:1].upper() + words[1:],
+        "title": title,
         "source": source,
         "data": data,
         "counted": counted,
         "prop": prop,
         "type": ann_type,
         "field": field,
-        "unit": None if is_histogram(data) else COUNT_UNITS.get((ann_type, field)),
+        "circle": circle,
+        "numbers": NUMBER_FIELDS.get((ann_type, field)),
     }
 
 
@@ -403,17 +450,23 @@ def plot_grid(plots):
     """The grid of plots, empty: charts.js draws them in the page from its data-plots.
 
     data-plots is the plots as JSON; one marked combined_only is not drawn
-    here, only in Combine mode. A counts field goes as [label, count] pairs, so
-    number labels (meter, polyphony) stay numbers.
+    here, only in Combine mode.
     """
-    data = [
-        {
-            **p,
-            "data": p["data"] if is_histogram(p["data"]) else list(p["data"].items()),
-        }
-        for p in plots
-    ]
+    data = [{**p, "data": page_data(p["data"])} for p in plots]
     return f'<div class="plot-grid" data-plots="{html.escape(json.dumps(data))}"></div>'
+
+
+def page_data(data):
+    """A plot's data as the page gets it: the counts of a counts field or a grid
+    as [label, count] pairs, so number labels (meter, bin starts) stay numbers;
+    points as {points: [[x, y], ...]}, a pair per point."""
+    if is_grid(data):
+        return {**data, "counts": list(data["counts"].items())}
+    if is_histogram(data):
+        return data
+    if is_points(data):
+        return {"points": [list(point) for point in zip(*data.values())]}
+    return list(data.items())
 
 
 # --- Directive ---------------------------------------------------------------

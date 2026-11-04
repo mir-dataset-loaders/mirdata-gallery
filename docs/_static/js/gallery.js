@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Search Input
     const search = document.createElement("input");
     search.type = "text";
-    search.placeholder = "Search datasets...";
+    search.placeholder = "Search dataset name...";
     search.className = "filter-search";
     search.addEventListener("input", (e) => {
         state.searchQuery = e.target.value.toLowerCase().trim();
@@ -421,12 +421,18 @@ document.addEventListener("DOMContentLoaded", function () {
     // combination or removes it, and the panel shows the combination
     // (combine.js works out its text). Cmd-click or Ctrl-click switches it on
     // too. A combination of one shows that dataset's own panel, and removing
-    // datasets down to one switches Combine off, on that one. Filters only
-    // change the list: a dataset they hide stays in the combination.
+    // datasets down to one switches Combine off, on that one. A dataset the
+    // filters hide leaves the panel too, but stays in the combination with its
+    // colour and picks, back when the filters let it through again
+    // (shownCombined).
     // colours: each selected dataset's colour, given when it joins (combine.js, nextColour)
     // focus: the dataset whose part of each plot is shown (its chip's name clicked), or null: stacked
     // typeFocus: the annotation type whose plots alone are shown (7. below), or null: all
-    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null, typeFocus: null };
+    // picks: the property a dataset adds to a combined plot, picked in the plot's sources bubble
+    // (charts.js, sourcesHtml), {plot's pickKey: {dataset title: property}}; one not picked adds
+    // its first (combine.js)
+    // openSources: the pickKey of the plot whose sources bubble is open (showSources), or null
+    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null, typeFocus: null, picks: {}, openSources: null };
     const combineBar = document.createElement("div");
     combineBar.className = "combine-bar";
     const combineBtn = document.createElement("button");
@@ -453,6 +459,8 @@ document.addEventListener("DOMContentLoaded", function () {
         combine.colours.clear();
         combine.focus = null;
         combine.typeFocus = null;
+        combine.picks = {};
+        combine.openSources = null;
         if (combine.on) {
             // the dataset on show is the first one of the combination, purple as in its panel
             if (activeItem && activeItem.card.style.display !== "none") join(activeItem);
@@ -465,12 +473,14 @@ document.addEventListener("DOMContentLoaded", function () {
             cardData.forEach((d) => d.btn.classList.remove("active"));
             selectCard(last);
             applyFilters(false); // the first visible one instead, if the filters hide it
+            refreshStats(); // the pop-up, when open, shows that one's Statistics now
         }
     });
 
     // A dataset joins the combination with the first free colour, and leaves it
     // with its colour, free for the next one to join; the others keep theirs.
-    // The focused one leaving takes the focus with it: the plots stack again.
+    // The focused one leaving takes the focus with it: the plots stack again;
+    // its picks go with it too.
     function join(item) {
         combine.colours.set(item, mirdataCombine.nextColour([...combine.colours.values()]));
         combine.selected.push(item);
@@ -480,6 +490,7 @@ document.addEventListener("DOMContentLoaded", function () {
         combine.colours.delete(item);
         combine.selected.splice(combine.selected.indexOf(item), 1);
         if (combine.focus === item) combine.focus = null;
+        for (const key in combine.picks) delete combine.picks[key][item.title];
     }
 
     function toggleCombined(item) {
@@ -503,28 +514,38 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // The combined datasets the filters let through: the ones the panel shows
+    function shownCombined() {
+        return combine.selected.filter((d) => matched.includes(d));
+    }
+
     function showCombination() {
-        const selected = combine.selected;
-        if (selected.length > 1) {
+        const shown = shownCombined();
+        if (shown.length > 1) {
             selectCard(null); // hides the dataset on show
-            fillCombinedPanel(selected);
+            fillCombinedPanel();
             combinedPanel.style.display = "flex";
         } else {
-            // one (Combine just switched on): its own panel; none: nothing
+            // one (Combine just switched on, or the filters hide the rest): its own panel; none: nothing
             combinedPanel.style.display = "none";
-            selectCard(selected[0] || null);
+            selectCard(shown[0] || null);
+            refreshStats();
         }
-        cardData.forEach((d) => d.btn.classList.toggle("active", selected.includes(d)));
+        cardData.forEach((d) => d.btn.classList.toggle("active", combine.selected.includes(d)));
     }
 
     // The combined panel: its title and the datasets' names, At a glance, and
     // Statistics: the datasets again (a chip each: a click on its name focuses
     // it, one more shows them all again, and × removes it; its dot is the
-    // dataset's colour in the plots, so the chips are the legend), each
-    // dataset's notes, and the plots pooled from theirs (combine.js), stacked
-    // by dataset or showing the focused one's part
-    function fillCombinedPanel(selected) {
+    // dataset's colour in the plots, so the chips are the legend), the ones the
+    // filters hide, each dataset's notes, and the plots pooled from theirs
+    // (combine.js), stacked by dataset or showing the focused one's part (none
+    // while the filters hide it)
+    function fillCombinedPanel() {
         const escape = mirdataCharts.escapeHtml;
+        const selected = shownCombined();
+        const hidden = combine.selected.filter((d) => !selected.includes(d));
+        const focus = selected.includes(combine.focus) ? combine.focus.title : null;
         const datasets = selected.map((d) => ({ name: d.title, slot: combine.colours.get(d), plots: d.plots }));
         const slots = datasets.map((d) => d.slot);
         const chips = selected
@@ -552,7 +573,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const types = [...new Set(selected.flatMap((d) => d.annotations))].sort();
         const tags = types.map((t) => `<code data-ann="${escape(t)}">${escape(t)}</code>`).join("");
         const notes = mirdataCombine.namedNotes(selected.map((d) => ({ name: d.title, notes: d.facts.notes })));
-        const plots = mirdataCombine.combinedPlots(datasets);
+        const plots = mirdataCombine.combinedPlots(datasets, combine.picks);
         if (!plots.length) notes.push("Nothing to plot yet.");
         combinedPanel.innerHTML =
             `<h2>${selected.length} Datasets Combined</h2>` +
@@ -562,27 +583,83 @@ document.addEventListener("DOMContentLoaded", function () {
             `<div class="box-title">Annotation types</div><div class="glance-tags">${tags || "—"}</div></div>` +
             '<div class="panel-box"><div class="box-title">Statistics</div>' +
             `<div class="combine-chips">${chips}</div>` +
+            (hidden.length ? `<p class="combine-hidden">Hidden by the filters: ${hidden.map((d) => escape(d.title)).join(", ")}</p>` : "") +
             '<p class="combine-chips-hint">Click a name to focus it in the plots</p>' +
             notes.map((text) => `<p class="stats-note">${escape(text)}</p>`).join("") +
-            (plots.length ? `<div class="plot-grid">${mirdataCharts.plotGridHtml(plots, combine.focus && combine.focus.title)}</div>` : "") +
+            (plots.length ? `<div class="plot-grid">${mirdataCharts.plotGridHtml(plots, focus)}</div>` : "") +
             "</div>";
         moveTips(combinedPanel);
         flashScrollbar(infoColumn);
         if (!types.includes(combine.typeFocus)) combine.typeFocus = null; // its datasets all removed
         focusType(combinedPanel, combine.typeFocus);
+        addStatsButton(combinedPanel);
+        showSources(combinedPanel);
+        refreshStats();
     }
 
-    combinedPanel.addEventListener("click", (e) => {
+    // Opens the sources bubble of the plot combine.openSources names in root
+    // (the combined panel, or the pop-up's copy), the others closed. One that
+    // would run past its plot grid's right edge opens leftwards instead.
+    function showSources(root) {
+        root.querySelectorAll(".plot[data-pick-key]").forEach((fig) => {
+            const open = fig.dataset.pickKey === combine.openSources;
+            const bubble = fig.querySelector(".plot-sources");
+            bubble.hidden = !open;
+            fig.querySelector(".plot-sources-btn").setAttribute("aria-expanded", String(open));
+            if (!open) return;
+            bubble.classList.remove("leftwards");
+            if (bubble.getBoundingClientRect().right > fig.closest(".plot-grid").getBoundingClientRect().right) {
+                bubble.classList.add("leftwards");
+            }
+        });
+    }
+
+    // The open sources bubble closes on a click anywhere outside it, or Esc
+    function closeSources() {
+        combine.openSources = null;
+        showSources(combinedPanel);
+        refreshStats();
+    }
+    document.addEventListener("pointerdown", (e) => {
+        if (combine.openSources !== null && !e.target.closest(".plot-sources, .plot-sources-btn")) closeSources();
+    });
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape" || combine.openSources === null) return;
+        e.preventDefault(); // just the bubble, not the pop-up around it too
+        closeSources();
+    });
+
+    // A click in the combination's Statistics, on its panel or in the pop-up (9. below)
+    function onCombinedClick(e) {
+        // a plot's sources button: its bubble opens, or closes
+        const sources = e.target.closest(".plot-sources-btn");
+        if (sources) {
+            const key = sources.closest(".plot").dataset.pickKey;
+            combine.openSources = combine.openSources === key ? null : key;
+            showSources(combinedPanel);
+            refreshStats();
+            return;
+        }
+        // a property's button in the bubble: that dataset adds it to the plot
+        const pick = e.target.closest(".plot-pick");
+        if (pick) {
+            const { key, name, prop } = pick.dataset;
+            combine.picks[key] = { ...combine.picks[key], [name]: prop };
+            fillCombinedPanel();
+            return;
+        }
+        // a chip's index: its place among the datasets shown
         const name = e.target.closest(".combine-name");
         if (name) {
-            const item = combine.selected[Number(name.dataset.index)];
+            const item = shownCombined()[Number(name.dataset.index)];
             combine.focus = combine.focus === item ? null : item;
-            fillCombinedPanel(combine.selected);
+            fillCombinedPanel();
             return;
         }
         const remove = e.target.closest(".combine-remove");
-        if (remove) removeCombined(combine.selected[Number(remove.dataset.index)]);
-    });
+        if (remove) removeCombined(shownCombined()[Number(remove.dataset.index)]);
+    }
+    combinedPanel.addEventListener("click", onCombinedClick);
 
     // 5. Apply filtering logic
     // Whether a dataset passes one pill filter: nothing selected, or any / all
@@ -725,23 +802,23 @@ document.addEventListener("DOMContentLoaded", function () {
         showPage();
         counter.textContent = `Showing ${matched.length} of ${cardData.length}`;
         listCount.textContent = matched.length === 1 ? "1 Dataset" : `${matched.length} Datasets`;
-        if (combine.on) return; // Combine mode: the filters only change the list
-        // Keep the dataset on show if the filters let it through (on whatever
-        // page), otherwise show the first one
-        selectCard(activeItem && matched.includes(activeItem) ? activeItem : matched[0] || null);
+        // Combine mode: the combined datasets the filters let through; otherwise
+        // keep the dataset on show if they let it through (on whatever page),
+        // or show the first one
+        if (combine.on) showCombination();
+        else selectCard(activeItem && matched.includes(activeItem) ? activeItem : matched[0] || null);
     }
     applyFilters();
 
     // The splitter between the list and the panel (custom.css, shown on hover):
     // dragging it, or the arrow keys on it, set the list's width, from its
-    // default (350px, or what the panel's 850px leaves it) up to the share of
-    // the width a 27" monitor gives it (687px of 687 + 850): the list takes
-    // width from the panel, and gives it back, but never leaves a blank. So a
-    // laptop's list can widen enough to show License; a window where both are
-    // at their widest has nothing to drag (the splitter idle). A double-click
-    // goes back to the default widths. The browser remembers the share;
-    // without storage it lasts this visit. Not in the narrow layout (no
-    // splitter there).
+    // narrowest (350px) up to its share of the page at its widest (687px of
+    // 687 + 850, custom.css .container): the list and the panel trade width,
+    // but never leave a blank. So a laptop's list can widen enough to show
+    // License, and the widest page's, at that share by default, can narrow, the
+    // panel growing past its 850px (its charts with it). A double-click goes
+    // back to the default widths. The browser remembers the share; without
+    // storage it lasts this visit. Not in the narrow layout (no splitter there).
     const SHARE_KEY = "mirdata-gallery-list-share";
     const MIN_LIST = 350;
     const MAX_LIST = 687;
@@ -759,12 +836,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const listRoom = () => container.clientWidth - splitter.offsetWidth; // the list's and the panel's
 
-    // The list's narrowest and widest: its default, and the 27" share
+    // The splitter's bar in the middle of the blank between the list's rows
+    // and the panel: the list's scrollbar room (none for an overlay
+    // scrollbar) and its right padding widen that blank, so the bar moves
+    // left by half of them (custom.css, --bar-shift)
+    const listRight = listColumn.offsetWidth - listColumn.clientWidth + parseFloat(getComputedStyle(listColumn).paddingRight);
+    splitter.style.setProperty("--bar-shift", `${-listRight / 2}px`);
+
+    // The list's narrowest and widest: 350px, and its share of the widest page
     function listBounds() {
-        const room = listRoom();
-        const panel = parseFloat(getComputedStyle(infoColumn).flexBasis) || 850; // its widest (custom.css)
-        const min = Math.max(MIN_LIST, Math.min(MAX_LIST, room - panel));
-        return [min, Math.max(min, Math.min(MAX_LIST, room * MAX_SHARE))];
+        return [MIN_LIST, Math.max(MIN_LIST, Math.min(MAX_LIST, listRoom() * MAX_SHARE))];
     }
 
     // The list at its share, within its bounds; the default flex without one,
@@ -776,9 +857,11 @@ document.addEventListener("DOMContentLoaded", function () {
         splitter.tabIndex = idle ? -1 : 0;
         if (share === null || idle) {
             listColumn.style.flex = "";
+            infoColumn.style.flexGrow = "";
             return;
         }
         listColumn.style.flex = `0 0 ${Math.min(max, Math.max(min, share * listRoom()))}px`;
+        infoColumn.style.flexGrow = "1"; // the rest, past its 850px when the list is narrower than its default
     }
 
     function saveShare() {
@@ -849,7 +932,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (share !== null) showPage();
 
     // 6. Plot bars, the filters' AND / OR buttons and the list's type dots: show
-    // their hover text at once, in a box above the cursor. The browser's own <title> tooltip waits
+    // their hover text at once, in a box right of the cursor. The browser's own <title> tooltip waits
     // about a second, so the text moves from each bar's <title> to data-tip.
     const tip = document.createElement("div");
     tip.className = "plot-tip";
@@ -873,10 +956,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         tip.textContent = bar.dataset.tip;
         tip.style.display = "block";
-        // centred above the cursor, kept inside the window
-        const x = Math.min(Math.max(e.clientX - tip.offsetWidth / 2, 4), window.innerWidth - tip.offsetWidth - 4);
+        // right of the cursor, its middle level with it, kept inside the window:
+        // left of the cursor when there is no room on the right
+        const right = e.clientX + 14;
+        const x = right + tip.offsetWidth <= window.innerWidth - 4 ? right : Math.max(e.clientX - 14 - tip.offsetWidth, 4);
+        const y = Math.min(Math.max(e.clientY - tip.offsetHeight / 2, 4), window.innerHeight - tip.offsetHeight - 4);
         tip.style.left = `${x}px`;
-        tip.style.top = `${e.clientY - tip.offsetHeight - 10}px`;
+        tip.style.top = `${y}px`;
     }
     const hideTip = () => (tip.style.display = "none");
     [infoColumn, sidebar, listColumn].forEach((el) => {
@@ -913,8 +999,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const show = !type || fig.dataset.type === type;
             fig.style.display = show ? "" : "none";
             shown += show;
-        });
-        // a type without plots: a note instead
+        });        // a type without plots: a note instead
         let empty = panel.querySelector(".type-empty");
         if (type && !shown) {
             if (!empty) {
@@ -956,4 +1041,65 @@ document.addEventListener("DOMContentLoaded", function () {
     const scrollers = [document.getElementById("left-sidebar"), listColumn, infoColumn].filter(Boolean);
     scrollers.forEach((el) => el.addEventListener("scroll", () => flashScrollbar(el), { passive: true }));
     window.addEventListener("load", () => scrollers.forEach(flashScrollbar));
+
+    // 9. Statistics, larger: a button at the end of a panel's Statistics title
+    // (one with plots) opens the box in a pop-up over the page, at the pop-up's
+    // width, so its plots scale up with it (custom.css, .stats-dialog). The
+    // pop-up always shows a copy of the Statistics on show (refreshStats, run
+    // whenever the combination's are redrawn and when Combine switches off):
+    // clicks in it work as on the combined panel (onCombinedClick). ×, Esc or a
+    // click outside it closes it.
+    function addStatsButton(panel) {
+        const grid = panel.querySelector(".plot-grid");
+        if (!grid || !grid.children.length) return;
+        grid.closest(".panel-box")
+            .querySelector(".box-title")
+            .insertAdjacentHTML("beforeend", '<button class="stats-expand" title="Show larger" aria-label="Show the statistics larger">⤢</button>');
+    }
+    cards.forEach(addStatsButton);
+
+    // in the panel column, so the panel's styles and hover text (6. above) work in it too;
+    // shown open, a dialog is drawn over the whole page wherever it is
+    const statsDialog = document.createElement("dialog");
+    statsDialog.className = "stats-dialog";
+    statsDialog.innerHTML =
+        '<div class="stats-dialog-head"><span class="stats-dialog-title"></span>' +
+        '<button class="stats-close" title="Close" aria-label="Close">×</button></div>' +
+        '<div class="stats-dialog-body"></div>';
+    infoColumn.appendChild(statsDialog);
+
+    // The pop-up's copy of the Statistics on show (the combination's, or the
+    // dataset's), under its name; closes the pop-up when there are none
+    function refreshStats() {
+        if (!statsDialog.open) return;
+        const combined = combinedPanel.style.display !== "none";
+        const panel = combined ? combinedPanel : activeItem && activeItem.card;
+        const grid = panel && panel.querySelector(".plot-grid");
+        if (!grid) {
+            statsDialog.close();
+            return;
+        }
+        const copy = grid.closest(".panel-box").cloneNode(true);
+        copy.querySelector(".stats-expand")?.remove();
+        statsDialog.querySelector(".stats-dialog-title").textContent = combined ? `${shownCombined().length} Datasets Combined` : activeItem.title;
+        statsDialog.querySelector(".stats-dialog-body").replaceChildren(copy);
+        showSources(copy); // placed again: the pop-up is wider
+    }
+
+    infoColumn.addEventListener("click", (e) => {
+        if (!e.target.closest(".stats-expand")) return;
+        statsDialog.append(tip); // the hover box shows over the pop-up only from inside it
+        statsDialog.showModal();
+        refreshStats();
+    });
+    statsDialog.addEventListener("click", (e) => {
+        // the dialog itself is hit only outside its content: the backdrop
+        if (e.target === statsDialog || e.target.closest(".stats-close")) statsDialog.close();
+        else onCombinedClick(e);
+    });
+    statsDialog.addEventListener("close", () => {
+        hideTip();
+        document.body.appendChild(tip);
+    });
+    statsDialog.querySelector(".stats-dialog-body").addEventListener("scroll", hideTip);
 });

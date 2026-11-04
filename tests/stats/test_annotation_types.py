@@ -1,13 +1,11 @@
 """The Stat classes of stats/annotation_types.py, fed mirdata annotations built in code.
 
-Histograms are compared with histogram() of the values a Stat should
-collect: which values and which kind of histogram is this file's job, the
-bins are tested in test_histograms.py.
+Numeric fields are compared with grid() of the values a Stat should collect;
+the exact bins are checked by hand only in test_grid*.
 """
 
-from collections import Counter
-
 import numpy as np
+import pytest
 from mirdata import annotations
 
 from stats.annotation_types import (
@@ -21,12 +19,9 @@ from stats.annotation_types import (
     Notes,
     Sections,
     Tempo,
-    bar_lengths,
-    chord_quality,
+    grid,
     is_empty,
-    top_counts,
 )
-from stats.histograms import histogram
 
 
 def intervals(*pairs):
@@ -39,6 +34,17 @@ def beats(times, positions=None, time_unit="s", position_unit="bar_index"):
     return annotations.BeatData(
         np.array(times, dtype=float), time_unit, np.array(positions), position_unit
     )
+
+
+def beats_from_gaps(*gaps):
+    """Beats from 0 s on, the given gaps apart."""
+    return beats(np.concatenate([[0.0], np.cumsum(gaps)]))
+
+
+def bars(*lengths):
+    """Beats in bars of the given lengths: bar_index positions 1, 2, ... in each."""
+    positions = [p for n in lengths for p in range(1, n + 1)]
+    return beats(range(len(positions)), positions)
 
 
 def events(*labels):
@@ -63,16 +69,20 @@ def test_tempo():
         intervals((0, 10), (10, 20)), "s", np.array([90.0, 180.0]), "bpm"
     )
     result = collect(Tempo(), track1, track2).result()
-    expected = {"tempo": histogram([120.0, 90.0, 180.0], "bpm")}
+    expected = {"tempo": grid([120.0, 90.0, 180.0], "bpm")}
     assert (
         result == expected
-    ), "every tempo of every annotation should go into one bpm histogram"
+    ), "every tempo of every annotation should be counted on one 1-bpm grid"
 
 
 def test_beats():
     every_half_second = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5]
-    bars_of_4 = [1, 2, 3, 4, 1, 2, 3, 4, 1, 2]  # two bars of 4, then 2 beats of a third
+    bars_of_4 = [1, 2, 3, 4, 1, 2, 3, 4, 1, 2]  # two bars of 4, then 2 beats
     in_ms = beats([0, 1000, 2000, 3000, 4000, 5000], [1, 2, 3, 1, 2, 3], time_unit="ms")
+    speeding_up = beats_from_gaps(*[0.6] * 5, *[0.45] * 5)  # 100 bpm, then 133.3 bpm
+    one_change = beats(
+        range(15), [1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4], time_unit="ticks"
+    )  # bars of 4 3 4 4, no tempo
     result = collect(
         Beats(),
         beats(every_half_second, bars_of_4),  # 120 bpm, meter 4
@@ -80,16 +90,42 @@ def test_beats():
         beats([0, 0.25, 0.5], [1, 2, 3], position_unit="global_index"),  # 240 bpm
         beats([0.0]),  # one beat
         beats([0, 1, 2], time_unit="ticks"),
+        speeding_up,  # median gap 0.525 s, no positions
+        one_change,
     ).result()
-    tempo = histogram([120.0, 60.0, 240.0], "bpm")
+    tempo = grid([120.0, 60.0, 240.0, 60 / 0.525], "bpm")
     assert result["tempo_from_beats"] == tempo, (
         "tempo should be 60 / the median beat gap, one per annotation, with ms read as s/1000;"
         " one beat or a non-clock unit (ticks) should give no tempo"
     )
-    assert result["meter"] == {3: 1, 4: 1}, (
+    assert result["meter"] == {3: 1, 4: 2}, (
         "meter should be each track's most common bar length (a short last bar does not"
         " change it); positions that are not bar_index should give no meter"
     )
+    tempo_changes = {"tempo": [120, 60, 240, 114.3], "change": [0, 0, 0, 33.3]}
+    assert result["tempo_changes"] == tempo_changes, (
+        "tempo_changes should list the tempo and the change in % of each annotation that"
+        " has a tempo, the i-th of each together, in the order read, rounded to 0.1"
+    )
+    assert result["meter_changes"] == {0: 2, 1: 1}, (
+        "meter_changes should count the tracks by how many times each leaves its"
+        " meter"
+    )
+
+
+def test_beats_empty():
+    one_beat, ticks = beats([0.0]), beats([0, 1, 2], time_unit="ticks")
+    result = collect(Beats(), one_beat, ticks).result()
+    assert (
+        result["tempo_from_beats"] is None
+    ), "with no annotation that has a tempo, tempo_from_beats should be null"
+    assert (
+        result["tempo_changes"] is None
+    ), "with no annotation that has a tempo, tempo_changes should be null"
+    assert result["meter"] == {}, "with no bar_index positions, meter should be empty"
+    assert (
+        result["meter_changes"] == {}
+    ), "with no bar_index positions, meter_changes should be empty, like meter"
 
 
 def test_chords():
@@ -129,7 +165,7 @@ def test_f0():
         "likelihood",
     )
     result = collect(F0(), binary, likelihood).result()
-    expected = {"frequencies": histogram([440.0, 880.0, 1760.0], "hz")}
+    expected = {"frequencies": grid([440.0, 880.0, 1760.0], "hz")}
     assert result == expected, (
         "only voiced frames should count (binary voicing above 0, likelihood from 0.5),"
         " in Hz, whatever unit the loader gives"
@@ -147,10 +183,10 @@ def test_multif0():
         np.array([0.0, 0.01]), "s", [[57.0, 69.0, 81.0], [69.0]], "midi"
     )  # 220, 440, 880 Hz
     result = collect(MultiF0(), track1, track2).result()
-    frequencies = histogram([440.0, 440.0, 880.0, 220.0, 440.0, 880.0, 440.0], "hz")
+    frequencies = grid([440.0, 440.0, 880.0, 220.0, 440.0, 880.0, 440.0], "hz")
     assert (
         result["frequencies"] == frequencies
-    ), "every sounding pitch should go into one Hz histogram, whatever unit the loader gives"
+    ), "every sounding pitch should be counted on one Hz grid, whatever unit the loader gives"
     polyphony = {1: 2, 2: 1, 3: 1}
     assert result["polyphony"] == polyphony, (
         "polyphony should count frames per number of pitches sounding at once;"
@@ -162,17 +198,21 @@ def test_notes():
     two_notes = intervals((0, 1), (1, 2))
     in_midi = annotations.NoteData(two_notes, "s", np.array([64.0, 65.98]), "midi")
     result = collect(Notes(), in_midi, in_midi).result()
-    expected = {"pitches": {64: 2, 65: 0, 66: 2}}
+    expected = {"pitches": grid([64, 64, 66, 66], "midi")}
     assert result == expected, (
-        "MIDI pitches should be counted per whole MIDI value (65.98 as 66), every value"
-        " from the lowest to the highest, 0 for a value with no note"
+        "MIDI pitches should be counted per note, rounded to the nearest one (65.98 as 66,"
+        " not 65)"
     )
 
-    in_hz = annotations.NoteData(two_notes, "s", np.array([440.0, 0.0]), "hz")  # 0: no pitch
+    in_hz = annotations.NoteData(
+        two_notes, "s", np.array([440.0, 0.0]), "hz"
+    )  # 0: no pitch
     higher = annotations.NoteData(two_notes, "s", np.array([880.0, 1760.0]), "hz")
     result = collect(Notes(), in_hz, higher).result()
-    expected = {"pitches": histogram([440.0, 880.0, 1760.0], "hz")}
-    assert result == expected, "Hz pitches should be counted in Hz, without the 0s (no pitch)"
+    expected = {"pitches": grid([440.0, 880.0, 1760.0], "hz")}
+    assert (
+        result == expected
+    ), "Hz pitches should be counted in Hz, without the 0s (no pitch)"
 
 
 def test_sections():
@@ -186,10 +226,10 @@ def test_sections():
     assert (
         result["labels"] == labels
     ), "labels should count every section label; unlabeled sections add none"
-    lengths = histogram([10.0, 20.0, 5.0, 40.0], "s", log=True)
+    lengths = grid([10.0, 20.0, 5.0, 40.0], "s")
     assert result["section_interval_seconds"] == lengths, (
         "every section's length in seconds (ms read as s/1000), labeled or not,"
-        " should go into one log histogram"
+        " should be counted on one 1 s grid"
     )
 
 
@@ -222,7 +262,7 @@ def test_lyrics():
     assert (
         result["lyric_unit"] == units
     ), "lyric_unit should count the annotations of each unit"
-    per_track = histogram([5, 4], "words")
+    per_track = grid([5, 4], "words")
     assert result["lyrics_per_track"] == per_track, (
         "lyrics_per_track should add up all of a track's annotations,"
         " in the most common unit"
@@ -233,6 +273,16 @@ def test_events():
     result = collect(Events(), events("kick", "snare"), events("kick")).result()
     expected = {"events": {"kick": 2, "snare": 1}}
     assert result == expected, "events should count every event label"
+
+
+def test_every_label_is_kept():
+    rare = [f"event{i}" for i in range(40)]
+    result = collect(Events(), events(*rare, "kick", "kick", "kick")).result()
+    assert (
+        len(result["events"]) == 41
+    ), "every label should be kept, however many there are"
+    assert "(other)" not in result["events"], "no labels should be folded into (other)"
+    assert list(result["events"])[0] == "kick", "labels should come most common first"
 
 
 # ------------------------------------------------------------ the shared base
@@ -293,23 +343,114 @@ def test_chord_quality():
         "G:7": "7",
     }
     for label, quality in expected.items():
-        assert chord_quality(label) == quality, f"{label} should have quality {quality}"
+        assert (
+            Chords.chord_quality(label) == quality
+        ), f"{label} should have quality {quality}"
 
 
 def test_bar_lengths():
-    bars = bar_lengths([1, 2, 3, 4, 1, 2, 3])
+    bars = Beats.bar_lengths([1, 2, 3, 4, 1, 2, 3])
     assert bars == [4, 3], "a bar should end where the count goes back down"
-    bars = bar_lengths([0, 0, 1, 2, 1, 2])
+    bars = Beats.bar_lengths([0, 0, 1, 2, 1, 2])
     assert bars == [2, 2], "position 0 (a beat outside any bar) should be skipped"
-    assert bar_lengths([]) == [], "no positions should give no bars"
+    assert Beats.bar_lengths([]) == [], "no positions should give no bars"
 
 
-def test_top_counts():
-    counter = Counter({"a": 3, "b": 2, "c": 1, "d": 1})
-    kept = top_counts(counter, top=2)
-    expected = {"a": 3, "b": 2, "(other)": 2}
-    assert (
-        kept == expected
-    ), "only the most common labels should be kept, the rest added up into (other)"
-    kept = top_counts(counter, top=4)
-    assert kept == dict(counter), "nothing left over should mean no (other)"
+def test_beat_meter():
+    meter = Beats.beat_meter(bars(4, 4, 3, 4, 4))
+    assert meter == (4, 1), (
+        "the meter should be the most common bar length, and one bar of another length"
+        " one change"
+    )
+    meter = Beats.beat_meter(bars(4, 4, 3, 3, 4, 4))
+    assert meter == (4, 1), "a run of the same odd length should count once"
+    meter = Beats.beat_meter(bars(4, 4, 3, 3, 2, 4, 4))
+    assert meter == (4, 2), (
+        "switching to another odd length should count again; going back to the meter"
+        " should not"
+    )
+    meter = Beats.beat_meter(bars(4, 3, 4, 4, 5, 4))
+    assert meter == (4, 2), "every time the bars leave the meter should count"
+    meter = Beats.beat_meter(bars(2, 4, 4, 4, 1))
+    assert meter == (4, 0), (
+        "a first or last bar shorter than the meter may be cut short (a pickup, the last"
+        " downbeat) and should not count"
+    )
+    meter = Beats.beat_meter(bars(8, 4, 4, 4))
+    assert meter == (4, 1), (
+        "a first bar longer than the meter should count: a pickup or a cut-short bar"
+        " is always shorter"
+    )
+    meter = Beats.beat_meter(beats([0, 1, 2], [1, 2, 3], position_unit="global_index"))
+    assert meter == (None, None), (
+        "positions that are not bar_index, like global_index, should give no meter"
+        " and no changes"
+    )
+
+
+def test_beat_tempo():
+    _, change = Beats.beat_tempo(beats_from_gaps(*[0.5] * 10, *[0.4] * 10))
+    assert change == pytest.approx(25.0), (
+        "change should be the end tempo over the start tempo, minus 1, in %: the start"
+        " from the gaps in the first 10% of the track, the end from the last 10%"
+    )
+    _, change = Beats.beat_tempo(beats_from_gaps(*[0.4] * 10, *[0.5] * 10))
+    assert change == pytest.approx(-20.0), "slowing down should give a negative change"
+    _, change = Beats.beat_tempo(beats_from_gaps(0.5, 0.7, 0.5, *[0.5] * 27))
+    assert change == pytest.approx(
+        0.0
+    ), "one odd gap should not move the start or end: each is 60 / the median gap"
+    _, change = Beats.beat_tempo(beats_from_gaps(*[0.5] * 10, *[0.4] * 10, *[0.5] * 10))
+    assert change == pytest.approx(
+        0.0
+    ), "a tempo change between the first and last 10% should not count"
+    _, change = Beats.beat_tempo(beats_from_gaps(0.5, 0.4))
+    assert change == pytest.approx(
+        25.0
+    ), "each edge should hold at least its first / last gap, however short the track"
+    assert Beats.beat_tempo(beats([0, 0.5]))[1] == pytest.approx(
+        0.0
+    ), "2 beats should be enough for a change"
+    assert Beats.beat_tempo(beats([0.0])) == (
+        None,
+        None,
+    ), "one beat should give no tempo and no change"
+    assert Beats.beat_tempo(beats([0, 1, 2], time_unit="ticks")) == (
+        None,
+        None,
+    ), "times not in a clock unit should give no tempo and no change"
+
+
+def test_grid():
+    result = grid([133.7, 101.9, 133.2, 120.0, 133.0], "bpm")
+    expected = {"unit": "bpm", "width": 1, "counts": {101: 1, 120: 1, 133: 3}}
+    assert result == expected, (
+        "each value should count under its whole number rounded down (133.7 under 133);"
+        " empty bins should be left out"
+    )
+    assert list(result["counts"]) == [
+        101,
+        120,
+        133,
+    ], "bins should be sorted, lowest first"
+    assert all(
+        isinstance(start, int) for start in result["counts"]
+    ), "whole-number bin starts should be ints"
+
+
+def test_grid_width_by_unit():
+    result = grid([447.0, 440.0, 451.2, 1760.4], "hz")
+    expected = {"unit": "hz", "width": 10, "counts": {440: 2, 450: 1, 1760: 1}}
+    assert result == expected, "hz should count in 10 Hz bins: 447 under 440"
+    result = grid([0.5, 0.9, 59.9, 60.0], "s")
+    expected = {"unit": "s", "width": 1, "counts": {0: 2, 59: 1, 60: 1}}
+    assert result == expected, "seconds should count in 1 s bins"
+    result = grid([412, 380, 380], "words")
+    expected = {"unit": "words", "width": 1, "counts": {380: 2, 412: 1}}
+    assert result == expected, "a unit without its own width should count whole numbers"
+
+
+def test_grid_empty():
+    assert grid([], "bpm") is None, "no values should give no grid"
+    missing = [None, float("nan"), float("inf")]
+    assert grid(missing, "bpm") is None, "None, NaN and infinity should be left out"

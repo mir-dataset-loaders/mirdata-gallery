@@ -1,6 +1,6 @@
 """The card's "stats" field, made from a computed result, and when to replace it.
 
-A card keeps the numbers, histograms, statuses and problems, with error
+A card keeps the numbers, grid counts, statuses and problems, with error
 counts instead of error lists. Its "computed" block records the mode and the
 index checksum, so a later run knows whether the stats are still current.
 """

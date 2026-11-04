@@ -62,7 +62,9 @@ def compute(
         result["error"] = f"{type(e).__name__}: {e}"
         return result
 
-    index = functools.cache(lambda: load_index(ds))  # loaded once, by the first part that needs it
+    index = functools.cache(
+        lambda: load_index(ds)
+    )  # loaded once, by the first part that needs it
     for part in parts:
         t0 = time.time()
         try:
