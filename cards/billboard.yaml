@@ -17,6 +17,9 @@ stats:
     problems: []
     n_tracks: 890
     n_audio_files: 746
+    total_seconds: null
+    sample_rates: null
+    durations: null
   annotations:
     status: incomplete
     problems: []

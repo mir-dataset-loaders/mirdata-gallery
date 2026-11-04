@@ -15,6 +15,14 @@ stats:
     problems: []
     n_tracks: 28
     n_audio_files: 28
+    total_seconds: 11858.7
+    sample_rates: {44.1k: 24, 22.05k: 4}
+    durations:
+      unit: s
+      width: 1
+      counts: {287: 1, 309: 1, 312: 1, 331: 1, 344: 1, 351: 1, 360: 1, 371: 1, 377: 1,
+        379: 1, 387: 1, 388: 1, 397: 1, 419: 1, 431: 1, 438: 2, 445: 1, 448: 1, 455: 1,
+        463: 1, 471: 1, 476: 1, 487: 1, 489: 1, 494: 1, 622: 1, 678: 1}
   annotations:
     status: ok
     problems: []
@@ -37,8 +45,7 @@ stats:
             34: 2, 35: 1, 38: 2, 39: 3, 40: 4, 41: 5, 42: 9, 43: 9, 44: 6, 45: 6,
             46: 4, 47: 4, 48: 1, 49: 2, 50: 1, 51: 4, 52: 1, 53: 1, 54: 1, 55: 1,
             56: 1, 57: 1, 58: 2, 59: 1, 61: 1, 71: 1, 85: 1, 94: 1}
-    skipped:
-      tonic: not a mirdata KeyData object (got float)
+    skipped: {}
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {}
