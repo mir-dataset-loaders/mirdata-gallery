@@ -37,7 +37,7 @@ MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest
 # a grid, histogram or points not listed is plotted after the listed ones,
 # titled from its name.
 PLOT_FIELDS = {
-    "audio": {"duration_histogram": "Track duration"},
+    "audio": {"durations": "Track duration"},
     "BeatData": {
         "tempo_from_beats": "Tempo",
         "tempo_changes": "Tempo changes",
@@ -307,14 +307,9 @@ def ordered_plots(stats, with_beat_tempo=False):
     """
     plots = []
     audio = stats.get("audio") or {}
-    if is_histogram(audio.get("duration_histogram")):
+    if is_grid(audio.get("durations")):
         plots.append(
-            plot(
-                "duration_histogram",
-                audio["duration_histogram"],
-                "audio",
-                audio.get("n_tracks"),
-            )
+            plot("durations", audio["durations"], "audio", audio.get("n_tracks"))
         )
 
     by_type = {}
