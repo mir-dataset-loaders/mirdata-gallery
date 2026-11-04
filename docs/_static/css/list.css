@@ -1,0 +1,336 @@
+/* Dataset list: toolbar, table, pager, icon view */
+
+/* Above the table: how many datasets are shown, and the sort menu */
+.list-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 2px 4px;
+    white-space: nowrap;
+}
+
+.list-count {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.list-sort {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+/* At the right, also when it wraps under the count (a narrow list) */
+.list-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+/* The list / icon switch (list.js), purple when on as the AND / OR one */
+.view-toggle {
+    display: inline-flex;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.view-toggle button {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    background: #ffffff;
+    border: none;
+    color: #475569;
+    cursor: pointer;
+}
+
+.view-toggle button[aria-pressed="true"] {
+    background: #a054d8;
+    color: #ffffff;
+}
+
+.list-sort select {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    background: #ffffff;
+    color: #1e293b;
+}
+
+/* The table: a header row, then one row (a button) per dataset. It keeps its
+   full height (flex-shrink: 0): a list taller than the window scrolls, rather
+   than the table cutting off its last rows. */
+.list-table {
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.list-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 96px 64px 128px;
+    grid-template-areas: "name types tracks license";
+    gap: 12px;
+    align-items: center;
+    padding: 12px 16px;
+    text-align: left;
+}
+
+.list-name {
+    grid-area: name;
+}
+
+/* A dataset's type dots (list.js; their colours: .ann-dot, type-colours.css) */
+.list-types {
+    grid-area: types;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+.list-tracks {
+    grid-area: tracks;
+}
+
+.list-license {
+    grid-area: license;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The list's Types, Tracks and License columns, header too, centred (not
+   the icons: their own layout below) */
+.list-table:not(.icon-view) .list-types {
+    justify-content: center;
+}
+
+.list-table:not(.icon-view) .list-tracks,
+.list-table:not(.icon-view) .list-license {
+    text-align: center;
+}
+
+.list-header {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.dataset-item-btn {
+    width: 100%;
+    background: #ffffff;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.dataset-item-btn:last-child {
+    border-bottom: none;
+}
+
+.dataset-item-btn:hover {
+    background: #faf5ff;
+}
+
+.dataset-item-btn:hover .dataset-item-title {
+    color: #a054d8;
+}
+
+.dataset-item-btn.active {
+    background: #faf5ff;
+    border-radius: 10px;
+    outline: 1.5px solid #a054d8;
+    outline-offset: -1.5px;
+}
+
+.dataset-item-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1e293b;
+    word-break: break-word;
+}
+
+.dataset-item-btn.active .dataset-item-title {
+    color: #7928ca;
+}
+
+.list-cell {
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+/* A narrower list: the dots wrap, 4 to a line (45px: 4 dots of 9px and
+   their 3 gaps of 3px), then License goes below 450px; a laptop's list
+   dragged to its widest (480-510px, the splitter) keeps License */
+@container dataset-list (max-width: 599px) {
+    .list-row {
+        grid-template-columns: minmax(0, 1fr) 45px 64px 128px;
+    }
+}
+
+@container dataset-list (max-width: 449px) {
+    .list-row {
+        grid-template-columns: minmax(0, 1fr) 45px 64px;
+        grid-template-areas: "name types tracks";
+    }
+
+    .list-license {
+        display: none;
+    }
+}
+
+@container dataset-list (max-width: 419px) {
+    /* The sort menu and the view switch on a line of their own under the
+       count, the menu stretched from the left edge to the switch */
+    .list-tools {
+        flex: 1 1 100%;
+    }
+
+    .list-sort,
+    .list-sort select {
+        flex: 1;
+    }
+}
+
+/* Under the list: which datasets are on show, and the pages (list.js,
+   drawPager): plain numbers and chevrons, the page on show in a light purple
+   circle */
+.list-pager {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-height: 32px;
+    padding: 0 4px;
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.pager-info {
+    white-space: nowrap;
+}
+
+/* (list.js adds compact when the line is too long) */
+.list-pager.compact .pager-words {
+    display: none;
+}
+
+.pager-pages {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
+}
+
+.list-pager button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    background: none;
+    font-size: 0.85rem;
+    color: #334155;
+    cursor: pointer;
+}
+
+.list-pager button:hover:not(:disabled) {
+    color: #a054d8;
+}
+
+.list-pager button[aria-current="page"] {
+    background: #f3e8ff;
+    border-color: #d8b4fe;
+    color: #7928ca;
+    font-weight: 600;
+}
+
+.list-pager button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.pager-gap {
+    width: 20px;
+    text-align: center;
+    color: #64748b;
+}
+
+/* A narrow list: smaller page buttons, to keep one line */
+@container dataset-list (max-width: 419px) {
+    .pager-pages {
+        gap: 2px;
+    }
+
+    .list-pager button {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+/* Only an icon says "tracks" after the number */
+.list-tracks .tracks-unit {
+    display: none;
+}
+
+/* Icon view (list.js, setView): a tile per dataset, 160px wide and as tall
+   as the tallest, as many to a line as fit (2 at the list's narrowest, 350px;
+   4 at its widest, 687px): its title, type dots (as in the list), tracks and
+   license */
+.list-table.icon-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 160px);
+    grid-auto-rows: 1fr;
+    gap: 10px;
+    border: none;
+    background: none;
+    overflow: visible;
+}
+
+.list-table.icon-view .list-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.list-table.icon-view .list-header {
+    display: none;
+}
+
+/* The title and the dots in the middle of the tile */
+.icon-view .list-name,
+.icon-view .list-types {
+    align-self: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* (shown whatever the list's width; one line, cut with "…") */
+.list-table.icon-view .list-license {
+    display: block;
+    align-self: stretch;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.icon-view .tracks-unit {
+    display: inline;
+}

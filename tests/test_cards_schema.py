@@ -18,13 +18,14 @@ FIELDS = [
     "name",
     "summary",
     "annotations",
+    "tasks",
     "stats",
-    "docstring_hash",
+    "summary_hash",
     "bibtex",
     "license",
 ]
 # The card's annotations field: mirdata's annotation types plus a few labels
-# that are not classes. Each one has a colour in docs/_static/css/custom.css.
+# that are not classes. Each one has a colour in docs/_static/css/type-colours.css.
 CARD_TYPES = {
     "BeatData",
     "ChordData",
@@ -39,6 +40,21 @@ CARD_TYPES = {
     "NoteData",
     "SectionData",
     "TempoData",
+}
+# The card's tasks field: the tasks of the annotation types, plus Source
+# Separation for a multitrack loader. Combine mode merges them by name.
+CARD_TASKS = {
+    "Beat Tracking",
+    "Chord Recognition",
+    "Key Estimation",
+    "Lyrics Transcription",
+    "Lyrics-to-Audio Alignment",
+    "Melody Extraction",
+    "Multi-pitch Estimation",
+    "Music Structure Analysis",
+    "Music Transcription",
+    "Source Separation",
+    "Tempo Estimation",
 }
 STATUSES = {"ok", "incomplete", "needs_local", "error"}
 MODES = {"remote", "local"}
@@ -207,11 +223,17 @@ def check_card(card, name):
     assert not unknown, f"annotations should only use known types, not {unknown}"
     in_order = types == sorted(set(types))
     assert in_order, "annotations should be sorted, without duplicates"
+    tasks = card["tasks"]
+    assert isinstance(tasks, list), "tasks should be a list (empty when none)"
+    unknown = set(tasks) - CARD_TASKS
+    assert not unknown, f"tasks should only use known names, not {unknown}"
+    in_order = tasks == sorted(set(tasks))
+    assert in_order, "tasks should be sorted, without duplicates"
     check_text(card["bibtex"], "bibtex")
     assert card["bibtex"].lstrip().startswith("@"), "bibtex should be a BibTeX entry"
     check_text(card["summary"], "summary")
-    hashed = str(card["docstring_hash"])
-    assert SHA256.fullmatch(hashed), "docstring_hash should be a SHA-256"
+    hashed = str(card["summary_hash"])
+    assert SHA256.fullmatch(hashed), "summary_hash should be a SHA-256"
     assert isinstance(card["stats"], dict), "stats should be computed"
 
 

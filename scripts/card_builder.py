@@ -23,7 +23,6 @@ FALLBACK_MAP = {
     "key": "KeyData",
     "tempo": "TempoData",
     "section": "SectionData",
-    "segment": "SectionData",
     "pitch": "F0Data",
     "f0": "F0Data",
     "melody": "F0Data",
@@ -33,25 +32,42 @@ FALLBACK_MAP = {
     "phoneme": "LyricData",
     "syllable": "LyricData",
     "phrase": "LyricData",
-    "tonic": "KeyData",
     "event": "EventData",
     "instrument": "Instrument",
 }
 
+# The MIR tasks each annotation type supports, by the names MIR papers use.
+# EventData is too generic to name one; Genre and Instrument have none yet.
+TASKS = {
+    "BeatData": ["Beat Tracking"],
+    "ChordData": ["Chord Recognition"],
+    "F0Data": ["Melody Extraction"],
+    "KeyData": ["Key Estimation"],
+    "LyricData": ["Lyrics Transcription", "Lyrics-to-Audio Alignment"],
+    "MultiF0Data": ["Multi-pitch Estimation"],
+    "NoteData": ["Music Transcription"],
+    "SectionData": ["Music Structure Analysis"],
+    "TempoData": ["Tempo Estimation"],
+}
+# A loader with a MultiTrack class has the stems to separate
+MULTITRACK_TASK = "Source Separation"
 
-def build_card(ds, summary=None, docstring_hash=None, stats=None):
+
+def build_card(ds, stats=None):
     """The card dict for one initialized dataset; keys in card order.
 
-    summary, docstring_hash and stats are the card's summary, docstring_hash
-    and stats fields, from generate_cards.update_summary() and update_stats()
-    (new, kept from the old card, or None).
+    stats is the card's stats field, from generate_cards.update_stats() (new,
+    kept from the old card, or None). summary and summary_hash are left None:
+    the LLM summary is made from the card's tasks, so generate_cards fills
+    them in afterwards.
     """
     return {
         "name": ds.name,
-        "summary": summary,
+        "summary": None,
         "annotations": annotations(ds),
+        "tasks": tasks(ds),
         "stats": stats,
-        "docstring_hash": docstring_hash,
+        "summary_hash": None,
         "bibtex": bibtex(ds),
         "license": license(ds),
     }
@@ -71,6 +87,14 @@ def annotations(ds):
     # Dedicated genre datasets (gtzan_genre, acousticbrainz_genre, ...)
     if ds.name.endswith("_genre"):
         found.add("Genre")
+    return sorted(found)
+
+
+def tasks(ds):
+    """Sorted list of MIR tasks: those of the card's annotation types, plus Source Separation for a multitrack loader."""
+    found = {task for t in annotations(ds) for task in TASKS.get(t, [])}
+    if getattr(ds, "_multitrack_class", None):
+        found.add(MULTITRACK_TASK)
     return sorted(found)
 
 

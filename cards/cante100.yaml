@@ -1,10 +1,13 @@
 name: cante100
-summary: cante100 includes 100 tracks with 10 style families, annotated sections of
-  vocal presence, and F0 and note transcriptions; the primary MIR task involves style
-  classification and vocal analysis.
+summary: cante100 includes 100 tracks from the COFLA corpus, with annotations for
+  predominant melody (F0) and singing voice transcription, focusing on melody extraction
+  and music transcription tasks.
 annotations:
 - F0Data
 - NoteData
+tasks:
+- Melody Extraction
+- Music Transcription
 stats:
   computed:
     mode: local
@@ -53,7 +56,7 @@ stats:
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {}
-docstring_hash: 8d979ee58812d60106650be5fffa235f815e40ac6f600df833ceeedffc9893f0
+summary_hash: 6ab91cae680ec7f97bb660c24a97b09f30f313ffb424d37d48776427cf3e28c8
 bibtex: |-
   @dataset{nadine_kroher_2018_1322542,
     author       = {Nadine Kroher and

@@ -4,8 +4,9 @@ The text comes straight from mirdata (`mirdata.datasets.<name>.__doc__`) and
 is never stored in the card. The model is Qwen2.5-7B-Instruct as a 4-bit GGUF
 file, run with llama.cpp on the CPU, so no GPU is needed.
 
-`summary(name, docstring)` takes the text from `loader_docstring(name)`;
-generate_cards.py calls it for each card whose docstring is new or changed.
+`summary(name, docstring, tasks)` takes the text from `loader_docstring(name)`
+and the card's tasks; generate_cards.py calls it for each card whose docstring
+or tasks are new or changed.
 The model is loaded on the first call and reused. To summarize existing
 cards without rebuilding them, run scripts/local/run_llm_local.py.
 
@@ -25,7 +26,9 @@ SYSTEM_PROMPT = (
     "You are an expert in Music Information Retrieval (MIR). "
     "Your job is to summarize dataset descriptions into a single concise paragraph (2-3 sentences, maximum 60 words). "
     "Focus strictly on: 1) What audio content is included, 2) What annotations/ground truth are provided, "
-    "and 3) The primary MIR task. Output ONLY the summary without any intro, markdown headers, or bullet points."
+    "and 3) The primary MIR task, named with the given task names; never name a task that is not given "
+    "(with no tasks given, take it from the description). "
+    "Output ONLY the summary without any intro, markdown headers, or bullet points."
 )
 
 GGUF_REPO = "Qwen/Qwen2.5-7B-Instruct-GGUF"
@@ -43,13 +46,14 @@ def loader_docstring(name):
     return card_builder.clean_text(doc) or None
 
 
-def summary(name, docstring):
-    """LLM summary of a loader docstring (from loader_docstring(name))."""
+def summary(name, docstring, tasks):
+    """LLM summary of a loader docstring (from loader_docstring(name)), naming the card's tasks."""
+    task_line = f"Tasks: {', '.join(tasks)}\n\n" if tasks else ""
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {
             "role": "user",
-            "content": f"Dataset name: {name}\n\nDataset description:\n{docstring}",
+            "content": f"Dataset name: {name}\n\n{task_line}Dataset description:\n{docstring}",
         },
     ]
     out = get_model().create_chat_completion(

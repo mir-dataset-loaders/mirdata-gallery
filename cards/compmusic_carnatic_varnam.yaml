@@ -1,10 +1,11 @@
 name: compmusic_carnatic_varnam
 summary: The dataset includes 28 solo Carnatic varnam recordings featuring 7 rāgas,
-  with taala cycle annotations and machine-readable notations. It is primarily used
-  for melodic analysis and audio-score alignment.
+  with taala cycle annotations and machine-readable notations. Tasks focus on music
+  structure analysis.
 annotations:
-- KeyData
 - SectionData
+tasks:
+- Music Structure Analysis
 stats:
   computed:
     mode: local
@@ -41,7 +42,7 @@ stats:
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {}
-docstring_hash: 7a6dbb742642a2069ba2edc5231fa5bf51d958bddbb17dad646799b89c246d78
+summary_hash: c1bcc3c4fb38fd2a4405b21d16d9bed7353b2327b72beb2f92dafad67dfafedc
 bibtex: |-
   @dataset{koduri_g_k_2014_1257118,
     author       = {Koduri, G. K. and

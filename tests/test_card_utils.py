@@ -9,10 +9,10 @@ from mirdata import download_utils
 
 from card_utils import (
     card_path,
-    docstring_hash,
     index_checksum,
     read_card,
     select_datasets,
+    summary_hash,
     write_card,
 )
 from fake_dataset_loader import RESOURCES
@@ -70,12 +70,15 @@ def test_read_card(tmp_path):
     assert path == expected, "a card should be <cards>/<name>.yaml"
 
 
-def test_docstring_hash():
+def test_summary_hash():
     text, changed = "A fake dataset for the tests.", "A fake dataset for the test."
-    same = docstring_hash(text) == docstring_hash(text)
-    assert same, "the same text should give the same hash"
-    different = docstring_hash(changed) != docstring_hash(text)
-    assert different, "a one-character change should change the hash"
+    tasks = ["Beat Tracking", "Chord Recognition"]
+    same = summary_hash(text, tasks) == summary_hash(text, list(tasks))
+    assert same, "the same docstring and tasks should give the same hash"
+    different = summary_hash(changed, tasks) != summary_hash(text, tasks)
+    assert different, "a one-character change in the docstring should change the hash"
+    other = summary_hash(text, tasks[:1]) != summary_hash(text, tasks)
+    assert other, "other tasks should change the hash"
 
 
 def test_index_checksum(fake_mirdata, monkeypatch):

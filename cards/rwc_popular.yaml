@@ -1,7 +1,7 @@
 name: rwc_popular
 summary: The dataset includes 100 popular songs, 20 with English lyrics and 80 with
-  Japanese lyrics, from the 1980s and 1990s. Annotations provide information for music
-  information retrieval tasks focusing on genre, tempo, and key.
+  Japanese lyrics, from the 1980s and 1990s. Annotations are provided for beat tracking,
+  chord recognition, melody extraction, music transcription, and tempo estimation.
 annotations:
 - BeatData
 - ChordData
@@ -9,6 +9,12 @@ annotations:
 - Instrument
 - NoteData
 - TempoData
+tasks:
+- Beat Tracking
+- Chord Recognition
+- Melody Extraction
+- Music Transcription
+- Tempo Estimation
 stats:
   computed:
     mode: local
@@ -179,7 +185,7 @@ stats:
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {}
-docstring_hash: 62127bff07e83da34957ff26a3d3dab19e967272694220e205e2faebdbc268e2
+summary_hash: 243dba6ea2b246cf0eb8340edc06eff217dccc726bea2c4b1461da1fb228834b
 bibtex: |-
   @inproceedings{goto2002rwc,
     title={RWC Music Database: Popular, Classical and Jazz Music Databases.},

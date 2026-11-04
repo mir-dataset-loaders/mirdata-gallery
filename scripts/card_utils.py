@@ -5,12 +5,12 @@ same way no matter which script wrote it last. generate_cards.py and
 local/compute_stats_local.py also share the dataset choice and the closing
 to-do list.
 
-A card's docstring_hash is the SHA-256 of the loader docstring that produced
-its summary. generate_cards.py reruns the LLM only when the current docstring
-hashes differently, so unchanged datasets never cost model time and never get
-a slightly different summary. index_checksum is the checksum mirdata publishes
-with a dataset's index; the card keeps it in stats.computed.index, so the stats
-are recomputed only when the index changes.
+A card's summary_hash is the SHA-256 of what its summary was made from: the
+loader docstring and the card's tasks. generate_cards.py reruns the LLM only
+when these hash differently, so unchanged datasets never cost model time and
+never get a slightly different summary. index_checksum is the checksum mirdata
+publishes with a dataset's index; the card keeps it in stats.computed.index, so
+the stats are recomputed only when the index changes.
 """
 
 import hashlib
@@ -72,11 +72,12 @@ _CardDumper.add_representer(list, _list_presenter)
 _CardDumper.add_representer(dict, _dict_presenter)
 
 
-# --- docstring hash and index checksum ----------------------------------------
+# --- summary hash and index checksum ------------------------------------------
 
 
-def docstring_hash(text):
-    """Hex SHA-256 of a string."""
+def summary_hash(docstring, tasks):
+    """Hex SHA-256 of the LLM's inputs: the loader docstring and the card's tasks."""
+    text = docstring + "\n" + ", ".join(tasks)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 

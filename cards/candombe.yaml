@@ -1,9 +1,10 @@
 name: candombe
-summary: The Candombe dataset includes over 2 hours of stereo audio from 35 performances,
-  with annotations for beats and downbeats by expert, focusing on identifying rhythmic
-  structures in traditional Candombe music.
+summary: The dataset includes over 2 hours of stereo Candombe recordings, with annotated
+  beats and downbeats. The primary MIR task is Beat Tracking.
 annotations:
 - BeatData
+tasks:
+- Beat Tracking
 stats:
   computed:
     mode: local
@@ -43,7 +44,7 @@ stats:
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {}
-docstring_hash: null
+summary_hash: 9df994b6e37f9bdc919210c06c28bec9ababa318857d8f648b1fec88e2ba2fd0
 bibtex: |-
   @inproceedings{Nunes2015,
       author = {Leonardo Nunes and Martín Rocamora and Luis Jure and Luiz W. P. Biscainho},

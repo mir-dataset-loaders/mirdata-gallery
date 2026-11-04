@@ -1,11 +1,14 @@
 name: queen
-summary: Queen Dataset includes chord, key, and segmentation annotations for 51 songs
-  from Queen's Greatest Hits albums. The primary MIR task involves analyzing these
-  annotations for chord and key identification.
+summary: Queen Dataset includes chord, key, and segmentation annotations for 51 Queen
+  songs. Tasks involve Chord Recognition, Key Estimation, and Music Structure Analysis.
 annotations:
 - ChordData
 - KeyData
 - SectionData
+tasks:
+- Chord Recognition
+- Key Estimation
+- Music Structure Analysis
 stats:
   computed:
     mode: local
@@ -93,7 +96,7 @@ stats:
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {}
-docstring_hash: e79f2c93f4582d3c2580a6151610a23c2e16673da982c762ac228ed714e2fe73
+summary_hash: 84f843f489bfac79d68f6bd864b7e240451e3fb3003b35a30ea9ffdbbcaead8e
 bibtex: |-
   @inproceedings{mauch2009beatles,
       title={OMRAS2 metadata project 2009},

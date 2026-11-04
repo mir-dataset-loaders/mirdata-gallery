@@ -1,12 +1,11 @@
 name: compmusic_raga
-summary: The compmusic_raga dataset includes full-length audio recordings of Carnatic
-  and Hindustani music, with associated rāga labels for 154 hours of audio, enabling
-  automatic rāga recognition. Annotations provide rāga identifiers, tonal information,
-  and pitch segments.
+summary: The dataset includes full-length audio recordings of Carnatic and Hindustani
+  music, with associated rāga labels for 480 Carnatic and 300 Hindustani recordings.
+  It supports melody extraction and rāga recognition tasks.
 annotations:
 - F0Data
-- KeyData
-- SectionData
+tasks:
+- Melody Extraction
 stats:
   computed:
     mode: local
@@ -102,7 +101,7 @@ stats:
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {}
-docstring_hash: 72441f8769c641f01c39f0542676c1beb3e1388c10e50ff1f7c92a8a13cad1f8
+summary_hash: b4ee729315c199aa45c65ec33c2a6351be9a5294d6af96418f8263e230d01cb0
 bibtex: |-
   @article{gulati_2016,
     author       = {Gulati, Sankalp and Serrà, Joan and Kaustuv Kani, Ganguli

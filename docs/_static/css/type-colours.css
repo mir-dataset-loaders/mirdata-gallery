@@ -1,0 +1,45 @@
+/* Each official mirdata.annotations class has its family's colour (rhythm
+   orange, harmony green, pitch blue, structure indigo, lyrics rose, events
+   yellow) in a shade of its own, the darker first: a badge's background, text
+   and border (the filter pills, At a glance), and a solid one for an active
+   pill and the type's dot in the dataset list (--ann-on-solid: text on it).
+   Anything else (Instrument, Genre, future values) stays silver. */
+[data-ann="BeatData"] { --ann-bg: #ffedd5; --ann-text: #9a3412; --ann-border: #fdba74; --ann-solid: #c2410c; --ann-on-solid: #ffffff; }
+[data-ann="TempoData"] { --ann-bg: #fff7ed; --ann-text: #c2410c; --ann-border: #fed7aa; --ann-solid: #fb923c; --ann-on-solid: #431407; }
+[data-ann="ChordData"] { --ann-bg: #d1fae5; --ann-text: #065f46; --ann-border: #6ee7b7; --ann-solid: #047857; --ann-on-solid: #ffffff; }
+[data-ann="KeyData"] { --ann-bg: #ecfdf5; --ann-text: #047857; --ann-border: #a7f3d0; --ann-solid: #34d399; --ann-on-solid: #022c22; }
+[data-ann="NoteData"] { --ann-bg: #e0f2fe; --ann-text: #075985; --ann-border: #7dd3fc; --ann-solid: #0369a1; --ann-on-solid: #ffffff; }
+[data-ann="F0Data"] { --ann-bg: #f0f9ff; --ann-text: #0369a1; --ann-border: #bae6fd; --ann-solid: #0ea5e9; --ann-on-solid: #082f49; }
+[data-ann="MultiF0Data"] { --ann-bg: #f8fcff; --ann-text: #0284c7; --ann-border: #e0f2fe; --ann-solid: #7dd3fc; --ann-on-solid: #082f49; }
+[data-ann="SectionData"] { --ann-bg: #eef2ff; --ann-text: #4338ca; --ann-border: #c7d2fe; --ann-solid: #4f46e5; --ann-on-solid: #ffffff; }
+[data-ann="LyricData"] { --ann-bg: #fff1f2; --ann-text: #be123c; --ann-border: #fecdd3; --ann-solid: #e11d48; --ann-on-solid: #ffffff; }
+[data-ann="EventData"] { --ann-bg: #fef9c3; --ann-text: #854d0e; --ann-border: #fde047; --ann-solid: #a16207; --ann-on-solid: #ffffff; }
+[data-ann="EventDataExtended"] { --ann-bg: #fefce8; --ann-text: #a16207; --ann-border: #fde68a; --ann-solid: #facc15; --ann-on-solid: #422006; }
+
+/* (the theme styles code in #content, hence !important) */
+.glance-tags [data-ann] {
+    background-color: var(--ann-bg, #f1f5f9) !important;
+    color: var(--ann-text, #475569) !important;
+    border-color: var(--ann-border, #cbd5e1) !important;
+}
+
+.filter-pill[data-ann] {
+    background-color: var(--ann-bg, #f8fafc);
+    color: var(--ann-text, #475569);
+    border-color: var(--ann-border, #e2e8f0);
+}
+
+.filter-pill[data-ann].active {
+    background-color: var(--ann-solid, #475569);
+    color: var(--ann-on-solid, #ffffff);
+    border-color: var(--ann-solid, #475569);
+}
+
+/* A type's dot in the dataset list */
+.ann-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background-color: var(--ann-solid, #94a3b8);
+}

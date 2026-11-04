@@ -4,15 +4,22 @@ import mirdata
 import pytest
 
 import fake_dataset_loader
-from card_builder import annotation_properties, annotations, build_card, clean_text
+from card_builder import (
+    annotation_properties,
+    annotations,
+    build_card,
+    clean_text,
+    tasks,
+)
 from fake_dataset_loader import DATA_HOME
 
 FIELDS = [
     "name",
     "summary",
     "annotations",
+    "tasks",
     "stats",
-    "docstring_hash",
+    "summary_hash",
     "bibtex",
     "license",
 ]
@@ -25,7 +32,7 @@ def ds(fake_mirdata):
 
 def test_build_card(ds):
     stats = {"computed": {"mode": "local", "index": "abc123"}}
-    card = build_card(ds, summary="Three tracks.", docstring_hash="d0c", stats=stats)
+    card = build_card(ds, stats=stats)
     assert list(card) == FIELDS, "fields should come in card order"
     assert card["name"] == "fake_dataset", "name should be the dataset's name"
     license_info, bibtex = fake_dataset_loader.LICENSE_INFO, fake_dataset_loader.BIBTEX
@@ -33,13 +40,12 @@ def test_build_card(ds):
     assert card["bibtex"] == bibtex, "bibtex should come from the loader"
     types = ["BeatData", "ChordData"]
     assert card["annotations"] == types, "annotations should list the Track's types"
-    assert card["summary"] == "Three tracks.", "summary should be passed through"
-    assert card["docstring_hash"] == "d0c", "docstring_hash should be passed through"
+    found = ["Beat Tracking", "Chord Recognition"]
+    assert card["tasks"] == found, "tasks should be those of the Track's types"
+    left = [card["summary"], card["summary_hash"]]
+    assert left == [None] * 2, "summary and summary_hash are generate_cards' to fill"
     assert card["stats"] is stats, "stats should be passed through"
-
-    empty = build_card(ds)
-    given = [empty["summary"], empty["docstring_hash"], empty["stats"]]
-    assert given == [None] * 3, "summary, hash and stats should be None when not given"
+    assert build_card(ds)["stats"] is None, "stats should be None when not given"
 
 
 def test_annotations(ds):
@@ -54,6 +60,26 @@ def test_annotations(ds):
     assert (
         "NoteData" not in found
     ), "a type the Track does not have should not be listed"
+
+
+def test_tasks(ds, monkeypatch):
+    found = ["Beat Tracking", "Chord Recognition"]
+    assert tasks(ds) == found, "tasks should be those of the annotation types, sorted"
+    ds.name = "fake_genre"
+    assert tasks(ds) == found, "Genre should not add a task"
+
+    # no return hints: "lyric" and "event" in the names make LyricData and EventData
+    flag = property(lambda self: False)
+    monkeypatch.setattr(fake_dataset_loader.Track, "lyrics", flag, raising=False)
+    monkeypatch.setattr(fake_dataset_loader.Track, "events", flag, raising=False)
+    both = ["Lyrics Transcription", "Lyrics-to-Audio Alignment"]
+    assert tasks(ds) == found + both, (
+        "a type with two tasks should add both; EventData should add none"
+    )
+
+    ds._multitrack_class = mirdata.core.MultiTrack
+    separation = "Source Separation"
+    assert separation in tasks(ds), "a multitrack loader should add Source Separation"
 
 
 def test_annotation_properties(ds):
@@ -80,6 +106,14 @@ def test_annotation_properties_guess(ds, monkeypatch):
     assert (
         declared == expected
     ), "guess=False should keep only the properties typed by their hint"
+
+
+def test_annotation_properties_tonic(ds, monkeypatch):
+    tonic = property(lambda self: 440.0)
+    monkeypatch.setattr(fake_dataset_loader.Track, "tonic", tonic, raising=False)
+    assert (
+        "tonic" not in annotation_properties(ds)
+    ), "a tonic is not a key, so it should not be guessed as KeyData"
 
 
 def test_clean_text():

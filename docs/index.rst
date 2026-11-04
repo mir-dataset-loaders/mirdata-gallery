@@ -1,7 +1,7 @@
 Home
 ====
 
-.. The front page. "Home" names the browser tab; custom.css hides it, the hero
+.. The front page. "Home" names the browser tab; home.css hides it, the hero
    below is the visible heading.
 
 .. toctree::
@@ -32,7 +32,7 @@ How to use the Gallery
        <p>Narrow the list down to the datasets you need.</p>
        <ul>
          <li>Search by name.</li>
-         <li>Filter by annotation type (beats, chords, notes…) and by license.</li>
+         <li>Filter by annotation type (beats, chords, notes…), by task and by license.</li>
          <li><b>AND</b> needs every picked filter, <b>OR</b> any of them; <b>Clear filters</b> resets.</li>
        </ul>
      </div>
@@ -53,7 +53,7 @@ How to use the Gallery
        <ul>
          <li>Overview of dataset: tracks, sample rate, duration, license.</li>
          <li>Charts of the audio and annotations; hover a bar for its value.</li>
-         <li>Click an annotation type to focus on its charts; <b>⤢</b> shows them larger.</li>
+         <li>Click an annotation type to focus on its charts (⌘/Ctrl-click for several); <b>⤢</b> shows them larger.</li>
          <li>The BibTeX citation and the code to load it.</li>
        </ul>
      </div>

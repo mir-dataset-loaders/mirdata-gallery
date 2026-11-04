@@ -1,0 +1,164 @@
+/* Gallery filters: the left sidebar's search, AND / OR switches and pills */
+
+/* Column 1: the filters, in the theme's left sidebar (its last nav, see
+   gallery.js; the nav before it, the header links, stays small screens only) */
+#left-sidebar nav:last-of-type {
+    display: block;
+    margin: 0;
+}
+
+/* 8px at the left, and at the right only the scrollbar's room (#left-sidebar):
+   room for "ANNOTATION TYPES" and its AND / OR switch on one line */
+.gallery-filter-sidebar {
+    width: 100%;
+    padding: 16px 0 16px 8px;
+    box-sizing: border-box;
+    border: none;
+    box-shadow: none;
+}
+
+.gallery-filter-sidebar h4 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-top: 16px;
+    margin-bottom: 10px;
+}
+
+.gallery-filter-sidebar h4:first-of-type {
+    margin-top: 0;
+}
+
+/* A section title with its AND / OR switch on the right (filters.js); the
+   switch goes under the title if a browser's wider text leaves no room */
+.filter-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.gallery-filter-sidebar .filter-section-head h4 {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.match-options {
+    display: inline-flex;
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+/* AND and OR the same width */
+.match-options button {
+    width: 32px;
+    padding: 4px 0;
+    background: #ffffff;
+    border: none;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-align: center;
+    color: #475569;
+    cursor: pointer;
+}
+
+/* The light purple of the other selections (the pager's page on show) */
+.match-options button[aria-pressed="true"] {
+    background: #f3e8ff;
+    color: #7928ca;
+}
+
+.filter-search {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-search:focus {
+    border-color: #a054d8;
+    box-shadow: 0 0 0 3px rgba(160, 84, 216, 0.15);
+}
+
+.filter-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.filter-reset-btn,
+.filter-more-btn {
+    background: none;
+    border: none;
+    color: #a054d8;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0;
+}
+
+.filter-reset-btn:hover,
+.filter-more-btn:hover {
+    text-decoration: underline;
+}
+
+.filter-pills-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 4px;
+    padding-right: 2px;
+}
+
+/* "Show all" under a collapsed pill group, and the pills it holds back (filters.js) */
+.filter-more-btn {
+    width: 100%;
+    text-align: left;
+}
+
+.filter-pill.pill-hidden {
+    display: none;
+}
+
+.filter-pill {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.filter-pill:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+/* Default active pill (silver annotations, licenses); coloured annotation
+   types override this (type-colours.css). */
+.filter-pill.active {
+    background: #475569;
+    border-color: #475569;
+    color: #ffffff;
+}
