@@ -502,12 +502,12 @@ document.addEventListener("DOMContentLoaded", function () {
     // (shownCombined).
     // colours: each selected dataset's colour, given when it joins (combine.js, nextColour)
     // focus: the dataset whose part of each plot is shown (its chip's name clicked), or null: stacked
-    // typeFocus: the annotation type whose plots alone are shown (7. below), or null: all
+    // typeFocus: the annotation types whose plots alone are shown (7. below); none: all
     // picks: the property a dataset adds to a combined plot, picked in the plot's sources bubble
     // (charts.js, sourcesHtml), {plot's pickKey: {dataset title: property}}; one not picked adds
     // its first (combine.js)
     // openSources: the pickKey of the plot whose sources bubble is open (showSources), or null
-    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null, typeFocus: null, picks: {}, openSources: null };
+    const combine = { on: false, selected: [], colours: new Map(), lastClicked: null, focus: null, typeFocus: [], picks: {}, openSources: null };
     const combineBar = document.createElement("div");
     combineBar.className = "combine-bar";
     const combineBtn = document.createElement("button");
@@ -533,7 +533,7 @@ document.addEventListener("DOMContentLoaded", function () {
         combine.selected = [];
         combine.colours.clear();
         combine.focus = null;
-        combine.typeFocus = null;
+        combine.typeFocus = [];
         combine.picks = {};
         combine.openSources = null;
         if (combine.on) {
@@ -665,8 +665,8 @@ document.addEventListener("DOMContentLoaded", function () {
             "</div>";
         moveTips(combinedPanel);
         flashScrollbar(infoColumn);
-        if (!types.includes(combine.typeFocus)) combine.typeFocus = null; // its datasets all removed
-        focusType(combinedPanel, combine.typeFocus);
+        combine.typeFocus = combine.typeFocus.filter((t) => types.includes(t)); // not those whose datasets are all removed
+        focusTypes(combinedPanel, combine.typeFocus);
         addStatsButton(combinedPanel);
         showSources(combinedPanel);
         refreshStats();
@@ -1051,58 +1051,67 @@ document.addEventListener("DOMContentLoaded", function () {
     listColumn.addEventListener("scroll", hideTip);
 
     // 7. Annotation type focus: a click on a type in a panel's At a glance (a
-    // dataset's or the combination's) shows only that type's plots in its
-    // Statistics and dims the other types; one more click shows them all again.
-    // The combination's is kept in combine.typeFocus, as its panel is redrawn.
-    // The "Annotation types" title gets a hint saying so.
-    function focusType(panel, type) {
+    // dataset's or the combination's) focuses that type alone: the panel's
+    // Statistics shows only its plots and the other types dim; a click on the
+    // only type focused shows them all again. Cmd-click or Ctrl-click adds a type
+    // to the ones focused, or takes it out. The combination's are kept in
+    // combine.typeFocus, as its panel is redrawn. The "Annotation types" title
+    // gets a hint saying so.
+    function focusTypes(panel, types) {
         panel.querySelectorAll(".glance-tags [data-ann]").forEach((tag) => {
             tag.setAttribute("role", "button");
             tag.tabIndex = 0;
-            tag.setAttribute("aria-pressed", String(tag.dataset.ann === type));
+            tag.setAttribute("aria-pressed", String(types.includes(tag.dataset.ann)));
         });
         const tags = panel.querySelector(".glance-tags");
         if (tags && tags.querySelector("[data-ann]")) {
-            tags.classList.toggle("has-focus", Boolean(type));
+            tags.classList.toggle("has-focus", types.length > 0);
             const title = tags.previousElementSibling;
             if (!title.querySelector(".box-hint")) {
-                title.insertAdjacentHTML("beforeend", '<span class="box-hint">Click a type to focus it in the plots</span>');
+                title.insertAdjacentHTML("beforeend", '<span class="box-hint">Click a type to focus it in the plots (⌘/Ctrl-click for several)</span>');
             }
         }
         const grid = panel.querySelector(".plot-grid");
         if (!grid) return;
-        let shown = 0;
-        grid.querySelectorAll(".plot").forEach((fig) => {
-            const show = !type || fig.dataset.type === type;
-            fig.style.display = show ? "" : "none";
-            shown += show;
-        });        // a type without plots: a note instead
+        const plots = [...grid.querySelectorAll(".plot")];
+        plots.forEach((fig) => {
+            fig.style.display = !types.length || types.includes(fig.dataset.type) ? "" : "none";
+        });
+        // types without plots: a note, above the plots of the others
+        const withoutPlots = types.filter((t) => !plots.some((fig) => fig.dataset.type === t));
         let empty = panel.querySelector(".type-empty");
-        if (type && !shown) {
+        if (withoutPlots.length) {
             if (!empty) {
                 empty = document.createElement("p");
                 empty.className = "stats-note type-empty";
                 grid.before(empty);
             }
-            empty.textContent = `No ${type} plots yet.`;
+            empty.textContent = `No ${withoutPlots.join(", ")} plots yet.`;
         } else if (empty) {
             empty.remove();
         }
     }
-    cards.forEach((card) => focusType(card, null));
+    cards.forEach((card) => focusTypes(card, []));
     infoColumn.addEventListener("click", (e) => {
         const tag = e.target.closest(".glance-tags [data-ann]");
         if (!tag) return;
         const panel = tag.closest(".gallery-cards-information > section");
-        const type = tag.getAttribute("aria-pressed") === "true" ? null : tag.dataset.ann;
-        if (panel === combinedPanel) combine.typeFocus = type;
-        focusType(panel, type);
+        const focused = [...panel.querySelectorAll('.glance-tags [data-ann][aria-pressed="true"]')].map((t) => t.dataset.ann);
+        const type = tag.dataset.ann;
+        let types;
+        if (e.metaKey || e.ctrlKey) {
+            types = focused.includes(type) ? focused.filter((t) => t !== type) : [...focused, type];
+        } else {
+            types = focused.length === 1 && focused[0] === type ? [] : [type];
+        }
+        if (panel === combinedPanel) combine.typeFocus = types;
+        focusTypes(panel, types);
     });
-    // Enter or Space on a focused type clicks it
+    // Enter or Space on a focused type clicks it, with Cmd or Ctrl if held
     infoColumn.addEventListener("keydown", (e) => {
         if ((e.key === "Enter" || e.key === " ") && e.target.matches(".glance-tags [data-ann]")) {
             e.preventDefault();
-            e.target.click();
+            e.target.dispatchEvent(new MouseEvent("click", { bubbles: true, metaKey: e.metaKey, ctrlKey: e.ctrlKey }));
         }
     });
 

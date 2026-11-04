@@ -1137,9 +1137,9 @@ body:has(#mirdata-gallery) #left-sidebar {
     margin: 2px 3px;
 }
 
-/* A type is a button: a click shows only its plots in Statistics and dims
-   the other types (gallery.js, focusType); a hint beside the title says so,
-   as the combined panel's chips hint does */
+/* A type is a button: a click, or Cmd/Ctrl-clicks for several, show only their
+   plots in Statistics and dim the other types (gallery.js, focusTypes); a hint
+   beside the title says so, as the combined panel's chips hint does */
 .box-hint {
     margin-left: 8px;
     font-size: 0.8rem;

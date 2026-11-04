@@ -53,7 +53,7 @@ How to use the Gallery
        <ul>
          <li>Overview of dataset: tracks, sample rate, duration, license.</li>
          <li>Charts of the audio and annotations; hover a bar for its value.</li>
-         <li>Click an annotation type to focus on its charts; <b>⤢</b> shows them larger.</li>
+         <li>Click an annotation type to focus on its charts (⌘/Ctrl-click for several); <b>⤢</b> shows them larger.</li>
          <li>The BibTeX citation and the code to load it.</li>
        </ul>
      </div>
