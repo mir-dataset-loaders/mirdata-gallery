@@ -1,6 +1,7 @@
 name: billboard
-summary: The dataset includes 890 Billboard chart slots with audio features and annotations,
-  along with metadata such as chart date and artist name, primarily for chord analysis.
+summary: The dataset includes audio from 890 Billboard chart slots with annotations
+  for chord recognition and music structure analysis, along with metadata such as
+  chart date and artist name.
 annotations:
 - ChordData
 - SectionData
@@ -395,7 +396,7 @@ stats:
     n_track_errors: 0
     annotation_errors: {chords_full: 1, chords_majmin: 1, chords_majmin7: 1, chords_majmin7inv: 1,
       chords_majmininv: 1}
-docstring_hash: a7aa6822ac4acf5b4b39d5b63e175fc6703dc1ca4f49318abf83fc46463323e0
+summary_hash: 5384918d252f26b221fdf46706ac5a2579cc5a1e5ba4df9c36be04035a1fc5c2
 bibtex: |-
   @inproceedings{burgoyne_billboard,
   author = {Burgoyne, John Ashley and Wild, Jonathan and Fujinaga, Ichiro},

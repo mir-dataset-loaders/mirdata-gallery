@@ -1,8 +1,7 @@
 name: guitarset
-summary: GuitarSet includes 360 close-to-30-second acoustic guitar recordings across
-  various styles, tempi, and versions, with annotations for pitch, beats, tempo, and
-  chords. The primary MIR tasks involve analyzing these recordings to extract musical
-  features and annotations.
+summary: GuitarSet includes 360 acoustic guitar recordings, each 30 seconds long,
+  covering various styles, tempi, and players, with annotations for pitch, beats,
+  tempo, chords, and keys.
 annotations:
 - BeatData
 - ChordData
@@ -350,7 +349,7 @@ stats:
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {}
-docstring_hash: eeb443ef36e3780b2127b1579fc3890c1784d6d564fc7059f66cf6b7d49d09dc
+summary_hash: 061765aadcd6d153274c314feffa3cdee068bb97d50dae6045d3df84e25e85fc
 bibtex: |-
   @inproceedings{xi2018guitarset,
   title={GuitarSet: A Dataset for Guitar Transcription},

@@ -1,5 +1,5 @@
 name: orchset
-summary: The Orchset dataset includes 64 audio excerpts of symphonic music with annotations
+summary: The Orchset dataset includes 64 audio excerpts of symphonic music, with annotations
   for melody extraction.
 annotations:
 - F0Data
@@ -47,7 +47,7 @@ stats:
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {}
-docstring_hash: 72b8e0263479ec5272c5ab23ea5661bab41358fff37e861361a760c463f7e739
+summary_hash: 8f2603de97e9796f456727ad48a21394aadfad2fed12139523a747dde41bbcae
 bibtex: |-
   @article{bosch2016evaluation,
       title={Evaluation and combination of pitch estimation methods for melody extraction in symphonic classical music},

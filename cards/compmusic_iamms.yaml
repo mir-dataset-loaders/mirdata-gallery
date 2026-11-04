@@ -1,13 +1,11 @@
 name: compmusic_iamms
-summary: The compmusic_iamms dataset includes audio excerpts from Carnatic and Hindustani
-  music, with annotations for melodic sections, nyas events, and pitch/tonic features,
-  aimed at developing methods for computing melodic similarity.
+summary: The dataset includes audio excerpts from Carnatic and Hindustani music, with
+  annotations for melodic phrases, section boundaries, Nyas events, and pitch/tonic
+  features, suitable for Melody Extraction and Music Structure Analysis.
 annotations:
 - F0Data
-- KeyData
 - SectionData
 tasks:
-- Key Estimation
 - Melody Extraction
 - Music Structure Analysis
 stats:
@@ -99,7 +97,7 @@ stats:
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {}
-docstring_hash: 866df86f968d3c67435fb5d5915c2370c1868b1dd9420b3b1787f0af5e9833c7
+summary_hash: 7b14892e88ee59ed019d90ba1ea68838b0385796a7dac075390c33e94664d42d
 bibtex: |-
   @inproceedings{gulati2015improving,
     author    = {Sankalp Gulati and Joan Serr{\`a} and Xavier Serra},

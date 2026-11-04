@@ -341,6 +341,12 @@ body:has(#mirdata-gallery) footer p {
     }
 }
 
+/* The scrollbar's room kept, with or without one: the filters stay as wide
+   when they grow past the window */
+body:has(#mirdata-gallery) #left-sidebar {
+    scrollbar-gutter: stable;
+}
+
 /* Column 1: the filters, in the theme's left sidebar (its last nav, see
    gallery.js; the nav before it, the header links, stays small screens only) */
 #left-sidebar nav:last-of-type {
@@ -348,10 +354,11 @@ body:has(#mirdata-gallery) footer p {
     margin: 0;
 }
 
-/* 8px at the sides: room for "ANNOTATION TYPES" and its AND / OR switch on one line */
+/* 8px at the left, and at the right only the scrollbar's room (#left-sidebar):
+   room for "ANNOTATION TYPES" and its AND / OR switch on one line */
 .gallery-filter-sidebar {
     width: 100%;
-    padding: 16px 8px;
+    padding: 16px 0 16px 8px;
     box-sizing: border-box;
     border: none;
     box-shadow: none;
@@ -441,7 +448,8 @@ body:has(#mirdata-gallery) footer p {
     border-bottom: 1px solid #f1f5f9;
 }
 
-.filter-reset-btn {
+.filter-reset-btn,
+.filter-more-btn {
     background: none;
     border: none;
     color: #a054d8;
@@ -451,7 +459,8 @@ body:has(#mirdata-gallery) footer p {
     padding: 0;
 }
 
-.filter-reset-btn:hover {
+.filter-reset-btn:hover,
+.filter-more-btn:hover {
     text-decoration: underline;
 }
 
@@ -459,10 +468,18 @@ body:has(#mirdata-gallery) footer p {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    max-height: 240px;
-    overflow-y: auto;
     padding-top: 4px;
     padding-right: 2px;
+}
+
+/* "Show all" under a collapsed pill group, and the pills it holds back (gallery.js) */
+.filter-more-btn {
+    width: 100%;
+    text-align: left;
+}
+
+.filter-pill.pill-hidden {
+    display: none;
 }
 
 .filter-pill {

@@ -1,6 +1,6 @@
 name: beatles
-summary: The Beatles Dataset includes 179 songs with beat, metric position, chord,
-  key, and segmentation annotations, supporting tasks in music segmentation and analysis.
+summary: The Beatles Dataset includes beats, metric positions, chords, key, and segmentation
+  annotations for 179 songs, supporting tasks like beat tracking and chord recognition.
 annotations:
 - BeatData
 - ChordData
@@ -213,7 +213,7 @@ stats:
     n_missing_files: 0
     n_track_errors: 0
     annotation_errors: {chords: 4, key: 1, sections: 8}
-docstring_hash: 956d38991edd897964d6b734a714acff631e3aa426d42f9bf216561562ec3f96
+summary_hash: bba4a990ebe5d42a54c31632d4cee3fbfe1c50952183e155482bd8ae0aa6b8de
 bibtex: |-
   @inproceedings{mauch2009beatles,
       title={OMRAS2 metadata project 2009},

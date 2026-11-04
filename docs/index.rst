@@ -32,7 +32,7 @@ How to use the Gallery
        <p>Narrow the list down to the datasets you need.</p>
        <ul>
          <li>Search by name.</li>
-         <li>Filter by annotation type (beats, chords, notes…) and by license.</li>
+         <li>Filter by annotation type (beats, chords, notes…), by task and by license.</li>
          <li><b>AND</b> needs every picked filter, <b>OR</b> any of them; <b>Clear filters</b> resets.</li>
        </ul>
      </div>
