@@ -23,6 +23,7 @@
     const THIN = 3; // bars in a slot narrower than this touch, so many thin bars read as one shape
     const UNIT_NAMES = { hz: "Hz", midi: "MIDI" }; // a unit as a chart writes it; any other as stored (s, bpm, ...)
     const MAX_BINS = 25; // most bars a grid is drawn with (barWidth)
+    const MINUTES_FROM = 600; // a grid in seconds is written in minutes when its bars end past this (axisOf)
     const VALUE_UNITS = new Set(["midi"]); // grids whose bins are one value each (notes, rounded): a bar per bin
     const OTHER = "(other)";
 
@@ -251,34 +252,43 @@
     //
     // A bar is a range, "60–70 bpm", with round numbers at its edges
     // (numberStep); in a grid of VALUE_UNITS it is one value, "64 MIDI", named
-    // under its middle. Hovering a bar shows it and its count. parts
+    // under its middle. A grid in seconds that ends past 10 minutes is written
+    // in minutes (axisOf). Hovering a bar shows it and its count. parts
     // (combine.js, each a dataset's own grid) stack the bars by dataset, or show
     // one dataset in focus (its name), on the same bars.
     function gridSvg(grid, counted, parts = null, focus = null) {
-        const unit = UNIT_NAMES[grid.unit] || grid.unit;
         const values = VALUE_UNITS.has(grid.unit);
         const width = values ? grid.width : barWidth(grid);
         const starts = barStarts(grid, width);
+        const { unit, scale } = axisOf(grid, starts.at(-1) + width);
         const counts = barCounts(grid, starts, width);
         const pieces = parts && stacks(parts, (data) => barCounts(data, starts, width), counts, focus);
-        const name = (start) => (values ? number(start) : `${number(start)}–${number(start + width)}`);
+        const name = (start) => (values ? number(start) : `${number(start / scale)}–${number((start + width) / scale)}`);
         const tips = starts.map((start, i) => barTip(`${name(start)} ${unit}`, counts[i], counted, pieces && pieces[i]));
         const { out, slot, base } = barsSvg(counts, tips, pieces);
         // [number, where on the axis, in bars]: a value bar's middle, or every edge of the range bars
         const marks = values
             ? starts.map((start, i) => [start, i + 0.5])
             : [...starts, starts.at(-1) + width].map((edge, i) => [edge, i]);
-        const step = numberStep(marks.map(([value]) => Array.from(number(value))), slot, width);
+        const clock = grid.unit === "s" ? barWidths(grid) : null;
+        const step = numberStep(marks.map(([value]) => Array.from(number(value / scale))), slot, width, clock);
         for (const [value, at] of marks) {
             if (Math.round(value / width) % Math.round(step / width)) continue; // the hover still has it
             out.push(
                 `<text class="plot-label" x="${(LEFT + at * slot).toFixed(1)}" y="${base + 10}"` +
-                    ` text-anchor="middle">${number(value)}</text>`
+                    ` text-anchor="middle">${number(value / scale)}</text>`
             );
         }
         out.push(unitSvg(unit, base));
         out.push("</svg>");
         return out.join("");
+    }
+
+    // The unit a grid is written in, and what its values are divided by for
+    // that: minutes for a grid in seconds whose bars end past MINUTES_FROM
+    function axisOf(grid, end) {
+        if (grid.unit === "s" && end > MINUTES_FROM) return { unit: "min", scale: 60 };
+        return { unit: UNIT_NAMES[grid.unit] || grid.unit, scale: 1 };
     }
 
     // The width a grid's bins are merged into bars of: the Freedman-Diaconis
@@ -297,8 +307,14 @@
     }
 
     // The widths a grid's bins can be merged into, narrowest first: its own
-    // width times 1, 2 or 5 × 10ⁿ, so a bar is always a whole number of bins
+    // width times 1, 2 or 5 × 10ⁿ, so a bar is always a whole number of bins. A
+    // grid in seconds goes by the clock instead: 1, 2, 5, 10, 15, 30 seconds,
+    // the same in minutes, then 1, 2 or 5 × 10ⁿ hours
     function* barWidths(grid) {
+        if (grid.unit === "s") {
+            for (const unit of [1, 60]) for (const m of [1, 2, 5, 10, 15, 30]) yield m * unit;
+            for (let e = 0; ; e++) for (const m of [1, 2, 5]) yield m * 3600 * 10 ** e;
+        }
         for (let e = 0; ; e++) for (const m of [1, 2, 5]) yield grid.width * m * 10 ** e;
     }
 
@@ -364,9 +380,15 @@
     // bars, one number per bar, width apart (a grid's width; 1 for a counts
     // field's numbers): the multiples of the smallest step of 1, 2 or 5 × 10ⁿ
     // bars that puts them far enough apart, e.g. 40, 50, 60 MIDI, or 1,000,
-    // 2,000 Hz on a 10 Hz grid
-    function numberStep(labels, slot, width = 1) {
+    // 2,000 Hz on a 10 Hz grid. With steps (a grid in seconds, by the clock), the
+    // first of those that is a whole number of bars, e.g. 60, not 75, on 15 s bars
+    function numberStep(labels, slot, width = 1, steps = null) {
         const widest = Math.max(...labels.map((chars) => chars.length)) * CHAR_WIDTH;
+        if (steps) {
+            for (const step of steps) {
+                if (step % width === 0 && (step / width) * slot >= widest + 2) return step;
+            }
+        }
         for (let e = 0; ; e++) {
             for (const m of [1, 2, 5]) {
                 const bars = m * 10 ** e;
