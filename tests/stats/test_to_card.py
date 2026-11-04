@@ -8,7 +8,15 @@ import pytest
 
 from stats.to_card import choose, is_current, result_to_card_stats
 
-AUDIO = {"status": "ok", "problems": [], "n_tracks": 3, "n_audio_files": 3}
+AUDIO = {
+    "status": "ok",
+    "problems": [],
+    "n_tracks": 3,
+    "n_audio_files": 3,
+    "total_seconds": 7.0,
+    "sample_rates": {"8k": 2, "16k": 1},
+    "durations": {"unit": "s", "width": 1, "counts": {1: 1, 2: 1, 4: 1}},
+}
 TEMPO = {"unit": "bpm", "edges": [0, 100, 200], "counts": [1, 1]}
 PITCHES = {"unit": "midi", "edges": [59.5, 60.5], "counts": [4]}
 ANNOTATIONS = {  # a remote run where track3 failed and one beats file was corrupt
@@ -67,7 +75,9 @@ def test_result_to_card_stats():
     assert (
         card["computed"] == computed
     ), "computed should record the mode and the index checksum"
-    assert card["audio"] == AUDIO, "audio should keep its status, problems and counts"
+    assert (
+        card["audio"] == AUDIO
+    ), "audio should keep its status, problems, counts, total, sample rates and durations"
 
     ann = card["annotations"]
     kept = {

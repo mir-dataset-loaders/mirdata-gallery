@@ -7,6 +7,7 @@ import shutil
 
 import fake_dataset_loader
 from fake_dataset_loader import DATA_HOME
+import stats
 from stats import compute
 from stats.annotation_types import grid
 
@@ -126,9 +127,41 @@ def test_compute(fake_mirdata):
 
 def test_compute_durations(fake_mirdata):
     audio = compute_local()["audio"]
-    fields = {"total_seconds", "sample_rate", "duration_histogram"}
-    missing = fields - set(audio)
-    assert not missing, f"audio should have {missing}: the gallery shows the durations"
+    assert (
+        audio["total_seconds"] == 7
+    ), "total_seconds should add up the tracks' durations"
+    sample_rates = {"8k": 2, "16k": 1}
+    assert (
+        audio["sample_rates"] == sample_rates
+    ), "sample_rates should count the tracks at each rate"
+    durations = grid([2, 4, 1], "s")
+    assert (
+        audio["durations"] == durations
+    ), "durations should be the grid of the tracks' durations, in seconds"
+
+
+def test_compute_audio_error(fake_mirdata, monkeypatch):
+    features = {
+        "audio_mic": {"duration_seconds": 2.0, "sample_rate": 8000, "num_channels": 1},
+        "audio_mix": {"duration_seconds": 2.5, "sample_rate": 8000, "num_channels": 1},
+    }
+    tracks = {
+        "track1": {
+            "audio_mic": ["mic.wav", "md5"],
+            "audio_mix": ["mix.wav", "md5"],
+            "audio_features": features,
+        }
+    }
+    monkeypatch.setattr(stats, "load_index", lambda ds: {"tracks": tracks})
+    result = compute_local()
+    audio = result["audio"]
+    assert (
+        audio["status"] == "error"
+    ), "audio files that disagree should make the audio part an error"
+    assert "track1" in audio["error"], "the error should name the track"
+    assert (
+        result["annotations"]["status"] == "ok"
+    ), "an audio error should not stop the annotations"
 
 
 def test_compute_parts(fake_mirdata):
