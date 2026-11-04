@@ -23,7 +23,6 @@ FALLBACK_MAP = {
     "key": "KeyData",
     "tempo": "TempoData",
     "section": "SectionData",
-    "segment": "SectionData",
     "pitch": "F0Data",
     "f0": "F0Data",
     "melody": "F0Data",
