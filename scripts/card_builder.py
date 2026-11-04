@@ -33,7 +33,6 @@ FALLBACK_MAP = {
     "phoneme": "LyricData",
     "syllable": "LyricData",
     "phrase": "LyricData",
-    "tonic": "KeyData",
     "event": "EventData",
     "instrument": "Instrument",
 }
@@ -55,20 +54,21 @@ TASKS = {
 MULTITRACK_TASK = "Source Separation"
 
 
-def build_card(ds, summary=None, docstring_hash=None, stats=None):
+def build_card(ds, stats=None):
     """The card dict for one initialized dataset; keys in card order.
 
-    summary, docstring_hash and stats are the card's summary, docstring_hash
-    and stats fields, from generate_cards.update_summary() and update_stats()
-    (new, kept from the old card, or None).
+    stats is the card's stats field, from generate_cards.update_stats() (new,
+    kept from the old card, or None). summary and summary_hash are left None:
+    the LLM summary is made from the card's tasks, so generate_cards fills
+    them in afterwards.
     """
     return {
         "name": ds.name,
-        "summary": summary,
+        "summary": None,
         "annotations": annotations(ds),
         "tasks": tasks(ds),
         "stats": stats,
-        "docstring_hash": docstring_hash,
+        "summary_hash": None,
         "bibtex": bibtex(ds),
         "license": license(ds),
     }

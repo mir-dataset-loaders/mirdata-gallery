@@ -20,7 +20,7 @@ FIELDS = [
     "annotations",
     "tasks",
     "stats",
-    "docstring_hash",
+    "summary_hash",
     "bibtex",
     "license",
 ]
@@ -232,8 +232,8 @@ def check_card(card, name):
     check_text(card["bibtex"], "bibtex")
     assert card["bibtex"].lstrip().startswith("@"), "bibtex should be a BibTeX entry"
     check_text(card["summary"], "summary")
-    hashed = str(card["docstring_hash"])
-    assert SHA256.fullmatch(hashed), "docstring_hash should be a SHA-256"
+    hashed = str(card["summary_hash"])
+    assert SHA256.fullmatch(hashed), "summary_hash should be a SHA-256"
     assert isinstance(card["stats"], dict), "stats should be computed"
 
 

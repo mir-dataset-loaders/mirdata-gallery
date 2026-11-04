@@ -11,6 +11,7 @@ import tempfile
 import mirdata
 import pytest
 
+import card_builder
 import card_utils
 import fake_dataset_loader
 import generate_cards
@@ -19,15 +20,16 @@ from fake_dataset_loader import RESOURCES
 
 LOCAL_COPIES = os.path.join(RESOURCES, "mir_datasets")  # holds fake_dataset/
 NEW_DOCSTRING = "A new docstring."
+TASKS = ["Beat Tracking", "Chord Recognition"]  # fake_dataset's beats and chords
 
 
 @pytest.fixture(autouse=True)
 def llm_calls(monkeypatch):
-    """llm.summary replaced by a stand-in; the list holds the (name, docstring) of each call."""
+    """llm.summary replaced by a stand-in; the list holds the (name, docstring, tasks) of each call."""
     calls = []
 
-    def summary(name, docstring):
-        calls.append((name, docstring))
+    def summary(name, docstring, tasks):
+        calls.append((name, docstring, tasks))
         return f"Summary of {name}."
 
     monkeypatch.setattr(llm, "summary", summary)
@@ -69,12 +71,14 @@ def older_index(card):
 def test_generate_cards(run, llm_calls, fake_remotes, tmp_path):
     card = run()
     docstring = llm.loader_docstring("fake_dataset")
-    one_call = [("fake_dataset", docstring)]
-    assert llm_calls == one_call, "the LLM should run once, on the loader docstring"
+    one_call = [("fake_dataset", docstring, TASKS)]
+    assert (
+        llm_calls == one_call
+    ), "the LLM should run once, on the loader docstring and the card's tasks"
     summary = "Summary of fake_dataset."
     assert card["summary"] == summary, "summary should be the LLM's answer"
-    hashed = card_utils.docstring_hash(docstring)
-    assert card["docstring_hash"] == hashed, "the hash should be the docstring's"
+    hashed = card_utils.summary_hash(docstring, TASKS)
+    assert card["summary_hash"] == hashed, "the hash should be of the docstring and tasks"
 
     stats = card["stats"]
     checksum = fake_dataset_loader.INDEXES["1.0"].remote.checksum
@@ -90,7 +94,7 @@ def test_generate_cards_rerun(run, llm_calls, fake_remotes):
     llm_calls.clear()
     fake_remotes.requests.clear()
     second = run()
-    assert llm_calls == [], "an unchanged docstring should not run the LLM again"
+    assert llm_calls == [], "unchanged docstring and tasks should not run the LLM again"
     requests = fake_remotes.requests
     assert requests == [], "stats from the same index should not be computed again"
     assert second == first, "nothing changed, so the card should not change"
@@ -106,10 +110,23 @@ def test_generate_cards_docstring_changed(run, llm_calls, fake_remotes, monkeypa
     monkeypatch.setattr(fake_dataset_loader, "__doc__", NEW_DOCSTRING)
     card = run()
     assert len(llm_calls) == 1, "a changed docstring should run the LLM again"
-    hashed = card_utils.docstring_hash(NEW_DOCSTRING)
-    assert card["docstring_hash"] == hashed, "the hash should be the new docstring's"
+    hashed = card_utils.summary_hash(NEW_DOCSTRING, TASKS)
+    assert card["summary_hash"] == hashed, "the hash should be of the new docstring"
     assert fake_remotes.requests == [], "the stats should not be computed again"
     assert card["stats"] == first["stats"], "the stats should be kept"
+
+
+def test_generate_cards_tasks_changed(run, llm_calls, monkeypatch):
+    run()
+    llm_calls.clear()
+    monkeypatch.setitem(card_builder.TASKS, "ChordData", ["Chord Estimation"])
+    card = run()
+    new_tasks = ["Beat Tracking", "Chord Estimation"]
+    docstring = llm.loader_docstring("fake_dataset")
+    one_call = [("fake_dataset", docstring, new_tasks)]
+    assert llm_calls == one_call, "changed tasks should run the LLM again, on the new tasks"
+    hashed = card_utils.summary_hash(docstring, new_tasks)
+    assert card["summary_hash"] == hashed, "the hash should be of the new tasks"
 
 
 def test_generate_cards_index_changed(run, llm_calls, fake_remotes, tmp_path):
@@ -145,8 +162,8 @@ def test_generate_cards_no_docstring(run, llm_calls, monkeypatch):
     assert llm_calls == [], "a loader without a docstring should not run the LLM"
     assert card["summary"] is None, "without a docstring, summary should be null"
     assert (
-        card["docstring_hash"] is None
-    ), "without a docstring, docstring_hash should be null"
+        card["summary_hash"] is None
+    ), "without a docstring, summary_hash should be null"
 
 
 # --------------------------------------------- flags that switch parts off
@@ -165,8 +182,8 @@ def test_generate_cards_no_summary(run, llm_calls, monkeypatch):
         llm_calls == []
     ), "--no-summary should not run the LLM, even for a new docstring"
     assert card["summary"] == first["summary"], "the old summary should be kept"
-    old_hash = first["docstring_hash"]
-    assert card["docstring_hash"] == old_hash, "the old summary's hash should be kept"
+    old_hash = first["summary_hash"]
+    assert card["summary_hash"] == old_hash, "the old summary's hash should be kept"
 
 
 def test_generate_cards_no_stats(run, fake_remotes, tmp_path):

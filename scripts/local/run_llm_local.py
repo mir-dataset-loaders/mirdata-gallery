@@ -2,8 +2,9 @@
 
 By default every dataset picked is summarized and the new summary is printed
 next to the card's current one; nothing is written, and the dataset needs no
-card. With --update each new summary is written into its card with its
-docstring_hash, so a later generate_cards.py run keeps it. The model and the
+card. Each summary is made from the card's tasks (none without a card). With
+--update each new summary is written into its card with its summary_hash, so a
+later generate_cards.py run keeps it. The model and the
 prompt are in llm.py.
 
 Usage:
@@ -100,9 +101,10 @@ def main():
     for name, path, card in todo:
         print(f"\n[{name}]")
         start = time.time()
+        tasks = (card or {}).get("tasks") or []
         try:
             docstring = llm.loader_docstring(name)
-            new = llm.summary(name, docstring) if docstring else None
+            new = llm.summary(name, docstring, tasks) if docstring else None
         except ModuleNotFoundError as e:
             print(f"  SKIP: loader needs an extra library ({e.name})")
             continue
@@ -121,7 +123,7 @@ def main():
             continue
 
         card["summary"] = new
-        card["docstring_hash"] = card_utils.docstring_hash(docstring)
+        card["summary_hash"] = card_utils.summary_hash(docstring, tasks)
         card_utils.write_card(path, card)
 
     if args.update:

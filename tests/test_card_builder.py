@@ -19,7 +19,7 @@ FIELDS = [
     "annotations",
     "tasks",
     "stats",
-    "docstring_hash",
+    "summary_hash",
     "bibtex",
     "license",
 ]
@@ -32,7 +32,7 @@ def ds(fake_mirdata):
 
 def test_build_card(ds):
     stats = {"computed": {"mode": "local", "index": "abc123"}}
-    card = build_card(ds, summary="Three tracks.", docstring_hash="d0c", stats=stats)
+    card = build_card(ds, stats=stats)
     assert list(card) == FIELDS, "fields should come in card order"
     assert card["name"] == "fake_dataset", "name should be the dataset's name"
     license_info, bibtex = fake_dataset_loader.LICENSE_INFO, fake_dataset_loader.BIBTEX
@@ -42,13 +42,10 @@ def test_build_card(ds):
     assert card["annotations"] == types, "annotations should list the Track's types"
     found = ["Beat Tracking", "Chord Recognition"]
     assert card["tasks"] == found, "tasks should be those of the Track's types"
-    assert card["summary"] == "Three tracks.", "summary should be passed through"
-    assert card["docstring_hash"] == "d0c", "docstring_hash should be passed through"
+    left = [card["summary"], card["summary_hash"]]
+    assert left == [None] * 2, "summary and summary_hash are generate_cards' to fill"
     assert card["stats"] is stats, "stats should be passed through"
-
-    empty = build_card(ds)
-    given = [empty["summary"], empty["docstring_hash"], empty["stats"]]
-    assert given == [None] * 3, "summary, hash and stats should be None when not given"
+    assert build_card(ds)["stats"] is None, "stats should be None when not given"
 
 
 def test_annotations(ds):
@@ -109,6 +106,14 @@ def test_annotation_properties_guess(ds, monkeypatch):
     assert (
         declared == expected
     ), "guess=False should keep only the properties typed by their hint"
+
+
+def test_annotation_properties_tonic(ds, monkeypatch):
+    tonic = property(lambda self: 440.0)
+    monkeypatch.setattr(fake_dataset_loader.Track, "tonic", tonic, raising=False)
+    assert (
+        "tonic" not in annotation_properties(ds)
+    ), "a tonic is not a key, so it should not be guessed as KeyData"
 
 
 def test_clean_text():

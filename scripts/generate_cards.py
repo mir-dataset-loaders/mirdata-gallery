@@ -4,11 +4,11 @@ The gallery's pipeline: the update-cards workflow runs it, and it runs the
 same way from the command line on your machine (--local for stats from local
 copies of the datasets).
 
-Every run rebuilds the cheap fields (license, annotations, bibtex). The LLM
-summary and the stats are recomputed only when needed: when the loader
-docstring changed or the dataset index changed (both recorded in the card:
-docstring_hash and stats.computed.index). Datasets whose stats need a local
-run are listed at the end.
+Every run rebuilds the cheap fields (license, annotations, tasks, bibtex). The
+LLM summary and the stats are recomputed only when needed: when the loader
+docstring or the card's tasks changed, or the dataset index changed (recorded
+in the card: summary_hash and stats.computed.index). Datasets whose stats need
+a local run are listed at the end.
 
 Usage:
     python scripts/generate_cards.py                     # every dataset -> cards/
@@ -69,26 +69,27 @@ def update_stats(ds, old, options):
     return chosen, "new" if chosen is new else "kept (more complete than the new run)"
 
 
-def update_summary(ds, old, options):
-    """(summary, docstring hash, "new" or "kept" or "none") for one card.
+def update_summary(ds, old, tasks, options):
+    """(summary, summary hash, "new" or "kept" or "none") for one card.
 
-    The LLM runs only when summaries are on and the loader has a docstring
-    that is new or changed (or with force_summary, or when the card has no
-    summary yet); otherwise the old summary and its hash are kept. old is the
-    old card ({} if none), whose docstring_hash is the hash of the docstring
-    its summary was made from; options see generate(). The hash is None when
-    the loader has no docstring.
+    The LLM runs only when summaries are on, the loader has a docstring, and
+    the docstring or the tasks are new or changed (or with force_summary, or
+    when the card has no summary yet); otherwise the old summary and its hash
+    are kept. old is the old card ({} if none), whose summary_hash is the hash
+    of the docstring and tasks its summary was made from; tasks are the new
+    card's; options see generate(). The hash is None when the loader has no
+    docstring.
     """
     summarize = options["summary"]
-    old_summary, stored_hash = old.get("summary"), old.get("docstring_hash")
+    old_summary, stored_hash = old.get("summary"), old.get("summary_hash")
     docstring = llm.loader_docstring(ds.name)
-    current = card_utils.docstring_hash(docstring) if docstring else None
+    current = card_utils.summary_hash(docstring, tasks) if docstring else None
     if (
         summarize
         and docstring
         and (options["force_summary"] or current != stored_hash or not old_summary)
     ):
-        return llm.summary(ds.name, docstring), current, "new"
+        return llm.summary(ds.name, docstring, tasks), current, "new"
     if docstring or not summarize:
         return old_summary, stored_hash, "kept"
     return None, None, "none"  # the loader has no docstring (any more)
@@ -98,8 +99,8 @@ def generate(names, output_dir, options):
     """Write a card for each dataset name. Returns (written, skipped).
 
     options is a dict with:
-      summary, force_summary: the LLM runs only for datasets whose docstring
-        hash is new or changed (or for all of them with force_summary). With
+      summary, force_summary: the LLM runs only for datasets whose summary
+        hash (docstring and tasks) is new or changed (or for all of them with force_summary). With
         summary False it never runs and each card keeps the summary it
         already has (or gets null).
       stats, force_stats, local, datasets_dir, fetch_root: see update_stats();
@@ -119,10 +120,12 @@ def generate(names, output_dir, options):
             ds = mirdata.initialize(name)
             # Stats first: if they fail, the LLM has not been run for nothing.
             stats_field, stats_status = update_stats(ds, old, options)
-            summary, summary_hash, summary_status = update_summary(ds, old, options)
-            card = card_builder.build_card(
-                ds, summary=summary, docstring_hash=summary_hash, stats=stats_field
+            card = card_builder.build_card(ds, stats=stats_field)
+            # The summary is made from the card's tasks, so it comes last.
+            summary, summary_hash, summary_status = update_summary(
+                ds, old, card["tasks"], options
             )
+            card["summary"], card["summary_hash"] = summary, summary_hash
         except ModuleNotFoundError as e:
             missing = str(e).replace("No module named ", "").strip("'")
             skipped[name] = f"missing library: {missing}"
@@ -173,7 +176,7 @@ def main():
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Redo every summary even if the docstring is unchanged",
+        help="Redo every summary even if the docstring and tasks are unchanged",
     )
     parser.add_argument(
         "--no-stats",
