@@ -1,0 +1,43 @@
+/* The gallery on the Awesome theme (sphinxawesome-theme), light mode only.
+   The theme styles elements inside #content by id, so rules that must win
+   over it start with #content. */
+
+/* The base size: everything set in rem (theme and gallery) follows it */
+html {
+    font-size: 15px;
+}
+
+/* The page (header, content, footer) at most as wide as the gallery at its
+   widest: the theme's sidebar (240px) and gap (2.5rem), the list (687px), the
+   splitter (24px) and the panel (850px), in the container's padding (2rem
+   each side). A wider window has equal margins either side. */
+.container {
+    max-width: calc(240px + 2.5rem + 687px + 24px + 850px + 4rem);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* No "On this page" column, and no grid column kept for it */
+#right-sidebar {
+    display: none;
+}
+
+main {
+    display: block !important;
+}
+
+/* Light mode only (js/light-mode.js): no colour scheme button */
+header button[title="Toggle color scheme"] {
+    display: none;
+}
+
+/* A bigger logo in the header (the theme draws it at 24px) */
+header img[alt="Logo"] {
+    width: 36px;
+    height: 36px;
+}
+
+/* One copy button per code block: sphinx-copybutton's, which skips line numbers */
+.highlight button.copy {
+    display: none;
+}

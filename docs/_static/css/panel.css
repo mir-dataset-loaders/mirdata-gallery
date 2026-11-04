@@ -1,0 +1,233 @@
+/* Panel: Overview, At a glance, Try it with mirdata, BibTeX (its Statistics: charts.css) */
+
+.gallery-cards-information>section {
+    background: #ffffff;
+    border: 1px solid #e3e8ee;
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#content .gallery-cards-information>section>h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #a054d8;
+    border-bottom: 2px solid #faf5ff;
+    padding-bottom: 6px;
+}
+
+#content .gallery-cards-information .panel-heading {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #a054d8;
+    margin: 2px 0 6px;
+}
+
+#content .gallery-cards-information .panel-summary {
+    color: #334155;
+    font-size: 1.03rem;
+    line-height: 1.5;
+    margin: 0 0 14px;
+}
+
+.gallery-cards-information .panel-missing,
+.gallery-cards-information .stats-note {
+    color: #94a3b8;
+    font-size: 0.9em;
+}
+
+.gallery-cards-information .stats-note {
+    margin: 0 0 8px;
+}
+
+/* The bordered boxes: "At a glance" and "Statistics" */
+.panel-box {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+}
+
+.box-title {
+    font-size: 1.03rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+
+/* "At a glance": label/value rows in two columns, annotation tags below */
+.glance-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.glance-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 3px 0;
+    font-size: 0.95rem;
+}
+
+.glance-label {
+    color: #475569;
+}
+
+.glance-value {
+    margin: 0;
+    color: #1e293b;
+    text-align: right;
+}
+
+/* Badge pills for annotation tags. Silver by default; official
+   mirdata.annotations classes get their own colour (type-colours.css). */
+.glance-tags code {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-block;
+    vertical-align: middle;
+    margin: 2px 3px;
+}
+
+/* A type is a button: a click, or Cmd/Ctrl-clicks for several, show only their
+   plots in Statistics and dim the other types (panel.js, focusTypes); a hint
+   beside the title says so, as the combined panel's chips hint does */
+.box-hint {
+    margin-left: 8px;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #64748b;
+}
+
+.glance-tags [data-ann] {
+    cursor: pointer;
+}
+
+.glance-tags [data-ann]:hover,
+.glance-tags [data-ann][aria-pressed="true"] {
+    box-shadow: 0 0 0 1px currentColor;
+}
+
+.glance-tags.has-focus [data-ann]:not([aria-pressed="true"]) {
+    opacity: 0.4;
+}
+
+/* "Try it with mirdata": a dark code block (this one only), copy icon always
+   shown; long lines wrap instead of scrolling sideways */
+.gallery-cards-information .try-mirdata .highlight {
+    background: #1e1e2e;
+    border: none;
+    border-radius: 10px;
+}
+
+#content .try-mirdata pre {
+    margin-top: 0;
+    padding: 16px 18px;
+    color: #e2e8f0;
+}
+
+#content .try-mirdata pre,
+#content .try-mirdata pre code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow-x: hidden;
+}
+
+#content .try-mirdata pre code {
+    display: block;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: inherit;
+}
+
+/* A wrapped line continues under its code, not under the line number */
+#content .try-mirdata pre code>span[id^="line-"] {
+    display: block;
+    padding-left: 2.4em;
+    text-indent: -2.4em;
+}
+
+/* white-space: from 10 lines on the numbers are padded (" 1"), and the
+   wrapping allowed above would break them at that space */
+#content .try-mirdata pre code .linenos {
+    display: inline-block;
+    white-space: pre;
+    width: 1.4em;
+    margin-right: 1em;
+    text-align: right;
+    text-indent: 0;
+    color: #64748b;
+}
+
+.gallery-cards-information .try-mirdata .highlight span {
+    color: inherit;
+    font-weight: normal;
+    font-style: normal;
+}
+
+.gallery-cards-information .try-mirdata .highlight .kn,
+.gallery-cards-information .try-mirdata .highlight .k {
+    color: #c084fc;
+}
+
+.gallery-cards-information .try-mirdata .highlight .s2,
+.gallery-cards-information .try-mirdata .highlight .s1 {
+    color: #86efac;
+}
+
+.gallery-cards-information .try-mirdata button.copybtn {
+    opacity: 1;
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+}
+
+/* BibTeX dropdown */
+.gallery-cards-information>section .admonition {
+    margin-top: 10px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.gallery-cards-information>section .admonition .admonition-title {
+    background: #f8fafc !important;
+    color: #334155 !important;
+    font-size: 0.98rem;
+    font-weight: 600;
+    padding: 9px 14px;
+    border-radius: 7px;
+    transition: background 0.15s ease;
+}
+
+.gallery-cards-information>section .admonition .admonition-title:hover {
+    background: #f1f5f9 !important;
+}
+
+.gallery-cards-information>section .admonition .admonition-title::before {
+    color: #a054d8 !important;
+}
+
+.gallery-cards-information>section .toggle-button {
+    color: #64748b !important;
+}

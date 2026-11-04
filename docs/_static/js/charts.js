@@ -48,7 +48,7 @@
             of: { major: "major", maj: "major", minor: "minor", min: "minor" },
         },
     };
-    // A circle's size, two bar charts wide as it spans two columns (custom.css);
+    // A circle's size, two bar charts wide as it spans two columns (charts.css);
     // its middle, its outer radius (room left around it for the root names) and
     // its empty middle's radius
     const CIRCLE_WIDTH = 2 * WIDTH, CIRCLE_HEIGHT = 170;
@@ -57,7 +57,7 @@
     const FAINTEST = 0.08; // the shade of a cell used least, so it never looks unused
     const MAX_TIP_LABELS = 10; // labels a hover text lists (a circle cell's, an "(other)" bar's); the rest as "… and 4 more"
 
-    // The tempo changes scatter (tempoChangesSvg): two columns wide (custom.css,
+    // The tempo changes scatter (tempoChangesSvg): two columns wide (charts.css,
     // plot-wide) at a bar chart's height, with room on the left for its y label
     // (Y_LABEL, a line each, turned) and more numbers under the x axis. A track
     // whose tempo changes by at most BAND % from start to end is steady; DOT is
@@ -155,7 +155,7 @@
     // than MIN_SLOTS bars, a bar keeps the width it has in a chart of MIN_SLOTS
     // bars, so a few bars are spread out instead of filling the chart. The
     // tallest bar reaches the top. With pieces (stacks), a bar is drawn as its
-    // pieces, each in its dataset's colour (custom.css, combine-c0 to c4, grey
+    // pieces, each in its dataset's colour (combine.css, combine-c0 to c4, grey
     // combine-other), the rest of a bar with a dataset in focus pale grey
     // (combine-rest). Bars in a slot narrower than THIN touch (a grid's many
     // bins), so many thin ones read as one shape.
@@ -768,14 +768,14 @@
     // hover) and its chart, with focus (a dataset's name, Combine mode) showing
     // that dataset's part of every combined plot. A scatter (points) is two
     // columns wide (plot-wide); the circles, two columns wide too, go together
-    // in a block of their own under the others (custom.css, plot-circles).
+    // in a block of their own under the others (charts.css, plot-circles).
     function plotGridHtml(plots, focus = null) {
         const wide = (p) => !Array.isArray(p.data) && "points" in p.data;
         const figures = (list) =>
             list
                 .map(
                     (p) =>
-                        // data-type: the annotation type ("" for the audio's), for gallery.js's type focus
+                        // data-type: the annotation type ("" for the audio's), for panel.js's type focus
                         `<figure class="plot${p.circle ? " plot-circle" : wide(p) ? " plot-wide" : ""}" data-type="${escapeHtml(p.type || "")}"` +
                         `${p.sources ? ` data-pick-key="${escapeHtml(p.pickKey)}"` : ""}>` +
                         `<figcaption>${sourcesHtml(p, `<span class="plot-title">${escapeHtml(p.title)}</span>`)}` +
@@ -789,10 +789,10 @@
     }
 
     // A plot's title, and for a pooled one with a choice (combine.js, sources)
-    // a button at its right opening a bubble under it (gallery.js,
+    // a button at its right opening a bubble under it (combine-panel.js,
     // showSources): which property each of its datasets adds, as a tag, or a
     // button per property when it has several, the one it adds pressed (a
-    // click swaps it in, gallery.js)
+    // click swaps it in, combine-panel.js)
     function sourcesHtml(p, title) {
         if (!p.sources) return title;
         const rows = p.sources.map(({ name, slot, props, pick }) => {

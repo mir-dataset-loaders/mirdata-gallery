@@ -9,7 +9,7 @@ the current document. Each card becomes a section, the dataset's panel: its
 title, an overview (the summary), an "At a glance" box, the statistics (the
 plots' data, which charts.js draws as SVG bar charts), and the BibTeX
 citation. gallery.js arranges the sections into the filterable gallery,
-custom.css styles them.
+the files in _static/css style them.
 
 Every card is registered as a dependency of the page, and the directory is
 snapshotted, so editing, adding or removing a card makes Sphinx re-read the
@@ -178,7 +178,7 @@ def track_count(stats):
 
 
 def combine_facts(data):
-    """What Combine mode (gallery.js, combine.js) adds up from this card, as JSON on a hidden element.
+    """What Combine mode (combine-panel.js, combine.js) adds up from this card, as JSON on a hidden element.
 
     The numbers behind the At a glance rows (None where the row shows "—"),
     the tasks, and the notes the Statistics box shows.

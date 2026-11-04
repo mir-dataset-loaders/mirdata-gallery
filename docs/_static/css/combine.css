@@ -1,0 +1,266 @@
+/* Combine mode: the button, the chips, a dataset's colour, a pooled plot's sources */
+
+/* Combine mode (combine-panel.js): the button that switches it on, and a hint */
+.combine-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 4px;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.combine-btn {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: #ffffff;
+    color: #1e293b;
+    cursor: pointer;
+}
+
+.combine-btn:hover {
+    border-color: #a054d8;
+    color: #a054d8;
+}
+
+.combine-btn.active {
+    background: #a054d8;
+    border-color: #a054d8;
+    color: #ffffff;
+}
+
+/* The combined panel's dataset names, under its title */
+#content .gallery-cards-information .combine-names {
+    color: #334155;
+    font-size: 1.03rem;
+    margin: 0 0 14px;
+}
+
+/* The combined panel's datasets again, under the Statistics title (focus a
+   dataset in the plots, or remove it), and a hint under them */
+.combine-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 6px;
+}
+
+#content .gallery-cards-information .combine-chips-hint {
+    margin: 0 0 14px;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+/* The combined datasets the filters hide, between the chips and the hint */
+#content .gallery-cards-information .combine-hidden {
+    margin: 0 0 4px;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.combine-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #faf5ff;
+    border: 1px solid #e9d5ff;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    color: #7928ca;
+}
+
+.combine-chip:hover {
+    border-color: #a054d8;
+}
+
+/* A chip's name focuses its dataset in the plots; its × removes it */
+.combine-chip button {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.combine-name {
+    padding: 3px 4px 3px 10px;
+}
+
+.combine-name:hover {
+    text-decoration: underline;
+}
+
+.combine-remove {
+    padding: 3px 10px 3px 4px;
+}
+
+.combine-remove:hover {
+    font-weight: 700;
+}
+
+/* The focused dataset's chip, filled in its colour (its combine-c0 to c4 or
+   combine-other class): white text on the dark colours, near black on the
+   light ones (teal, amber, coral), each at least 4.4:1 */
+.combine-chip.focused {
+    border-color: transparent;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.combine-chip.focused.combine-c1,
+.combine-chip.focused.combine-c2,
+.combine-chip.focused.combine-c4 {
+    color: #0f172a;
+}
+
+.combine-chip.focused .combine-dot {
+    background-color: currentColor;
+}
+
+.combine-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+/* Combine mode: a dataset's colour, for its pieces of the stacked bars and its
+   chip's dot (charts.js, combine.js). Given in this order as datasets join:
+   the first the single panel's purple, then four muted ones, then grey for
+   the rest. The order keeps neighbours in a stack apart for colour-blind
+   readers too. */
+.combine-c0 { fill: #a054d8; background-color: #a054d8; }
+.combine-c1 { fill: #34b59e; background-color: #34b59e; }
+.combine-c2 { fill: #d4a552; background-color: #d4a552; }
+.combine-c3 { fill: #2666a2; background-color: #2666a2; }
+.combine-c4 { fill: #c87062; background-color: #c87062; }
+.combine-other { fill: #57534e; background-color: #57534e; }
+/* With a dataset in focus, the rest of each bar (the other datasets) */
+.combine-rest { fill: #cbd5e1; }
+
+/* Combine mode: a pooled plot's sources (charts.js, sourcesHtml; combine-panel.js,
+   showSources): a button right after its title, and the bubble it
+   opens under the title, over the plots, listing each dataset's property: a
+   tag, or a button per property when it has several, the one it adds pressed */
+#content .plot figcaption {
+    position: relative;
+}
+
+.plot-title-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.plot-title-line .plot-title {
+    min-width: 0;
+}
+
+.plot-sources-btn {
+    flex-shrink: 0;
+    padding: 0 7px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    background: #ffffff;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: #7928ca;
+    cursor: pointer;
+}
+
+.plot-sources-btn:hover,
+.plot-sources-btn[aria-expanded="true"] {
+    background: #faf5ff;
+    border-color: #a054d8;
+}
+
+.plot-sources {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 20;
+    width: max-content;
+    max-width: 360px;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+/* one that would run past the plots' right edge opens from its plot's right edge */
+.plot-sources.leftwards {
+    left: auto;
+    right: 0;
+}
+
+.plot-sources-title {
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* the datasets' names in one column, their properties in the next */
+.plot-sources-grid {
+    display: grid;
+    grid-template-columns: max-content auto;
+    align-items: baseline; /* a name level with the first line of its buttons */
+    row-gap: 5px;
+}
+
+.plot-sources-row {
+    display: contents;
+}
+
+/* a faint line across both columns between datasets, so wrapped buttons stay with theirs */
+.plot-sources-rule {
+    grid-column: 1 / -1;
+    border-top: 1px solid #f1f5f9;
+}
+
+.plot-sources-name {
+    padding-right: 12px;
+    color: #334155;
+}
+
+.plot-sources-name .combine-dot {
+    vertical-align: -1px;
+}
+
+.plot-sources-props {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+/* lined up with the buttons' text */
+.plot-source-tag {
+    padding: 0 7px;
+    border: 1px solid transparent;
+    color: #334155;
+}
+
+.plot-pick {
+    padding: 0 7px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    background: #ffffff;
+    font: inherit;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.plot-pick:hover {
+    border-color: #a054d8;
+}
+
+.plot-pick[aria-pressed="true"] {
+    background: #faf5ff;
+    border-color: #a054d8;
+    color: #7928ca;
+}

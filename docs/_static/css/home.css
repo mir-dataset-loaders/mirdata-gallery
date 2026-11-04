@@ -1,0 +1,165 @@
+/* Front page (index.rst): the hero, then the sections in a readable column */
+
+/* Without a sidebar the theme keeps a page to a text column (max-w-prose);
+   the front page lets the hero use the width */
+.max-w-prose:has(section#home) {
+    max-width: none;
+}
+
+/* "Home" only names the browser tab; the hero has the visible heading */
+#content section#home>h1 {
+    display: none;
+}
+
+#content section#home>.landing-hero {
+    max-width: 1100px;
+    margin: 0 auto 36px;
+}
+
+#content section#home>section {
+    max-width: 1100px;
+    margin: 0 auto 40px;
+}
+
+/* The section titles: the gallery panels' purple */
+#content section#home>section>h2 {
+    font-size: 1.35rem;
+    color: #a054d8;
+    border: none;
+    margin: 0 0 14px;
+}
+
+.landing-hero {
+    text-align: center;
+    padding: 56px 24px 48px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #faf5ff, #ede4fb);
+}
+
+#content .landing-hero h1.landing-title {
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 12px;
+    border: none;
+}
+
+.landing-hero p {
+    font-size: 1.15rem;
+    color: #475569;
+    max-width: 620px;
+    margin: 0 auto 24px;
+}
+
+.landing-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Purple button; .secondary is the white one with a purple outline */
+.landing-button {
+    display: inline-block;
+    padding: 10px 20px;
+    border: 1.5px solid #7928ca;
+    border-radius: 10px;
+    background: #7928ca;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-decoration: none !important;
+}
+
+.landing-button.secondary {
+    background: #ffffff;
+    color: #7928ca !important;
+}
+
+/* How to use: four cards in a row, two on a narrow screen */
+.landing-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.landing-step {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px;
+    background: #ffffff;
+}
+
+.landing-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #f3e8ff;
+    color: #7928ca;
+    font-weight: 700;
+}
+
+#content .landing-step h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 10px 0 4px;
+}
+
+#content .landing-step p {
+    margin: 0;
+    color: #475569;
+    font-size: 0.95rem;
+}
+
+/* The card's how-to points, under its one-line purpose; as specific as the
+   theme's #content ul:not(.search)>li, which spaces them 24px apart */
+#content .landing-step ul:not(.search) {
+    margin: 10px 0 0 18px;
+}
+
+#content .landing-step ul:not(.search)>li {
+    margin: 4px 0 0;
+    color: #475569;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+/* Using Mirdata: the text beside the Python code, one above the other on a narrow screen */
+.landing-quickstart {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+/* RST's container class meets the theme's .container (centred, padded): undone here */
+#content .landing-quickstart.container,
+#content .landing-quickstart .container {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
+.landing-quickstart-text>p:first-child,
+.landing-quickstart-code pre {
+    margin-top: 0;
+}
+
+@media (max-width: 900px) {
+    .landing-steps {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .landing-quickstart {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* A phone: one card a row, so the points keep a readable line length */
+@media (max-width: 600px) {
+    .landing-steps {
+        grid-template-columns: 1fr;
+    }
+}

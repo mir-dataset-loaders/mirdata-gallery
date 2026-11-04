@@ -53,5 +53,26 @@ html_sidebars = {"index": []}
 
 # Custom static files, copied after the theme's own so they can override it.
 html_static_path = ["_static"]
-html_css_files = ["css/custom.css"]
-html_js_files = ["js/light-mode.js", "js/charts.js", "js/combine.js", "js/gallery.js"]
+# In this order: of two equally specific rules, the later file's wins.
+html_css_files = [
+    "css/page.css",
+    "css/home.css",
+    "css/layout.css",
+    "css/filters.css",
+    "css/list.css",
+    "css/panel.css",
+    "css/charts.css",
+    "css/combine.css",
+    "css/type-colours.css",
+]
+html_js_files = [
+    "js/light-mode.js",
+    "js/charts.js",
+    "js/combine.js",
+    "js/filters.js",
+    "js/list.js",
+    "js/combine-panel.js",
+    "js/splitter.js",
+    "js/panel.js",
+    "js/gallery.js",  # last: it runs the setups of the five above
+]

@@ -25,7 +25,7 @@ FIELDS = [
     "license",
 ]
 # The card's annotations field: mirdata's annotation types plus a few labels
-# that are not classes. Each one has a colour in docs/_static/css/custom.css.
+# that are not classes. Each one has a colour in docs/_static/css/type-colours.css.
 CARD_TYPES = {
     "BeatData",
     "ChordData",

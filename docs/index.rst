@@ -1,7 +1,7 @@
 Home
 ====
 
-.. The front page. "Home" names the browser tab; custom.css hides it, the hero
+.. The front page. "Home" names the browser tab; home.css hides it, the hero
    below is the visible heading.
 
 .. toctree::

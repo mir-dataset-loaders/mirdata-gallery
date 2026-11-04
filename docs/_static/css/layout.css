@@ -1,0 +1,188 @@
+/* Gallery layout: the list and panel columns, the splitter between them, scrollbars, footer */
+
+/* The header already names the page */
+#content #mirdata-gallery>h1 {
+    display: none;
+}
+
+#mirdata-gallery {
+    display: block;
+    container-type: inline-size; /* the stacked layout below follows the gallery's width */
+}
+
+/* Container holding the list and the panel */
+.gallery-layout {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    /* The window less the theme's header (57px), the page's padding (32px
+       above, 12px below) and the one-line footer (29px): the page itself does
+       not scroll; the list and the panel, each this full height, scroll inside */
+    height: calc(100vh - 130px);
+}
+
+/* The splitter between the list and the panel (splitter.js): 24px of room
+   between them, all of it draggable, with a bar in it, purple while dragged */
+.gallery-splitter {
+    flex: 0 0 24px;
+    position: relative;
+    cursor: col-resize;
+    touch-action: none;
+    outline: none;
+}
+
+/* The bar: half the gallery's height, in the middle of the blank between the
+   list's rows and the panel (--bar-shift: the list's scrollbar room and
+   padding, splitter.js, widen that blank on the left) */
+.gallery-splitter::before {
+    content: "";
+    position: absolute;
+    top: 25%;
+    bottom: 25%;
+    left: 50%;
+    width: 6px;
+    transform: translateX(calc(-50% + var(--bar-shift, 0px)));
+    border-radius: 3px;
+    background: #cbd5e1;
+    opacity: 0.3; /* full on hover, focus or drag */
+    transition: opacity 0.15s;
+}
+
+.gallery-splitter:hover::before,
+.gallery-splitter:focus-visible::before,
+.gallery-splitter.dragging::before {
+    opacity: 1;
+}
+
+.gallery-splitter.dragging::before {
+    background: #a054d8;
+}
+
+/* Nothing to drag (the list's share leaves it no more than its 350px): only
+   the room between them, without the bar */
+.gallery-splitter.idle {
+    cursor: default;
+    pointer-events: none;
+}
+
+.gallery-splitter.idle::before {
+    display: none;
+}
+
+/* The scrollbars of the filters, the list and the panel: thin, and hidden
+   until the pointer is over them, or for a moment (scrollbar-shown) when their
+   content changes or they scroll (gallery.js, flashScrollbar); scrollbar-color
+   for Chrome and Firefox, the ::-webkit-scrollbar rules for Safari */
+:is(#left-sidebar, .gallery-datasets-list, .gallery-cards-information) {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+
+:is(#left-sidebar, .gallery-datasets-list, .gallery-cards-information):is(:hover, .scrollbar-shown) {
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+:is(#left-sidebar, .gallery-datasets-list, .gallery-cards-information)::-webkit-scrollbar {
+    width: 8px;
+}
+
+:is(#left-sidebar, .gallery-datasets-list, .gallery-cards-information)::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: transparent;
+}
+
+:is(#left-sidebar, .gallery-datasets-list, .gallery-cards-information):is(:hover, .scrollbar-shown)::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+}
+
+/* The gallery page's footer: one small line (28px and its 1px border; the
+   theme's is 96px), 12px under the gallery */
+body:has(#mirdata-gallery) main {
+    padding-bottom: 12px;
+}
+
+body:has(#mirdata-gallery) footer {
+    padding: 0;
+}
+
+body:has(#mirdata-gallery) footer > .container {
+    height: 28px;
+}
+
+body:has(#mirdata-gallery) footer p {
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+/* The theme's left sidebar (md and up) runs from the header to the window's
+   bottom (and 1px past it: the header is 57px with its border); on the gallery
+   page it stops at the footer */
+@media (min-width: 768px) {
+    body:has(#mirdata-gallery) #left-sidebar {
+        height: calc(100vh - 86px);
+    }
+}
+
+/* The scrollbar's room kept, with or without one: the filters stay as wide
+   when they grow past the window */
+body:has(#mirdata-gallery) #left-sidebar {
+    scrollbar-gutter: stable;
+}
+
+/* Column 2: the dataset list. 350px to 687px; it takes the width the panel
+   leaves once the panel is at its 850px (687px is what the page at its
+   widest leaves, .container in page.css). Its columns follow its own width
+   (the container queries in list.css). */
+.gallery-datasets-list {
+    container: dataset-list / inline-size;
+    flex: 1 0 350px;
+    max-width: 687px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    /* the scrollbar's room kept, with or without one: rows as wide when
+       list.js measures them (paginate) as on their page */
+    scrollbar-gutter: stable;
+    padding: 0 2px 12px 0;
+    box-sizing: border-box;
+}
+
+/* Column 3: the panel, 850px, narrower (down to 400px) when the window has
+   no room for it (wider, the charts and their text grow too big; only when
+   the splitter narrows the list, splitter.js) */
+.gallery-cards-information {
+    flex: 0 1 850px;
+    min-width: 400px;
+    overflow-y: auto;
+}
+
+/* Too narrow for the list and the panel's minimum width (350 + the 24px splitter + 400): the
+   list goes above the panel as a short scrollable box, and the panel and the
+   page grow with the panel's content (the page scrolls). */
+@container (max-width: 773px) {
+    .gallery-layout {
+        flex-direction: column;
+        gap: 24px;
+        height: auto;
+    }
+
+    .gallery-splitter {
+        display: none;
+    }
+
+    .gallery-datasets-list {
+        flex: none;
+        min-width: 0;
+        max-height: 60vh;
+    }
+
+    .gallery-cards-information {
+        flex: none;
+        min-width: 0;
+        max-width: none;
+        position: static;
+        max-height: none;
+        overflow-y: visible;
+    }
+}

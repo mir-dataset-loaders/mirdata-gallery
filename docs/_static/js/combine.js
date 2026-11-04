@@ -1,4 +1,4 @@
-// Combine mode: the panel of several datasets together. gallery.js builds the
+// Combine mode: the panel of several datasets together. combine-panel.js builds the
 // panel; these functions work out its text from each card's facts (gallery.py,
 // combine_facts: tracks, seconds, sample_rate, tasks, notes) and its plots
 // pooled from each card's (gallery.py, plot_grid; charts.js draws them). Every
@@ -220,7 +220,7 @@
     // type, after how many datasets it holds when not all do. A dataset with
     // several properties there adds one (pickOf); a pooled plot then has
     // pickKey and sources, every dataset's choicesOf, for its sources bubble
-    // (charts.js, sourcesHtml; gallery.js keeps the picks). A plot no other dataset has, or one that
+    // (charts.js, sourcesHtml; combine-panel.js keeps the picks). A plot no other dataset has, or one that
     // cannot be pooled exactly, is shown on its own, in its own unit, its source
     // starting with its dataset, and so is every plot of a property not added.
     // Every plot has parts: each dataset's own data on the plot's bars, with its
