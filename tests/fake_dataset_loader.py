@@ -36,7 +36,7 @@ INDEXES = {
     "1.0": core.Index(
         filename="fake_dataset_index_1.0.json",
         url="https://example.com/fake_dataset_index_1.0.json",  # never fetched: the file is in RESOURCES
-        checksum="76f820b1d7c4aa22c7edf1f6f9ec0998",
+        checksum="9ff320a0fae77c6b4a011d5c3aa2be0b",
     ),
 }
 # mirdata keeps a remote index in its own package folder: point it to ours.

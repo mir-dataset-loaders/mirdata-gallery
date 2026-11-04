@@ -9,7 +9,15 @@ MODES = ("remote", "local")
 
 # Keys copied from each part's result; everything else (log lines, per-file
 # dicts) stays out of the card.
-AUDIO_KEYS = ("status", "problems", "n_tracks", "n_audio_files")
+AUDIO_KEYS = (
+    "status",
+    "problems",
+    "n_tracks",
+    "n_audio_files",
+    "total_seconds",
+    "sample_rates",
+    "durations",
+)
 ANNOTATION_KEYS = (
     "status",
     "problems",

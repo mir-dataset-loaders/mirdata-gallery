@@ -60,7 +60,7 @@ STATUSES = {"ok", "incomplete", "needs_local", "error"}
 MODES = {"remote", "local"}
 NAME = re.compile(r"[a-z0-9_]+")
 SHA256 = re.compile(r"[0-9a-f]{64}")
-HISTOGRAM_KEYS = {"unit", "edges", "counts"}
+SAMPLE_RATE = re.compile(r"\d+(\.\d+)?k")
 GRID_KEYS = {"unit", "width", "counts"}
 CRASHED_PART = {"status", "error"}
 DATASET_ERROR = {"computed", "error"}
@@ -71,8 +71,8 @@ AUDIO_FIELDS = {
     "n_tracks",
     "n_audio_files",
     "total_seconds",
-    "sample_rate",
-    "duration_histogram",
+    "sample_rates",
+    "durations",
 }
 ANNOTATION_FIELDS = {
     "status",
@@ -123,21 +123,6 @@ def check_counts(value, where):
     assert isinstance(value, dict), f"{where} should be {{label: count}}"
     whole = all(is_count(n) for n in value.values())
     assert whole, f"{where} should count whole numbers >= 0"
-
-
-def check_histogram(value, where):
-    """The old {unit, edges, counts}: only duration_histogram, until durations are computed again."""
-    if value is None:
-        return  # no values to bin
-    assert set(value) == HISTOGRAM_KEYS, f"{where} should be {{unit, edges, counts}}"
-    edges, counts = value["edges"], value["counts"]
-    assert isinstance(value["unit"], str), f"{where} unit should be text"
-    one_more = len(edges) == len(counts) + 1
-    assert one_more, f"{where} should have one more edge than counts"
-    increasing = all(a < b for a, b in zip(edges, edges[1:]))
-    assert increasing, f"{where} edges should increase"
-    whole = all(is_count(n) for n in counts)
-    assert whole, f"{where} counts should be whole numbers >= 0"
 
 
 def check_grid(value, where):
@@ -237,6 +222,31 @@ def check_card(card, name):
     assert isinstance(card["stats"], dict), "stats should be computed"
 
 
+def check_durations(audio):
+    """total_seconds, sample_rates and durations: all null when the index has none."""
+    seconds, rates, durations = (
+        audio["total_seconds"],
+        audio["sample_rates"],
+        audio["durations"],
+    )
+    if seconds is None:
+        none = rates is None and durations is None
+        assert none, "total_seconds, sample_rates and durations should be null together"
+        return
+    positive = isinstance(seconds, (int, float)) and seconds >= 0
+    assert positive, "total_seconds should be a number >= 0"
+    assert seconds == round(seconds, 1), "total_seconds should have one decimal at most"
+    check_counts(rates, "sample_rates")
+    labelled = all(SAMPLE_RATE.fullmatch(label) for label in rates)
+    assert labelled, "sample_rates should be labelled like 44.1k"
+    assert durations is not None, "durations should not be null when there is a total"
+    check_grid(durations, "durations")
+    same = sum(rates.values()) == sum(durations["counts"].values())
+    assert same, "sample_rates and durations should count the same tracks"
+    within = sum(rates.values()) <= audio["n_tracks"]
+    assert within, "no more tracks should have a duration than there are"
+
+
 def check_stats(stats):
     computed = stats.get("computed") or {}
     assert computed.get("mode") in MODES, f"computed.mode should be one of {MODES}"
@@ -252,11 +262,7 @@ def check_stats(stats):
     if check_part("audio", audio, AUDIO_FIELDS):
         assert is_count(audio["n_tracks"]), "audio n_tracks should be a count"
         assert is_count(audio["n_audio_files"]), "audio n_audio_files should be a count"
-        seconds = audio["total_seconds"]
-        positive = isinstance(seconds, (int, float)) and seconds >= 0
-        assert positive, "total_seconds should be a number >= 0"
-        assert is_count(audio["sample_rate"]), "sample_rate should be a whole number"
-        check_histogram(audio["duration_histogram"], "duration_histogram")
+        check_durations(audio)
 
     ann = stats["annotations"]
     if check_part("annotations", ann, ANNOTATION_FIELDS):

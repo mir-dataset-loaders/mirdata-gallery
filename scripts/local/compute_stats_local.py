@@ -97,9 +97,12 @@ def print_part(part, part_stats, elapsed):
 
 
 def print_audio(part_stats):
-    """The terminal block for one dataset's audio, counted from its index."""
+    """The terminal block for one dataset's audio, from its index."""
     print(f"  tracks in index:        {part_stats['n_tracks']}")
     print(f"  audio files in index:   {part_stats['n_audio_files']}")
+    seconds = part_stats["total_seconds"]
+    print(f"  total duration:         {hms(seconds) if seconds else '-'}")
+    print(f"  sample rates:           {part_stats['sample_rates'] or '-'}")
 
 
 def print_annotations(part_stats):
@@ -154,14 +157,9 @@ def print_table(results):
             else "-"
         )
         files = str(a["n_audio_files"]) if ok_a else "-"
-        duration = (
-            hms(a["total_seconds"]) if a.get("total_seconds") else "-"
-        )  # until the index has durations
-        rate = (
-            str(a["sample_rate"])
-            if a.get("sample_rate")
-            else ("mixed" if a.get("sample_rates") else "-")
-        )
+        duration = hms(a["total_seconds"]) if a.get("total_seconds") else "-"
+        rates = list(a.get("sample_rates") or [])
+        rate = rates[0] if len(rates) == 1 else ("mixed" if rates else "-")
         entries = str(len(n["annotations"])) if n and "error" not in n else "-"
         note = result.get("error") or a.get("error") or n.get("error") or ""
         print(

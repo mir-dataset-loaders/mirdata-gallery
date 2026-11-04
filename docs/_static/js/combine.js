@@ -1,6 +1,6 @@
 // Combine mode: the panel of several datasets together. combine-panel.js builds the
 // panel; these functions work out its text from each card's facts (gallery.py,
-// combine_facts: tracks, seconds, sample_rate, tasks, notes) and its plots
+// combine_facts: tracks, seconds, sample_rates, tasks, notes) and its plots
 // pooled from each card's (gallery.py, plot_grid; charts.js draws them). Every
 // function returns plain values, so tests/combine.test.js runs in Node.
 (function () {
@@ -24,14 +24,15 @@
         const known = (key) => facts.map((f) => f[key]).filter((v) => v != null);
         const sum = (values) => values.reduce((total, v) => total + v, 0);
         const tracks = known("tracks");
-        const rates = known("sample_rate");
+        const rates = known("sample_rates");
         const seconds = known("seconds");
         const withTasks = facts.filter((f) => f.tasks.length);
         const tasks = [...new Set(withTasks.flatMap((f) => f.tasks))];
-        const kHz = [...new Set(rates)].sort((a, b) => a - b).map((rate) => rate / 1000);
+        // most common first, as on a card
+        const labels = poolCounts(rates.map(Object.entries)).sort((a, b) => b[1] - a[1]).map(([label]) => label);
         return [
             ["Tracks", tracks.length ? GROUPED.format(sum(tracks)) + coverage(tracks.length, n) : null],
-            ["Sample rate", rates.length ? `${kHz.join(", ")} kHz` + coverage(rates.length, n) : null],
+            ["Sample rate", rates.length ? labels.join(", ") + coverage(rates.length, n) : null],
             ["Total duration", seconds.length ? duration(sum(seconds)) + coverage(seconds.length, n) : null],
             ["Tasks", tasks.length ? tasks.join(", ") + coverage(withTasks.length, n) : null],
         ];

@@ -16,11 +16,13 @@ stats:
     n_tracks: 64
     n_audio_files: 128
     total_seconds: 1413.1
-    sample_rate: 44100
-    duration_histogram:
+    sample_rates: {44.1k: 64}
+    durations:
       unit: s
-      edges: [5, 10, 15, 20, 25, 30, 35]
-      counts: [1, 9, 12, 20, 18, 4]
+      width: 1
+      counts: {9: 1, 10: 3, 11: 1, 12: 3, 14: 2, 15: 3, 16: 2, 17: 2, 18: 1, 19: 4,
+        20: 2, 21: 4, 22: 5, 23: 5, 24: 4, 25: 2, 26: 3, 27: 6, 28: 3, 29: 4, 30: 1,
+        31: 1, 32: 2}
   annotations:
     status: ok
     problems: []

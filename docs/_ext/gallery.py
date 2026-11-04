@@ -37,7 +37,7 @@ MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest
 # a grid, histogram or points not listed is plotted after the listed ones,
 # titled from its name.
 PLOT_FIELDS = {
-    "audio": {"duration_histogram": "Track duration"},
+    "audio": {"durations": "Track duration", "sample_rates": "Sample rate"},
     "BeatData": {
         "tempo_from_beats": "Tempo",
         "tempo_changes": "Tempo changes",
@@ -137,15 +137,12 @@ def at_a_glance(data):
     stats = data.get("stats") or {}
     audio = stats.get("audio") or {}
     tracks = track_count(stats)
-    sample_rate = audio.get("sample_rate")
     tags = data.get("annotations") or []
     license_text = " ".join((data.get("license") or "").split())
 
     rows = [
         glance_row("Tracks", f"{tracks:,}" if tracks is not None else None),
-        glance_row(
-            "Sample rate", f"{sample_rate / 1000:g} kHz" if sample_rate else None
-        ),
+        glance_row("Sample rate", ", ".join(audio.get("sample_rates") or {})),
         glance_row("Total duration", duration(audio.get("total_seconds"))),
         # gallery.js replaces the full text with its short license label
         glance_row(
@@ -188,7 +185,7 @@ def combine_facts(data):
     facts = {
         "tracks": track_count(stats),
         "seconds": audio.get("total_seconds") or None,
-        "sample_rate": audio.get("sample_rate") or None,
+        "sample_rates": audio.get("sample_rates") or None,
         "tasks": data.get("tasks") or [],
         "notes": stats_notes(data.get("stats")),
     }
@@ -298,7 +295,7 @@ def status_notes(stats):
 def ordered_plots(stats, with_beat_tempo=False):
     """Every grid, histogram, points and counts field to plot, in display order.
 
-    The audio duration comes first, then the plots grouped by annotation type,
+    The audio duration and sample rates come first, then the plots grouped by annotation type,
     A–Z. Inside a type, the entry (track property) with the most annotations
     comes first, then the others; each entry's plots in PLOT_FIELDS
     order. The circles (CIRCLE_FIELDS) come last, in the same order, on rows
@@ -307,14 +304,13 @@ def ordered_plots(stats, with_beat_tempo=False):
     """
     plots = []
     audio = stats.get("audio") or {}
-    if is_histogram(audio.get("duration_histogram")):
+    if is_grid(audio.get("durations")):
         plots.append(
-            plot(
-                "duration_histogram",
-                audio["duration_histogram"],
-                "audio",
-                audio.get("n_tracks"),
-            )
+            plot("durations", audio["durations"], "audio", audio.get("n_tracks"))
+        )
+    if is_counts(audio.get("sample_rates")):
+        plots.append(
+            plot("sample_rates", audio["sample_rates"], "audio", audio.get("n_tracks"))
         )
 
     by_type = {}

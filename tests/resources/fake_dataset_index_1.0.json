@@ -13,7 +13,14 @@
       "chords": [
         "annotations/chords/track1.lab",
         "9a0ff6b265ad6e69dec75c08df7b0980"
-      ]
+      ],
+      "audio_features": {
+        "audio": {
+          "duration_seconds": 2.0,
+          "sample_rate": 8000,
+          "num_channels": 1
+        }
+      }
     },
     "track2": {
       "audio": [
@@ -27,7 +34,14 @@
       "chords": [
         "annotations/chords/track2.lab",
         "4032945aeb752445d61e9ace1e73d5b7"
-      ]
+      ],
+      "audio_features": {
+        "audio": {
+          "duration_seconds": 4.0,
+          "sample_rate": 8000,
+          "num_channels": 1
+        }
+      }
     },
     "track3": {
       "audio": [
@@ -41,7 +55,14 @@
       "chords": [
         null,
         null
-      ]
+      ],
+      "audio_features": {
+        "audio": {
+          "duration_seconds": 1.0,
+          "sample_rate": 16000,
+          "num_channels": 1
+        }
+      }
     }
   },
   "metadata": {
