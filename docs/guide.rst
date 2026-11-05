@@ -40,7 +40,7 @@ Audio
 BeatData
 ~~~~~~~~
 
-- **Tempo:** how fast the music is, in beats per minute, worked out from the beats. For each trck, we measure the gaps between neighboring beats, take the median gap, and calculate 60 ÷ gap. If the dataset also has ``TempoData``, you'll see that chart instead.
+- **Tempo:** how fast the music is, in beats per minute, worked out from the beats. For each track, we measure the gaps between neighboring beats, take the median gap, and calculate 60 ÷ gap. If the dataset also has ``TempoData``, you'll see that chart instead.
 - **Tempo changes:** each dot is a track. Its median tempo runs along the bottom, and how much it changes from start to end runs up the side. Dots on the pale band stay within 5%, dots above it speed up and dots below it slow down. Hover over each area to count them. Darker areas are where dots pile up.
 - **Meter:** how many beats each bar has. 3/4 and 3/8 both count as 3.
 - **Meter changes:** how many times that number changes within a track, with 5 or more grouped together.
@@ -99,7 +99,7 @@ Compare datasets
 Want to see several datasets together? Switch on **Combine** above the list, or ⌘/Ctrl-click a dataset. The dataset you were looking at joins first, and then each click adds or removes one.
 
 - **At a glance:** tracks and total duration add up, and sample rates and tasks are gathered together. If only some datasets know a value, you'll see "(2 of 3 datasets)" beside it. Licenses aren't combined, so please check each dataset's own.
-- **Statistics:** charts of the same annotation type are merged, with one colour per dataset. The name chips above them work as the legend, and hovering shows each dataset's count. A line like ``2 of 3 · BeatData`` tells you how many datasets are in that chart.
+- **Statistics:** charts of the same annotation type are merged, with one color per dataset. The name chips above them work as the legend, and hovering shows each dataset's count. A line like ``2 of 3 · BeatData`` tells you how many datasets are in that chart.
 - **Focus:** click a name to see only that dataset's part, and click it again to see them all. **×** removes a dataset. Clicking an annotation type and **⤢** work here too.
 - **Choices:** if a dataset has several annotations of one type, as Billboard does for chords, **⇄ sources** lets you choose which one it adds. The others get their own charts.
 - **Separate charts:** charts that can't be merged, such as ones in different units, stay separate, with the dataset's name on each.

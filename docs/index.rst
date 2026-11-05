@@ -42,7 +42,7 @@ If you're looking for a kind of data, the filters on the left can help. Click a 
 - **Tasks** tell you what the data is useful for, such as Beat Tracking or Chord Recognition.
 - **Licenses** gives you a dataset with the selected licenses.
 
-Each group has its own switch. **AND** keeps only the datasets with everything you picked, and **OR** keeps those with at least one. Annotation types start on AND; tasks and licenses start on OR. 
+Each group has its own switch. **AND** keeps only the datasets with everything you picked, and **OR** keeps those with at least one. The default for Annotation types is AND; tasks and licenses is OR.
 
 "Showing x of y" tells you how many are left. If you've narrowed things too far, **Clear filters** takes you back to the start.
 
@@ -51,7 +51,7 @@ Look through the list
 
 Your matches appear in the list, with their annotation types, number of tracks and license.
 
-The coloured dots show at a glance what a dataset holds, with one dot per annotation type. The colours come in families: orange for rhythm, green for harmony, blue for pitch, indigo for structure, rose for lyrics and yellow for events. Hover over the dots to see their names, or tap them on a touch screen.
+The colored dots show what annotation types a dataset holds, with one dot per annotation type. The colors come in families: orange for rhythm, green for harmony, blue for pitch, indigo for structure, red for lyrics and yellow for events. Hover over the dots to see their names, or tap them on a touch screen.
 
 - **Sort by** orders the list by name or by number of tracks.
 - The two buttons beside it switch between list and icon views, and your browser remembers your choice.
