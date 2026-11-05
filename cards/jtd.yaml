@@ -1,0 +1,85 @@
+name: jtd
+summary: The Jazz Trio Database (JTD) includes 1,294 multitrack jazz performances,
+  with audio content comprising raw stereo and unmixed piano, bass, and drums. Annotations
+  provide beat and downbeat timestamps, MIDI transcriptions, and onset timestamps
+  for the unmixed audio, supporting tasks like beat tracking and music transcription.
+annotations:
+- BeatData
+- EventData
+- NoteData
+tasks:
+- Beat Tracking
+- Music Transcription
+- Source Separation
+stats:
+  computed:
+    mode: local
+    index: fd31d02762fecadfd4615c3fdb41e225
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 3882
+    n_audio_files: 3882
+    total_seconds: 478047.3
+    sample_rates: {44.1k: 3882}
+    durations:
+      unit: s
+      width: 1
+      counts: {22: 3, 25: 9, 26: 3, 27: 15, 28: 9, 29: 18, 30: 24, 31: 21, 32: 24,
+        33: 21, 34: 12, 35: 12, 36: 6, 37: 27, 38: 15, 39: 12, 40: 18, 41: 9, 42: 21,
+        43: 9, 44: 15, 45: 27, 46: 30, 47: 12, 48: 30, 49: 15, 50: 21, 51: 3, 52: 18,
+        53: 15, 54: 15, 55: 21, 56: 15, 57: 30, 58: 12, 59: 18, 60: 30, 61: 27, 62: 15,
+        63: 21, 64: 33, 65: 21, 66: 30, 67: 18, 68: 30, 69: 33, 70: 33, 71: 24, 72: 18,
+        73: 27, 74: 15, 75: 36, 76: 48, 77: 24, 78: 39, 79: 30, 80: 39, 81: 24, 82: 24,
+        83: 18, 84: 15, 85: 24, 86: 24, 87: 15, 88: 27, 89: 12, 90: 27, 91: 33, 92: 15,
+        93: 36, 94: 30, 95: 36, 96: 21, 97: 9, 98: 45, 99: 21, 100: 24, 101: 24, 102: 42,
+        103: 12, 104: 18, 105: 27, 106: 33, 107: 24, 108: 36, 109: 48, 110: 30, 111: 24,
+        112: 30, 113: 33, 114: 39, 115: 21, 116: 42, 117: 12, 118: 21, 119: 12, 120: 48,
+        121: 18, 122: 15, 123: 15, 124: 21, 125: 30, 126: 42, 127: 39, 128: 18, 129: 30,
+        130: 24, 131: 12, 132: 18, 133: 21, 134: 15, 135: 21, 136: 18, 137: 9, 138: 15,
+        139: 24, 140: 9, 141: 9, 142: 18, 143: 18, 144: 12, 145: 24, 146: 21, 147: 6,
+        148: 6, 149: 12, 150: 30, 151: 6, 152: 3, 153: 24, 154: 30, 155: 12, 156: 18,
+        157: 12, 158: 27, 159: 9, 160: 24, 161: 24, 162: 15, 163: 12, 164: 6, 165: 12,
+        166: 24, 167: 12, 168: 12, 170: 12, 171: 21, 172: 9, 173: 6, 174: 15, 175: 6,
+        176: 12, 177: 21, 178: 6, 179: 9, 180: 9, 181: 21, 182: 3, 183: 6, 184: 6,
+        185: 15, 186: 15, 187: 24, 188: 12, 189: 6, 190: 12, 191: 6, 192: 12, 193: 15,
+        194: 6, 195: 9, 196: 12, 197: 3, 198: 15, 199: 9, 200: 9, 201: 9, 203: 9,
+        204: 9, 205: 6, 207: 3, 208: 9, 209: 6, 211: 6, 212: 12, 213: 9, 214: 3, 215: 6,
+        217: 3, 218: 3, 219: 3, 220: 3, 221: 15, 222: 3, 223: 6, 225: 9, 226: 12,
+        227: 6, 228: 3, 229: 3, 230: 3, 232: 6, 234: 3, 235: 9, 236: 9, 237: 9, 238: 12,
+        239: 6, 240: 3, 241: 6, 243: 9, 246: 9, 249: 3, 250: 3, 251: 6, 252: 6, 253: 6,
+        255: 6, 256: 3, 257: 3, 258: 3, 260: 6, 261: 3, 263: 3, 264: 9, 266: 6, 267: 3,
+        268: 6, 269: 6, 270: 6, 275: 6, 276: 3, 278: 3, 280: 3, 282: 3, 286: 3, 288: 3,
+        290: 3, 294: 3, 295: 3, 298: 6, 301: 3, 302: 3, 305: 3, 306: 3, 310: 3, 318: 3,
+        319: 3, 320: 6, 321: 3, 322: 3, 324: 3, 325: 3, 327: 3, 330: 3, 336: 3, 345: 3,
+        357: 6, 361: 3, 370: 3, 374: 3, 375: 3, 378: 3, 398: 3, 411: 3, 412: 3, 420: 3,
+        422: 3, 437: 3}
+  annotations:
+    status: error
+    error: 'ValueError: cannot convert float NaN to integer'
+summary_hash: 4a56e0dbbdcf496c64dbab7d237afe75cb8b4bac969d0f9a3647c99985fd3372
+bibtex: |-
+  @article{jazz-trio-database
+      title = {Jazz Trio Database: Automated Annotation of Jazz Piano Trio Recordings Processed Using Audio Source Separation},
+      url = {https://doi.org/10.5334/tismir.186},
+      doi = {10.5334/tismir.186},
+      publisher = {Transactions of the International Society for Music Information Retrieval},
+      author = {Cheston, Huw and Schlichting, Joshua L and Cross, Ian and Harrison, Peter M C},
+      year = {2024},
+  }
+license: |-
+  The MIT License (MIT)
+  Copyright (c) 2023, Huw Cheston
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+  documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+  persons to whom the Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+  Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+  WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+  COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

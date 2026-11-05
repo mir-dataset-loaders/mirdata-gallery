@@ -1,0 +1,76 @@
+name: mdb_stem_synth
+summary: The dataset includes 230 solo stems from the MedleyDB dataset, resynthesized
+  for perfect pitch annotation. It is used for melody extraction.
+annotations:
+- F0Data
+tasks:
+- Melody Extraction
+stats:
+  computed:
+    mode: local
+    index: 4a1e8ebecfa76e6fbdaa9aa8a1ca382a
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 230
+    n_audio_files: 230
+    total_seconds: 56031.2
+    sample_rates: {44.1k: 230}
+    durations:
+      unit: s
+      width: 1
+      counts: {13: 2, 17: 15, 19: 2, 21: 2, 25: 2, 27: 15, 28: 2, 33: 1, 34: 2, 36: 9,
+        41: 2, 49: 2, 56: 2, 57: 2, 59: 2, 60: 2, 63: 2, 65: 1, 66: 3, 68: 6, 75: 2,
+        89: 2, 99: 1, 101: 3, 102: 3, 103: 3, 104: 2, 110: 3, 114: 2, 124: 2, 146: 3,
+        166: 1, 167: 2, 169: 1, 171: 3, 173: 3, 175: 2, 181: 2, 189: 2, 195: 2, 204: 4,
+        207: 2, 208: 1, 212: 2, 217: 6, 218: 2, 228: 2, 241: 2, 243: 2, 257: 2, 259: 2,
+        266: 2, 275: 2, 278: 3, 282: 2, 283: 2, 284: 3, 287: 1, 289: 3, 294: 5, 300: 5,
+        302: 8, 303: 2, 317: 2, 323: 4, 355: 2, 367: 4, 391: 2, 403: 1, 412: 2, 418: 2,
+        440: 1, 500: 1, 514: 2, 628: 5, 1061: 17}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 230
+    n_tracks_loaded: 230
+    tracks_with: {F0Data: 230}
+    annotations:
+      f0:
+        type: F0Data
+        n_tracks: 230
+        n_annotations: 230
+        frequencies:
+          unit: hz
+          width: 10
+          counts: {30: 5682, 40: 334161, 50: 472481, 60: 507780, 70: 508933, 80: 567220,
+            90: 628135, 100: 268401, 110: 233611, 120: 192627, 130: 126759, 140: 136659,
+            150: 93327, 160: 172798, 170: 99794, 180: 153326, 190: 214359, 200: 133944,
+            210: 145503, 220: 157519, 230: 138894, 240: 236241, 250: 136237, 260: 140204,
+            270: 141025, 280: 79710, 290: 212728, 300: 54641, 310: 82901, 320: 141777,
+            330: 99894, 340: 68653, 350: 56115, 360: 68199, 370: 92174, 380: 63618,
+            390: 163085, 400: 28850, 410: 81276, 420: 32828, 430: 78204, 440: 114489,
+            450: 18546, 460: 41316, 470: 27027, 480: 27816, 490: 156107, 500: 32512,
+            510: 15948, 520: 51543, 530: 13365, 540: 14553, 550: 71724, 560: 23497,
+            570: 11265, 580: 79040, 590: 46965, 600: 7283, 610: 5360, 620: 15060,
+            630: 7973, 640: 7125, 650: 40815, 660: 59540, 670: 6603, 680: 3696, 690: 14765,
+            700: 13145, 710: 3294, 720: 2745, 730: 14172, 740: 28732, 750: 4671, 760: 1824,
+            770: 7469, 780: 39528, 790: 20700, 800: 3293, 810: 1496, 820: 4677, 830: 16172,
+            840: 3503, 850: 1771, 860: 2748, 870: 14124, 880: 30042, 890: 8321, 900: 1390,
+            910: 1242, 920: 3956, 930: 11154, 940: 3888, 950: 1512, 960: 1347, 970: 6629,
+            980: 26897, 990: 18463, 1000: 8492, 1010: 2973, 1020: 1818, 1030: 1773,
+            1040: 4133, 1050: 7095, 1060: 4163, 1070: 1998, 1080: 1080, 1090: 1934,
+            1100: 5122, 1110: 8277, 1120: 2599, 1130: 1164, 1140: 952, 1150: 1600,
+            1160: 3877, 1170: 14620, 1180: 9228, 1190: 5013, 1200: 628, 1210: 54,
+            1220: 11, 1230: 4, 1240: 1, 1250: 3}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: 9ff25610bc71432f8f70aa227f2d851c46ba55b751eb4b44e0fefb00cbf668b3
+bibtex: |-
+  @inproceedings{salamon2017analysis,
+    title={An analysis/synthesis framework for automatic f0 annotation of multitrack datasets},
+    author={Salamon, Justin and Bittner, Rachel M and Bonada, Jordi and Bosch, Juan J and G{'o}mez Guti{'e}rrez, Emilia and Bello, Juan Pablo},
+    booktitle={International Society for Music Information Retrieval Conference},
+    year={2017},
+  }
+license: Attribution-NonCommercial 4.0 International

@@ -17,7 +17,7 @@
 }
 
 #content section#home>section {
-    max-width: 1100px;
+    max-width: 820px;
     margin: 0 auto 40px;
 }
 
@@ -75,21 +75,32 @@
     color: #7928ca !important;
 }
 
-/* How to use: four cards in a row, two on a narrow screen */
-.landing-steps {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+/* How to use: each step's number, drawn here, beside its title, the text under them, a thin line
+   between steps */
+#how-to-use-the-gallery {
+    counter-reset: step;
 }
 
-.landing-step {
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 18px;
-    background: #ffffff;
+#content section#home #how-to-use-the-gallery>section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e9e4f2;
 }
 
-.landing-step-number {
+#content section#home #how-to-use-the-gallery>section>h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 12px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+#how-to-use-the-gallery>section>h3::before {
+    counter-increment: step;
+    content: counter(step);
+    flex: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -98,32 +109,49 @@
     border-radius: 50%;
     background: #f3e8ff;
     color: #7928ca;
+    font-size: 1rem;
     font-weight: 700;
 }
 
-#content .landing-step h3 {
-    font-size: 1.05rem;
+#content section#home #how-to-use-the-gallery>section>p:first-of-type {
+    margin-top: 0;
+}
+
+/* The line to the Guide, the last paragraph of the last step: apart from the step */
+#content section#home #look-through-the-list>p:last-child {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e9e4f2;
+}
+
+/* A bullet list stays close to the text around it, and its bullets to each other. The theme's gap
+   comes from each bullet's own paragraph */
+#content section#home ul:not(.search) {
+    margin-top: 8px;
+}
+
+#content section#home ul:not(.search)>li {
+    margin: 8px 0 0;
+    line-height: 1.55;
+}
+
+#content section#home ul:not(.search)>li>p {
+    margin-top: 0;
+}
+
+#content section#home ul:not(.search)+p {
+    margin-top: 16px;
+}
+
+/* The note: as large as the page's text (the theme draws notes smaller) */
+#content section#home .admonition.note,
+#content section#home .admonition.note p {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+#content section#home .admonition.note .admonition-title {
     font-weight: 700;
-    margin: 10px 0 4px;
-}
-
-#content .landing-step p {
-    margin: 0;
-    color: #475569;
-    font-size: 0.95rem;
-}
-
-/* The card's how-to points, under its one-line purpose; as specific as the
-   theme's #content ul:not(.search)>li, which spaces them 24px apart */
-#content .landing-step ul:not(.search) {
-    margin: 10px 0 0 18px;
-}
-
-#content .landing-step ul:not(.search)>li {
-    margin: 4px 0 0;
-    color: #475569;
-    font-size: 0.9rem;
-    line-height: 1.45;
 }
 
 /* Using Mirdata: the text beside the Python code, one above the other on a narrow screen */
@@ -148,18 +176,7 @@
 }
 
 @media (max-width: 900px) {
-    .landing-steps {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
     .landing-quickstart {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* A phone: one card a row, so the points keep a readable line length */
-@media (max-width: 600px) {
-    .landing-steps {
         grid-template-columns: 1fr;
     }
 }

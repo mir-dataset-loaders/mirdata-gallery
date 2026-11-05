@@ -1,0 +1,68 @@
+name: openmic2018
+summary: The dataset includes 20000 10-second excerpts from polyphonic recordings,
+  partially annotated for 20 instrument categories with confidence ratings. The primary
+  MIR task involves classifying the presence or absence of instruments in each audio
+  excerpt.
+annotations:
+- Instrument
+tasks: []
+stats:
+  computed:
+    mode: local
+    index: 67fe744b529df1486c2de053cb81cbff
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 20000
+    n_audio_files: 20000
+    total_seconds: 200000.0
+    sample_rates: {44.1k: 19031, 48k: 824, 22.05k: 114, 32k: 26, 16k: 2, 24k: 2, 11.025k: 1}
+    durations:
+      unit: s
+      width: 1
+      counts: {10: 20000}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 20000
+    n_tracks_loaded: 20000
+    tracks_with: {}
+    annotations: {}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: 010a205e788dd245cd053e48eeb7f0a1097f9c219e91bcaf98ca118c732aef7e
+bibtex: |-
+  @inproceedings{DBLP:conf/ismir/HumphreyDM18,
+    author    = {Eric Humphrey and
+                 Simon Durand and
+                 Brian McFee},
+    editor    = {Emilia G{'{o}}mez and
+                 Xiao Hu and
+                 Eric Humphrey and
+                 Emmanouil Benetos},
+    title     = {OpenMIC-2018: An Open Data-set for Multiple Instrument Recognition},
+    booktitle = {Proceedings of the 19th International Society for Music Information
+                 Retrieval Conference, {ISMIR} 2018, Paris, France, September 23-27,
+                 2018},
+    pages     = {438--444},
+    year      = {2018},
+    url       = {http://ismir2018.ircam.fr/doc/pdfs/248\_Paper.pdf},
+    timestamp = {Thu, 12 Mar 2020 11:33:14 +0100},
+    biburl    = {https://dblp.org/rec/conf/ismir/HumphreyDM18.bib},
+    bibsource = {dblp computer science bibliography, https://dblp.org}
+  },
+  @dataset{humphrey_eric_j_2018_1432913,
+    author       = {Humphrey, Eric J. and
+                    Durand, Simon and
+                    McFee, Brian},
+    title        = {OpenMIC-2018},
+    month        = sep,
+    year         = 2018,
+    publisher    = {Zenodo},
+    version      = {v1.0.0},
+    doi          = {10.5281/zenodo.1432913},
+    url          = {https://doi.org/10.5281/zenodo.1432913}
+  }
+license: Creative Commons Attribution 4.0 International

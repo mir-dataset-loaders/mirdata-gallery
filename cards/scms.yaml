@@ -1,0 +1,72 @@
+name: scms
+summary: The dataset includes 2460 time-aligned vocal melody tracks from Carnatic
+  Music recordings, with 30-second lengths, and provides ground-truth pitch annotations
+  for melody extraction.
+annotations:
+- EventData
+- F0Data
+tasks:
+- Melody Extraction
+stats:
+  computed:
+    mode: local
+    index: f4f8b5594b917a1d5f76f98a2c2371f5
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 2467
+    n_audio_files: 2467
+    total_seconds: 74359.9
+    sample_rates: {44.1k: 2467}
+    durations:
+      unit: s
+      width: 1
+      counts: {0: 1, 1: 2, 2: 2, 4: 2, 7: 2, 8: 2, 9: 1, 10: 1, 11: 3, 12: 5, 13: 1,
+        14: 3, 15: 1, 16: 4, 17: 1, 18: 5, 19: 5, 20: 3, 22: 3, 24: 3, 25: 5, 26: 4,
+        27: 7, 28: 2, 29: 2, 30: 2397}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 2467
+    n_tracks_loaded: 2467
+    tracks_with: {EventData: 2466, F0Data: 2467}
+    annotations:
+      activations:
+        type: EventData
+        n_tracks: 2466
+        n_annotations: 2466
+        events: {singer: 33104}
+      pitch:
+        type: F0Data
+        n_tracks: 2467
+        n_annotations: 2467
+        frequencies:
+          unit: hz
+          width: 10
+          counts: {0: 142755, 10: 47057, 20: 14083, 30: 2361, 40: 4447, 50: 8858,
+            60: 10037, 70: 10612, 80: 13824, 90: 19581, 100: 40607, 110: 63612, 120: 153837,
+            130: 251868, 140: 260863, 150: 357242, 160: 565212, 170: 577246, 180: 657161,
+            190: 865858, 200: 828841, 210: 790414, 220: 894118, 230: 876665, 240: 857136,
+            250: 857183, 260: 849300, 270: 920586, 280: 848461, 290: 771288, 300: 594585,
+            310: 573323, 320: 546092, 330: 556452, 340: 529966, 350: 532512, 360: 427712,
+            370: 342628, 380: 381815, 390: 289426, 400: 215316, 410: 242983, 420: 174882,
+            430: 110592, 440: 111815, 450: 92544, 460: 97705, 470: 86832, 480: 61150,
+            490: 52964, 500: 31667, 510: 25387, 520: 20606, 530: 13579, 540: 11779,
+            550: 11187, 560: 6965, 570: 5097, 580: 4012, 590: 2660}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: cc9f3b6e12d6d5d3782b0fc76668a394a6dd2a8c2897d4a2c743f28df647fb0c
+bibtex: |-
+  @article{Plaja-Roglans-2023,
+    author = {Plaja-Roglans, Gen{'\i}s and Nuttall, Thomas and Pearson, Lara and Serra, Xavier and Miron, Marius},
+    doi = {10.5334/tismir.137},
+    journal = {Transactions of the International Society for Music Information Retrieval},
+    keyword = {en_US},
+    month = {Jun},
+    title = {Repertoire-Specific Vocal Pitch Data Generation for Improved Melodic Analysis of Carnatic Music},
+    year = {2023}
+  }
+license: Creative Commons Attribution Non-Commercial Share-Alike 4.0 (CC BY-NC-SA
+  4.0).

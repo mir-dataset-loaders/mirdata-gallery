@@ -1,7 +1,7 @@
 name: cante100
-summary: cante100 includes 100 tracks from the COFLA corpus, with annotations for
-  predominant melody (F0) and singing voice transcription, focusing on melody extraction
-  and music transcription tasks.
+summary: cante100 includes 100 tracks with annotated sections of vocal presence, F0,
+  and automatic note transcription. The primary MIR tasks are Melody Extraction and
+  Music Transcription.
 annotations:
 - F0Data
 - NoteData

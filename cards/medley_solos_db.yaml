@@ -1,0 +1,43 @@
+name: medley_solos_db
+summary: 'The dataset includes 3-second audio clips of solo recordings from MedleyDB
+  and solosDB, containing one of eight instruments: clarinet, distorted electric guitar,
+  female singer, flute, piano, tenor saxophone, trumpet, or violin. It is used for
+  automatic musical instrument recognition.'
+annotations:
+- Instrument
+tasks: []
+stats:
+  computed:
+    mode: local
+    index: ff756765385bb6fd5cab024e841504f7
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 21571
+    n_audio_files: 21571
+    total_seconds: 64109.0
+    sample_rates: {44.1k: 21571}
+    durations:
+      unit: s
+      width: 1
+      counts: {2: 21571}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 21571
+    n_tracks_loaded: 21571
+    tracks_with: {}
+    annotations: {}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: 6f9a988ff13f1d8b2878f7f99bd94ebec3bcd2452e507276847b19dad68cf8d0
+bibtex: |-
+  @inproceedings{lostanlen2019ismir,
+      title={Deep Convolutional Networks in the Pitch Spiral for Musical Instrument Recognition},
+      author={Lostanlen, Vincent and Cella, Carmine Emanuele},
+      booktitle={International Society of Music Information Retrieval (ISMIR)},
+      year={2016}
+  }
+license: Creative Commons Attribution 4.0 International.

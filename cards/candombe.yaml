@@ -1,6 +1,7 @@
 name: candombe
-summary: The dataset includes over 2 hours of stereo Candombe recordings, with annotated
-  beats and downbeats. The primary MIR task is Beat Tracking.
+summary: The dataset includes over 2 hours of stereo Candombe performances at 44.1
+  kHz, with annotated beats and downbeats totaling more than 4700 instances, primarily
+  for Beat Tracking.
 annotations:
 - BeatData
 tasks:
