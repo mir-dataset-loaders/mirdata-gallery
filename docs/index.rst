@@ -105,7 +105,7 @@ BeatData
 TempoData
 ^^^^^^^^^
 
-- *※ TempoData is currently not supported*
+- *※ TempoData is currently not supported. Please refer to Tempo from BeatData.*
 
 ChordData
 ^^^^^^^^^
