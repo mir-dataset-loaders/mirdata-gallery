@@ -34,7 +34,7 @@ Here's what each chart shows, grouped by annotation type:
 Audio
 ~~~~~
 
-- **Track duration:** how long the tracks are. Currently, we are only showing the duration of each tracks. Some datasets contains multiple audio files per tracks, but those are not aggregated. 
+- **Track duration:** how long the tracks are. Each track counts once, even if a dataset has several audio files per track. Their lengths aren't added together.
 - **Sample rate:** how many tracks have each audio sample rate.
 
 BeatData
