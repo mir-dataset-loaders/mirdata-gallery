@@ -1,0 +1,53 @@
+name: beatport_key
+summary: The beatport_key dataset includes 1486 two-minute EDM audio excerpts from
+  various subgenres, annotated with key labels, and is primarily used for key estimation
+  in electronic dance music.
+annotations:
+- KeyData
+- TempoData
+tasks:
+- Key Estimation
+- Tempo Estimation
+stats:
+  computed:
+    mode: local
+    index: 71291eec1a4791259d05fd9281c5cfbf
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 1486
+    n_audio_files: 1486
+    total_seconds: 178111.5
+    sample_rates: {44.1k: 1486}
+    durations:
+      unit: s
+      width: 1
+      counts: {43: 1, 56: 1, 81: 1, 103: 1, 111: 1, 117: 1, 119: 37, 120: 1443}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 1486
+    n_tracks_loaded: 1486
+    tracks_with: {}
+    annotations: {}
+    skipped:
+      key: not a mirdata KeyData object (got list)
+      tempo: not a mirdata TempoData object (got int)
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: 6355e1e5ed0c1d06f15430143c83cc632e3d0005a18d71a471865ccd54b44925
+bibtex: |-
+  @phdthesis {3897,
+      title = {Tonality Estimation in Electronic Dance Music: A Computational and Musically Informed Examination},
+      year = {2018},
+      month = {03/2018},
+      pages = {234},
+      school = {Universitat Pompeu Fabra},
+      address = {Barcelona},
+      abstract = {This dissertation revolves around the task of computational key estimation in electronic dance music, upon which three interrelated operations are performed. First, I attempt to detect possible misconceptions within the task, which is typically accomplished with a tonal vocabulary overly centred in Western classical tonality, reduced to a binary major/minor model which might not accomodate popular music styles. Second, I present a study of tonal practises in electronic dance music, developed hand in hand with the curation of a corpus of over 2,000 audio excerpts, including various subgenres and degrees of complexity. Based on this corpus, I propose the creation of more open-ended key labels, accounting for other modal practises and ambivalent tonal configurations. Last, I describe my own key finding methods, adapting existing models to the musical idiosyncrasies and tonal distributions of electronic dance music, with new statistical key profiles derived from the newly created corpus.},
+      keywords = {EDM, Electronic Dance Music, Key Estimation, mir, music information retrieval, tonality},
+      url = {https://doi.org/10.5281/zenodo.1154586},
+      author = {{'A}ngel Faraldo}
+  }
+license: Creative Commons Attribution Share Alike 4.0 International.

@@ -1,0 +1,47 @@
+name: irmas
+summary: The IRMAS dataset includes 9,579 musical audio excerpts (6,705 for training
+  and 2,874 for testing) with annotations of predominant instruments, drums, and musical
+  genres. It is primarily used for instrument recognition in musical audio signals.
+annotations:
+- Instrument
+tasks: []
+stats:
+  computed:
+    mode: local
+    index: 87327f90124d36750037df6c80b19749
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 9534
+    n_audio_files: 9534
+    total_seconds: 68511.2
+    sample_rates: {44.1k: 9534}
+    durations:
+      unit: s
+      width: 1
+      counts: {3: 6660, 5: 130, 6: 94, 7: 92, 8: 82, 9: 87, 10: 71, 11: 60, 12: 45,
+        13: 59, 14: 55, 15: 48, 16: 38, 17: 42, 18: 42, 19: 41, 20: 1888}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 9534
+    n_tracks_loaded: 9534
+    tracks_with: {}
+    annotations: {}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: 861dea4617e642fd28ee31418c8a757dd6eb79572e8e520c928546ca104b59c1
+bibtex: |-
+  @dataset{juan_j_bosch_2014_1290750,
+    author       = {Juan J. Bosch and Ferdinand Fuhrmann and Perfecto Herrera},
+    title        = {{IRMAS: a dataset for instrument recognition in musical audio signals}},
+    month        = sep,
+    year         = 2014,
+    publisher    = {Zenodo},
+    version      = {1.0},
+    doi          = {10.5281/zenodo.1290750},
+    url          = {https://doi.org/10.5281/zenodo.1290750}
+  }
+license: Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.

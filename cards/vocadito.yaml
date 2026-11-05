@@ -1,0 +1,91 @@
+name: vocadito
+summary: vocadito includes 40 short solo singing excerpts in 7 languages. Annotations
+  provide frame-level f0, note annotations, lyrics, and language. Tasks focus on lyrics
+  transcription, alignment, melody extraction, and music transcription.
+annotations:
+- F0Data
+- LyricData
+- NoteData
+tasks:
+- Lyrics Transcription
+- Lyrics-to-Audio Alignment
+- Melody Extraction
+- Music Transcription
+stats:
+  computed:
+    mode: local
+    index: ff83648dc2311c0c11fe8f304bbb62d4
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 40
+    n_audio_files: 40
+    total_seconds: 817.1
+    sample_rates: {44.1k: 40}
+    durations:
+      unit: s
+      width: 1
+      counts: {8: 1, 9: 1, 12: 4, 13: 2, 14: 5, 15: 1, 17: 2, 18: 4, 19: 1, 20: 2,
+        21: 1, 22: 2, 23: 4, 24: 1, 25: 1, 27: 1, 29: 1, 30: 2, 31: 1, 33: 1, 35: 1,
+        38: 1}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 40
+    n_tracks_loaded: 40
+    tracks_with: {F0Data: 40, NoteData: 40}
+    annotations:
+      f0:
+        type: F0Data
+        n_tracks: 40
+        n_annotations: 40
+        frequencies:
+          unit: hz
+          width: 10
+          counts: {60: 6, 70: 146, 80: 408, 90: 728, 100: 2505, 110: 4147, 120: 3560,
+            130: 4392, 140: 4128, 150: 3858, 160: 3474, 170: 3044, 180: 4014, 190: 4154,
+            200: 4169, 210: 4322, 220: 4198, 230: 3977, 240: 5251, 250: 4018, 260: 3445,
+            270: 3751, 280: 4077, 290: 2773, 300: 1806, 310: 1347, 320: 1606, 330: 1460,
+            340: 1614, 350: 1388, 360: 1610, 370: 762, 380: 957, 390: 971, 400: 374,
+            410: 364, 420: 33, 430: 56, 440: 22, 450: 33, 460: 17, 470: 1}
+      notes_a1:
+        type: NoteData
+        n_tracks: 40
+        n_annotations: 40
+        pitches:
+          unit: hz
+          width: 10
+          counts: {70: 7, 80: 15, 90: 33, 100: 73, 110: 92, 120: 95, 130: 131, 140: 108,
+            150: 102, 160: 69, 170: 75, 180: 105, 190: 95, 200: 118, 210: 108, 220: 92,
+            230: 93, 240: 115, 250: 98, 260: 69, 270: 96, 280: 89, 290: 44, 300: 50,
+            310: 28, 320: 42, 330: 32, 340: 36, 350: 32, 360: 27, 370: 20, 380: 15,
+            390: 14, 400: 6, 410: 7, 420: 1, 430: 3, 440: 1, 450: 1}
+      notes_a2:
+        type: NoteData
+        n_tracks: 40
+        n_annotations: 40
+        pitches:
+          unit: hz
+          width: 10
+          counts: {70: 7, 80: 8, 90: 9, 100: 52, 110: 88, 120: 74, 130: 103, 140: 86,
+            150: 92, 160: 63, 170: 64, 180: 84, 190: 75, 200: 92, 210: 88, 220: 94,
+            230: 81, 240: 112, 250: 81, 260: 56, 270: 77, 280: 81, 290: 44, 300: 37,
+            310: 27, 320: 38, 330: 23, 340: 31, 350: 29, 360: 19, 370: 15, 380: 14,
+            390: 13, 400: 7, 410: 8, 430: 2, 440: 1, 450: 1}
+    skipped:
+      average_pitch_midi: not a mirdata F0Data object (got int)
+      lyrics: not a mirdata LyricData object (got list)
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: f06f0b4a60f213a422dfeb2b0af1c06369c0d220b73992669e8ae7ad20de20d2
+bibtex: |-
+  @techreport{bittner2021vocadito,
+        title={vocadito: A dataset of solo vocals with $f_0$, note, and lyric annotations},
+        author={Rachel M. Bittner and Katherine Pasalo and Juan José Bosch and Gabriel Meseguer-Brocal and David Rubinstein},
+        year={2021},
+        institution={Spotify},
+        number={2110.05580},
+        note={https://arxiv.org/abs/2110.05580}
+  }
+license: Creative Commons Attribution 4.0 International

@@ -1,0 +1,43 @@
+name: freesound_one_shot_percussive_sounds
+summary: The dataset includes 10,254 one-shot percussive sounds from FreeSound.org,
+  with metadata, timbral analysis from two extractors, and tags. The primary MIR task
+  involves timbral analysis and classification.
+annotations: []
+tasks: []
+stats:
+  computed:
+    mode: local
+    index: 5992d20ef9b2a9eadff0f7324d902003
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 10254
+    n_audio_files: 10254
+    total_seconds: 4229.9
+    sample_rates: {16k: 10254}
+    durations:
+      unit: s
+      width: 1
+      counts: {0: 10254}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 10254
+    n_tracks_loaded: 10254
+    tracks_with: {}
+    annotations: {}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: ebba96a116c9ac1b4053d090321ee79376422759a46f1470893c832db10ff7e3
+bibtex: |-
+  @inproceedings{ramires2020,
+      author = "Antonio Ramires and Pritish Chandna and Xavier Favory and Emilia Gómez and Xavier Serra",
+      title = "Neural Percussive Synthesis Parametrerised by High-Level Timbral Features",
+      booktitle = "Proc. of the IEEE Int. Conf. on Acoustics, Speech and Signal Processing (ICASSP)",
+      year = "2020"
+  }
+license: |-
+  The dataset is licensed under The Creative Commons Attribution Non Commercial Share Alike 4.0 International.
+  Please check the specific license of each sound by running track.license

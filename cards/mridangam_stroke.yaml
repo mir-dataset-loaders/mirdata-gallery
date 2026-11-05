@@ -1,0 +1,47 @@
+name: mridangam_stroke
+summary: The dataset includes 6977 audio samples of 10 mridangam strokes across 6
+  tonics, recorded in a semi-anechoic studio. Annotations are in filenames, suitable
+  for stroke recognition tasks.
+annotations: []
+tasks: []
+stats:
+  computed:
+    mode: local
+    index: b84b05f46839e2d4417cc59af377b0c2
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 6976
+    n_audio_files: 6976
+    total_seconds: 2461.4
+    sample_rates: {44.1k: 6976}
+    durations:
+      unit: s
+      width: 1
+      counts: {0: 6937, 1: 38, 2: 1}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 6976
+    n_tracks_loaded: 6976
+    tracks_with: {}
+    annotations: {}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: 95ab3f48e30539c4a02aa8990e269419f5e57820067f346862d6ec016bad8e48
+bibtex: |-
+  @article{Anantapadmanabhan2013,
+      author = {Anantapadmanabhan, Akshay and Bellur, Ashwin and Murthy, Hema A.},
+      doi = {10.1109/ICASSP.2013.6637633},
+      isbn = {9781479903566},
+      issn = {15206149},
+      journal = {ICASSP, IEEE International Conference on Acoustics, Speech and Signal Processing - Proceedings},
+      keywords = {Hidden Markov models, Modal Analysis, Mridangam, Non-negative Matrix Factorization,
+      automatic transcription},
+      pages = {181--185},
+      title = {{Modal analysis and transcription of strokes of the mridangam using non-negative matrix factorization}},
+      year = {2013}
+  }
+license: Creative Commons Attribution 3.0 Unported (CC BY 3.0) License.

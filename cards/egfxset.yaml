@@ -1,0 +1,59 @@
+name: egfxset
+summary: EGFxSet includes 8,970 5-second audio files of clean and effected electric
+  guitar tones, with annotations for guitar settings and effect parameters. The primary
+  MIR task is Music Transcription.
+annotations:
+- NoteData
+tasks:
+- Music Transcription
+stats:
+  computed:
+    mode: local
+    index: c72222f93e03fce0f6135a60aefe5312
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 8970
+    n_audio_files: 8970
+    total_seconds: 44850.4
+    sample_rates: {48k: 8970}
+    durations:
+      unit: s
+      width: 1
+      counts: {4: 4, 5: 8966}
+  annotations:
+    status: incomplete
+    problems: []
+    n_tracks: 8970
+    n_tracks_loaded: 8970
+    tracks_with: {NoteData: 8280}
+    annotations:
+      midinote:
+        type: NoteData
+        n_tracks: 8280
+        n_annotations: 8280
+        pitches:
+          unit: midi
+          width: 1
+          counts: {40: 60, 41: 60, 42: 60, 43: 60, 44: 60, 45: 120, 46: 120, 47: 120,
+            48: 120, 49: 120, 50: 180, 51: 180, 52: 180, 53: 180, 54: 180, 55: 239,
+            56: 239, 57: 239, 58: 239, 59: 298, 60: 298, 61: 298, 62: 298, 63: 238,
+            64: 298, 65: 298, 66: 298, 67: 298, 68: 238, 69: 238, 70: 238, 71: 238,
+            72: 238, 73: 178, 74: 178, 75: 178, 76: 178, 77: 178, 78: 120, 79: 120,
+            80: 120, 81: 119, 82: 62, 83: 62, 84: 62, 85: 62, 86: 62, 87: 3, 88: 2,
+            89: 2, 90: 2, 91: 2, 92: 2, 93: 2, 94: 2, 95: 2, 96: 2, 97: 2, 98: 2,
+            99: 2, 100: 2, 101: 1, 102: 1, 103: 1, 104: 1}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {note_name: 8280}
+summary_hash: 248153a7b828d65dcfa0225b6b4a866a3c21bcf334f9d7e16522b181a5dabc23
+bibtex: |-
+  @techreport{pedroza2022egfxset,
+        title={EGFxSet: Electric guitar tones processed through real effects of distortion, modulation, delay and reverb},
+        author={Pedroza, Hegel and Meza, Gerardo and Roman, Iran},
+        year={2022},
+        institution={UNAM},
+        booktitle={Extended Abstracts for the Late-Breaking Demo Session of the 23rd Int. Society for Music Information Retrieval Conf., Bengaluru, India, 2022.},
+  }
+license: Creative Commons Attribution 4.0 International
