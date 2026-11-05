@@ -29,7 +29,7 @@ Welcome! The Mirdata Gallery helps you get to know a dataset before you download
 
 .. note::
 
-   The Gallery doesn't support `Section` and `Tempo` annotations yet, or anything that comes from metadata, such as `instrument` and `genre`. We'll be adding them soon, so keep an eye out!
+   The Gallery doesn't support `Section`, `Event`, and `Tempo` annotations yet, or anything that comes from metadata, such as `instrument` and `genre`. We'll be adding them soon, so keep an eye out!
 
 Find datasets
 ~~~~~~~~~~~~~
