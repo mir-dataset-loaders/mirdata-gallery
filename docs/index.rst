@@ -105,7 +105,7 @@ BeatData
 TempoData
 ^^^^^^^^^
 
-- **Tempo:** how fast the music is, in beats per minute, from the dataset's own tempo annotations.
+- *※ TempoData is currently not supported*
 
 ChordData
 ^^^^^^^^^
@@ -135,9 +135,7 @@ MultiF0Data
 
 SectionData
 ^^^^^^^^^^^
-
-- **Section labels:** what the parts of a piece are called, such as verse or chorus.
-- **Section length:** how long those sections last.
+- *※ SectionData is currently not supported*
 
 LyricData
 ^^^^^^^^^
@@ -147,8 +145,7 @@ LyricData
 
 EventData
 ^^^^^^^^^
-
-- **Events:** how often each event label appears.
+- *※ EventData is currently not supported*
 
 Compare datasets
 ~~~~~~~~~~~~~~~~
