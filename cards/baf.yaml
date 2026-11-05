@@ -1,0 +1,60 @@
+name: baf
+summary: The BAF dataset includes 2,000 reference tracks and 57 hours of TV broadcast
+  queries, annotated for foreground and background music detection. Annotations specify
+  sound start and end times.
+annotations:
+- EventDataExtended
+tasks: []
+stats:
+  computed:
+    mode: local
+    index: 6bc533ab686a7c8940873e4580d93563
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 3425
+    n_audio_files: 3425
+    total_seconds: 205478.7
+    sample_rates: {8k: 3425}
+    durations:
+      unit: s
+      width: 1
+      counts: {57: 1, 58: 3, 59: 928, 60: 2493}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 3425
+    n_tracks_loaded: 3425
+    tracks_with: {}
+    annotations: {}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: c2f650584efa831f32a17c14c37c8c568cb9e05033f1d635c2afb1a9952b2e4c
+bibtex: |-
+  @inproceedings{cortes2022BAF,
+    author       = {Guillem Cortès and
+                    Alex Ciurana and
+                    Emilio Molina and
+                    Marius Miron and
+                    Owen Meyers and
+                    Joren Six and
+                    Xavier Serra},
+    title        = {BAF: An audio fingerprinting dataset for broadcast monitoring},
+    booktitle    = {Proceedings of the 23rd International Society for Music Information Retrieval Conference},
+    year         = 2022,
+    pages        = {908-916},
+    publisher    = {ISMIR},
+    address      = {Bengaluru, India},
+    month        = dec,
+    venue        = {Bengaluru, India},
+    doi          = {10.5281/zenodo.7316812},
+    url          = {https://doi.org/10.5281/zenodo.7372162}
+  }
+license: |-
+  Given the different ownership of the elements of the dataset, the dataset is licensed under the following conditions:
+      * User's access request
+      * Research only, non-commercial purposes
+      * No adaptations nor derivative works
+      * Attribution to Epidemic Sound and the authors as it is indicated in the ”citation” section.

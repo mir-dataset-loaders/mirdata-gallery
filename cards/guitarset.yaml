@@ -1,7 +1,7 @@
 name: guitarset
-summary: GuitarSet includes 360 acoustic guitar recordings, each 30 seconds long,
-  covering various styles, tempi, and players, with annotations for pitch, beats,
-  tempo, chords, and keys.
+summary: GuitarSet includes audio recordings of acoustic guitar performances in various
+  styles and tempi, with annotations for pitch, beats, tempo, chords, and keys. Primary
+  MIR tasks include Beat Tracking, Chord Recognition, Key Estimation, and Melody Extraction.
 annotations:
 - BeatData
 - ChordData

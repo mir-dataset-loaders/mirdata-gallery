@@ -1,0 +1,120 @@
+name: tonas
+summary: The TONAS dataset includes 72 monophonic, a cappella sung excerpts (16 Deblas,
+  36 Martinete 1, 20 Martinete 2) for melody extraction and music transcription, with
+  annotations specifying notes, F0, and energy values at timestamps.
+annotations:
+- F0Data
+- NoteData
+tasks:
+- Melody Extraction
+- Music Transcription
+stats:
+  computed:
+    mode: local
+    index: afa42c61f856471d2ef49609d894fb19
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 72
+    n_audio_files: 72
+    total_seconds: 1233.3
+    sample_rates: {44.1k: 72}
+    durations:
+      unit: s
+      width: 1
+      counts: {7: 1, 8: 3, 9: 1, 10: 6, 11: 7, 12: 3, 13: 5, 14: 5, 15: 5, 16: 5,
+        17: 2, 18: 4, 19: 4, 20: 4, 21: 1, 22: 1, 23: 4, 24: 2, 25: 2, 26: 4, 30: 1,
+        33: 2}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 72
+    n_tracks_loaded: 72
+    tracks_with: {F0Data: 72, NoteData: 72}
+    annotations:
+      f0:
+        type: F0Data
+        n_tracks: 72
+        n_annotations: 72
+        frequencies:
+          unit: hz
+          width: 10
+          counts: {100: 40, 110: 23, 120: 61, 130: 6, 140: 17, 150: 57, 160: 58, 170: 247,
+            180: 89, 190: 172, 200: 124, 210: 1113, 220: 1037, 230: 1027, 240: 1231,
+            250: 3184, 260: 3195, 270: 1862, 280: 5556, 290: 3089, 300: 8944, 310: 5876,
+            320: 5647, 330: 7171, 340: 6961, 350: 5546, 360: 3805, 370: 3760, 380: 5287,
+            390: 671, 400: 3389, 410: 781, 420: 1942, 430: 429, 440: 539, 450: 789,
+            460: 126, 470: 18, 480: 20, 500: 116, 510: 7}
+      f0_automatic:
+        type: F0Data
+        n_tracks: 72
+        n_annotations: 72
+        frequencies:
+          unit: hz
+          width: 10
+          counts: {90: 33, 100: 36, 110: 70, 120: 87, 130: 87, 140: 158, 150: 146,
+            160: 166, 170: 218, 180: 306, 190: 377, 200: 661, 210: 1110, 220: 1384,
+            230: 1327, 240: 2017, 250: 3104, 260: 3251, 270: 3975, 280: 4605, 290: 5923,
+            300: 6030, 310: 6355, 320: 6185, 330: 6335, 340: 6291, 350: 4676, 360: 4302,
+            370: 3897, 380: 3497, 390: 2452, 400: 1804, 410: 1687, 420: 1295, 430: 807,
+            440: 615, 450: 492, 460: 269, 470: 94, 480: 44, 490: 36, 500: 21, 510: 3,
+            520: 6, 530: 5, 540: 4, 550: 2, 560: 1, 570: 4, 580: 3, 590: 1, 600: 6,
+            670: 1, 700: 1, 760: 2, 860: 2, 870: 5}
+      f0_corrected:
+        type: F0Data
+        n_tracks: 72
+        n_annotations: 72
+        frequencies:
+          unit: hz
+          width: 10
+          counts: {100: 40, 110: 23, 120: 61, 130: 6, 140: 17, 150: 57, 160: 58, 170: 247,
+            180: 89, 190: 172, 200: 124, 210: 1113, 220: 1037, 230: 1027, 240: 1231,
+            250: 3184, 260: 3195, 270: 1862, 280: 5556, 290: 3089, 300: 8944, 310: 5876,
+            320: 5647, 330: 7171, 340: 6961, 350: 5546, 360: 3805, 370: 3760, 380: 5287,
+            390: 671, 400: 3389, 410: 781, 420: 1942, 430: 429, 440: 539, 450: 789,
+            460: 126, 470: 18, 480: 20, 500: 116, 510: 7}
+      notes:
+        type: NoteData
+        n_tracks: 72
+        n_annotations: 72
+        pitches:
+          unit: hz
+          width: 10
+          counts: {100: 3, 110: 2, 120: 5, 130: 1, 140: 2, 150: 4, 160: 8, 170: 5,
+            180: 9, 190: 14, 200: 15, 210: 28, 220: 40, 230: 36, 240: 65, 250: 91,
+            260: 101, 270: 137, 280: 137, 290: 229, 300: 170, 310: 188, 320: 213,
+            330: 234, 340: 225, 350: 165, 360: 153, 370: 143, 380: 133, 390: 60, 400: 73,
+            410: 119, 420: 33, 430: 56, 440: 40, 450: 27, 460: 9, 470: 1, 480: 2,
+            490: 2, 500: 1, 510: 4}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: 287b4c82448e24c7bf68ffd2e917ab9c319ab6664a5f9bc834bdfcdf160183ab
+bibtex: |-
+  Music material:
+  @inproceedings{tonas_music,
+      author = {Mora, Joaquin and Gómez, Francisco and Gómez, Emilia
+                and Borrego, Francisco Javier and Díaz-Báñez, José},
+      year = {2010},
+      month = {01},
+      pages = {351-356},
+      title = {Characterization and Similarity in A Cappella Flamenco Cantes.}
+  }
+
+  Transcriptions:
+  @inproceedings{tonas_annotations,
+      author = {E. {Gómez} and J. {Bonada}},
+      journal = {Computer Music Journal},
+      title = {Towards Computer-Assisted Flamenco Transcription: An Experimental
+             Comparison of Automatic Transcription Algorithms as Applied to A
+             Cappella Singing},
+      year = {2013},
+      volume = {37},
+      number = {2},
+      pages = {73-90},
+      doi = {10.1162/COMJ_a_00180}}
+license: |-
+  The TONAS dataset is offered free of charge for internal non-commercial use only. You can not redistribute it nor
+  modify it. Dataset by COFLA team. Copyright © 2012 COFLA project, Universidad de Sevilla. Distribution rights granted
+  to Music Technology Group, Universitat Pompeu Fabra. All Rights Reserved.

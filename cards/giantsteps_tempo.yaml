@@ -1,0 +1,88 @@
+name: giantsteps_tempo
+summary: The dataset includes 664 2-minute audio previews from Beatport, with annotations
+  for tempo and genre. The primary MIR task is tempo estimation.
+annotations:
+- TempoData
+tasks:
+- Tempo Estimation
+stats:
+  computed:
+    mode: local
+    index: 92e8db769a01def442b6bb89b700afb8
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 664
+    n_audio_files: 664
+    total_seconds: 79528.4
+    sample_rates: {44.1k: 663, 22.05k: 1}
+    durations:
+      unit: s
+      width: 1
+      counts: {61: 1, 70: 1, 80: 1, 118: 2, 119: 13, 120: 646}
+  annotations:
+    status: incomplete
+    problems: []
+    n_tracks: 664
+    n_tracks_loaded: 664
+    tracks_with: {TempoData: 664}
+    annotations:
+      tempo:
+        type: TempoData
+        n_tracks: 664
+        n_annotations: 664
+        tempo:
+          unit: bpm
+          width: 1
+          counts: {53: 1, 58: 1, 63: 2, 64: 1, 65: 1, 69: 1, 70: 7, 72: 2, 73: 1,
+            74: 1, 75: 2, 76: 1, 79: 1, 80: 11, 82: 3, 83: 3, 84: 1, 85: 12, 86: 5,
+            87: 10, 89: 1, 90: 4, 92: 2, 93: 2, 95: 4, 96: 1, 99: 3, 100: 2, 101: 3,
+            105: 2, 107: 1, 110: 7, 111: 1, 112: 1, 113: 1, 115: 4, 118: 2, 119: 1,
+            120: 18, 122: 6, 123: 11, 124: 12, 125: 12, 126: 39, 127: 10, 128: 36,
+            129: 3, 130: 11, 132: 9, 133: 3, 134: 2, 135: 3, 136: 6, 137: 2, 138: 4,
+            139: 4, 140: 156, 141: 3, 143: 2, 144: 3, 145: 4, 146: 1, 147: 4, 148: 17,
+            150: 6, 151: 1, 156: 1, 157: 1, 158: 1, 160: 5, 165: 4, 166: 1, 167: 1,
+            169: 1, 170: 27, 171: 4, 172: 18, 173: 10, 174: 41, 175: 32, 176: 2, 177: 1,
+            178: 2, 180: 8, 185: 1, 186: 1, 190: 3, 199: 1, 200: 1}
+      tempo_v2:
+        type: TempoData
+        n_tracks: 661
+        n_annotations: 661
+        tempo:
+          unit: bpm
+          width: 1
+          counts: {58: 1, 59: 2, 60: 15, 61: 7, 62: 10, 63: 12, 64: 12, 65: 7, 66: 10,
+            67: 1, 68: 5, 69: 16, 70: 49, 71: 38, 72: 5, 73: 4, 74: 8, 75: 3, 76: 1,
+            77: 3, 78: 2, 79: 2, 80: 11, 81: 6, 82: 2, 83: 9, 84: 6, 85: 32, 86: 33,
+            87: 59, 88: 19, 89: 9, 90: 9, 91: 1, 92: 2, 93: 3, 94: 2, 95: 3, 96: 1,
+            99: 4, 100: 2, 101: 3, 104: 1, 106: 3, 108: 1, 109: 2, 110: 9, 111: 1,
+            112: 5, 115: 3, 116: 4, 117: 10, 118: 1, 119: 6, 120: 2, 121: 25, 123: 17,
+            124: 1, 125: 15, 127: 74, 128: 1, 129: 25, 130: 8, 131: 1, 132: 14, 133: 4,
+            134: 11, 135: 1, 136: 11, 137: 2, 138: 2, 139: 136, 140: 15, 141: 11,
+            142: 24, 143: 1, 144: 16, 147: 28, 148: 2, 150: 16, 151: 2, 152: 6, 153: 7,
+            156: 4, 157: 1, 159: 4, 160: 20, 162: 1, 163: 12, 164: 2, 165: 1, 166: 1,
+            167: 9, 169: 5, 170: 52, 171: 4, 172: 4, 173: 2, 174: 112, 175: 1, 176: 1,
+            178: 3, 179: 15, 180: 2, 183: 5, 184: 1, 188: 5, 189: 1, 190: 1, 192: 4,
+            197: 3, 201: 1, 203: 6, 208: 2}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {tempo_v2: 3}
+summary_hash: 4b57b4d101cea59413414ea4ad93f47fcaf2cb7b513cb8cbc5a7403af47fcd0e
+bibtex: |-
+  @inproceedings{knees2015two,
+    title={Two data sets for tempo estimation and key detection in electronic dance music annotated from user corrections},
+    author={Knees, Peter and Faraldo P{'e}rez, {'A}ngel and Boyer, Herrera and Vogl, Richard and B{"o}ck, Sebastian and H{"o}rschl{"a}ger, Florian and Le Goff, Mickael and others},
+    booktitle={Proceedings of the 16th International Society for Music Information Retrieval Conference (ISMIR); 2015 Oct 26-30; M{'a}laga, Spain.[M{'a}laga]: International Society for Music Information Retrieval, 2015. p. 364-70.},
+    year={2015},
+    organization={International Society for Music Information Retrieval (ISMIR)},
+  }
+  @inproceedings{SchreiberM18a_Tempo_ISMIR,
+    author={Hendrik Schreiber and Meinard M{"u}ller},
+    title={A Crowdsourced Experiment for Tempo Estimation of Electronic Dance Music},
+    booktitle={Proceedings of the International Conference on Music Information Retrieval ({ISMIR})},
+    address={Paris, France},
+    year={2018},
+    url-pdf={http://www.tagtraum.com/download/2018_schreiber_tempo_giantsteps.pdf},
+  }
+license: Creative Commons Attribution Share Alike 4.0 International.

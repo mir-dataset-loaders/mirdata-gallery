@@ -1,0 +1,49 @@
+name: tinysol
+summary: TinySOL includes 2913 single-note samples from 14 instruments, suitable for
+  melody extraction and fundamental frequency estimation. Annotations provide a 5-fold
+  split for research reproducibility.
+annotations:
+- F0Data
+- Instrument
+tasks:
+- Melody Extraction
+stats:
+  computed:
+    mode: local
+    index: dba7aab99081f66d6a46f2bcfc1a3296
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 2913
+    n_audio_files: 2913
+    total_seconds: 19444.0
+    sample_rates: {44.1k: 2913}
+    durations:
+      unit: s
+      width: 1
+      counts: {1: 38, 2: 23, 3: 96, 4: 137, 5: 417, 6: 932, 7: 901, 8: 281, 9: 53,
+        10: 15, 11: 10, 12: 5, 13: 1, 14: 2, 15: 1, 16: 1}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 2913
+    n_tracks_loaded: 2913
+    tracks_with: {}
+    annotations: {}
+    skipped:
+      pitch: not a mirdata F0Data object (got str)
+      pitch_id: not a mirdata F0Data object (got int)
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: fcc5fe0033656029e4e76e677099ef7143e402cf581b305dc7119e3540a25c61
+bibtex: |-
+  @inproceedings{cella2020preprint,
+    author={Cella, Carmine Emanuele and Ghisi, Daniele and Lostanlen, Vincent and
+    Lévy, Fabien and Fineberg, Joshua and Maresz, Yan},
+    title={{OrchideaSOL}: {A} dataset of extended
+    instrumental techniques for computer-aided orchestration},
+    bootktitle={Under review},
+    year={2020}
+  }
+license: Creative Commons Attribution 4.0 International Public License.

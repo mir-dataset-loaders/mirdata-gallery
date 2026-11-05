@@ -1,0 +1,78 @@
+name: cuidado
+summary: The Cuidado Rhythm Dataset includes beat and bar annotations for various
+  ballroom dance styles, designed for tasks such as beat tracking and tempo estimation.
+  Annotations are provided for beats and bars in cuidado dance music, facilitating
+  rhythm analysis and tempo estimation.
+annotations:
+- BeatData
+- TempoData
+tasks:
+- Beat Tracking
+- Tempo Estimation
+stats:
+  computed:
+    mode: local
+    index: 12848795ae341273d29ed2243f26af7f
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 70
+    n_audio_files: 70
+    total_seconds: 1400.2
+    sample_rates: {44.1k: 70}
+    durations:
+      unit: s
+      width: 1
+      counts: {20: 70}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 70
+    n_tracks_loaded: 70
+    tracks_with: {BeatData: 70}
+    annotations:
+      beats:
+        type: BeatData
+        n_tracks: 70
+        n_annotations: 70
+        meter: {}
+        meter_changes: {}
+        tempo_from_beats:
+          unit: bpm
+          width: 1
+          counts: {57: 1, 71: 1, 73: 1, 80: 1, 81: 2, 84: 1, 86: 1, 87: 1, 88: 1,
+            91: 1, 95: 1, 98: 5, 99: 1, 101: 3, 103: 3, 109: 1, 110: 1, 111: 1, 112: 1,
+            115: 2, 116: 2, 117: 1, 118: 1, 120: 2, 121: 1, 122: 1, 124: 3, 129: 1,
+            132: 2, 134: 2, 135: 1, 137: 1, 143: 1, 144: 1, 145: 1, 148: 1, 153: 1,
+            154: 1, 155: 1, 156: 1, 157: 1, 159: 1, 161: 1, 164: 1, 165: 1, 166: 1,
+            172: 2, 181: 1, 187: 1, 191: 1, 198: 2, 226: 1}
+        tempo_changes:
+          tempo: [191.3, 164.1, 91.4, 155.1, 132.2, 153.1, 86.4, 110.9, 124.7, 98.4,
+            198.9, 187.9, 101.3, 57.7, 98.5, 99, 137.9, 103.4, 115.5, 115.1, 181.2,
+            98.4, 81.4, 145.6, 134.2, 143.6, 148.3, 95.7, 129.2, 87.6, 120.2, 101.8,
+            73.4, 103.6, 81.4, 172.3, 157.2, 161.6, 117.5, 98, 84.7, 111.9, 118.8,
+            136, 121, 99.4, 226.2, 156.6, 166.7, 103.1, 101.9, 166, 110, 198.4, 124.2,
+            134.4, 116.1, 144.6, 124.5, 80.7, 112.3, 132.5, 121.9, 122, 71.3, 172.3,
+            116.1, 154.3, 88.7, 159.2]
+          change: [-3.1, 13.3, 2.2, 0, 4.8, 0.7, 0, 0, 1.3, 0, 0, -0.9, -3.7, 3.8,
+            -0.7, 0, -2.5, 11, -0.3, 0, 0, -1, -2.8, 1.4, 0.8, 4.3, -5.8, -1.8, -0.6,
+            3.4, 0, 0, 0, -2.1, 3.7, 7.8, -3.6, 0, -6.5, 0, 9.1, 5.5, -1.7, 1, 0.9,
+            -0.6, 0, 3.4, 3.2, 1.8, 0, -30.6, 0.1, 5.5, 0, 2, 0, -1.5, 1.2, 3.6, 4.3,
+            1.3, -16.6, 0, -3.9, 1.7, 2.9, 2.1, -5.6, 0]
+    skipped:
+      tempo: not a mirdata TempoData object (got float)
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: 8b6ff52ab646157fcb4e4172bd7484ce222e7c50e2eefd469a6cca7c50de7d59
+bibtex: |-
+  @article{1678001,
+      author={Gouyon, F. and Klapuri, A. and Dixon, S. and Alonso, M. and Tzanetakis, G. and Uhle, C. and Cano, P.},
+      journal={IEEE Transactions on Audio, Speech, and Language Processing},
+      title={An experimental comparison of audio tempo induction algorithms},
+      year={2006},
+      volume={14},
+      number={5},
+      pages={1832-1844},
+      doi={10.1109/TSA.2005.858509}}
+license: Creative Commons Attribution Non Commercial Share Alike 4.0 International.

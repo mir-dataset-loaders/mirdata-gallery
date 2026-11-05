@@ -1,0 +1,114 @@
+name: compmusic_jingju_acappella
+summary: The dataset includes a cappella Jingju singing recordings with annotations
+  for phrases, syllables, and phonemes in both pinyin and X-SAMPA, for tasks such
+  as lyrics transcription and alignment.
+annotations:
+- LyricData
+tasks:
+- Lyrics Transcription
+- Lyrics-to-Audio Alignment
+stats:
+  computed:
+    mode: local
+    index: 3737ee6926528fd47af89654b931205a
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 82
+    n_audio_files: 82
+    total_seconds: 11652.6
+    sample_rates: {44.1k: 82}
+    durations:
+      unit: s
+      width: 1
+      counts: {26: 1, 32: 1, 33: 1, 35: 1, 36: 2, 37: 2, 38: 2, 39: 1, 41: 2, 43: 1,
+        46: 1, 48: 1, 50: 1, 51: 1, 52: 1, 58: 1, 62: 3, 68: 1, 69: 1, 70: 2, 71: 1,
+        80: 1, 81: 1, 84: 1, 85: 1, 87: 1, 89: 1, 90: 1, 91: 1, 95: 1, 97: 1, 99: 1,
+        100: 1, 101: 1, 103: 2, 104: 2, 108: 1, 110: 1, 111: 1, 112: 1, 117: 1, 120: 1,
+        123: 1, 128: 1, 147: 1, 155: 1, 156: 1, 159: 2, 161: 1, 170: 1, 171: 1, 172: 1,
+        174: 1, 175: 1, 177: 1, 180: 1, 182: 1, 184: 1, 185: 2, 211: 1, 249: 1, 329: 1,
+        334: 1, 336: 1, 356: 1, 380: 1, 469: 1, 470: 1, 499: 1, 558: 1, 655: 1}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 82
+    n_tracks_loaded: 82
+    tracks_with: {LyricData: 65}
+    annotations:
+      phoneme:
+        type: LyricData
+        n_tracks: 65
+        n_annotations: 65
+        lyric_unit: {pronunciations_open: 65}
+        lyrics_per_track:
+          unit: pronunciations_open
+          width: 1
+          counts: {44: 1, 50: 1, 57: 2, 61: 1, 74: 1, 86: 1, 89: 1, 92: 1, 95: 1,
+            97: 1, 113: 1, 114: 1, 116: 1, 117: 2, 127: 1, 131: 1, 133: 1, 145: 1,
+            157: 1, 166: 1, 171: 1, 174: 1, 193: 1, 194: 1, 195: 1, 201: 1, 203: 1,
+            209: 1, 213: 1, 217: 1, 223: 1, 225: 1, 228: 1, 230: 1, 280: 1, 284: 1,
+            285: 1, 296: 1, 300: 1, 308: 1, 353: 1, 358: 1, 372: 1, 382: 1, 395: 1,
+            405: 1, 410: 1, 412: 1, 413: 1, 426: 1, 429: 1, 444: 1, 462: 1, 485: 1,
+            508: 1, 526: 1, 578: 1, 631: 1, 647: 1, 696: 1, 717: 1, 725: 1, 839: 1}
+      phrase:
+        type: LyricData
+        n_tracks: 65
+        n_annotations: 65
+        lyric_unit: {words: 65}
+        lyrics_per_track:
+          unit: words
+          width: 1
+          counts: {1: 5, 2: 4, 4: 12, 5: 2, 6: 7, 7: 2, 8: 8, 9: 1, 10: 4, 11: 1,
+            12: 3, 13: 4, 16: 4, 17: 1, 18: 1, 21: 2, 22: 2, 23: 1, 26: 1}
+      phrase_char:
+        type: LyricData
+        n_tracks: 65
+        n_annotations: 65
+        lyric_unit: {words: 65}
+        lyrics_per_track:
+          unit: words
+          width: 1
+          counts: {1: 5, 2: 4, 4: 12, 5: 2, 6: 7, 7: 2, 8: 8, 9: 1, 10: 4, 11: 1,
+            12: 3, 13: 4, 16: 4, 17: 1, 18: 1, 21: 2, 22: 2, 23: 1, 26: 1}
+      syllable:
+        type: LyricData
+        n_tracks: 65
+        n_annotations: 65
+        lyric_unit: {syllable_open: 65}
+        lyrics_per_track:
+          unit: syllable_open
+          width: 1
+          counts: {13: 1, 16: 1, 18: 1, 20: 1, 21: 1, 24: 1, 34: 2, 39: 1, 40: 2,
+            41: 1, 47: 1, 48: 1, 49: 1, 50: 1, 51: 1, 52: 1, 58: 1, 60: 1, 61: 1,
+            64: 1, 68: 1, 71: 1, 75: 1, 76: 2, 84: 1, 86: 1, 90: 1, 91: 1, 93: 1,
+            96: 1, 100: 2, 104: 1, 105: 1, 106: 1, 117: 1, 119: 1, 123: 1, 132: 1,
+            138: 1, 139: 1, 143: 1, 160: 1, 176: 1, 179: 1, 182: 1, 186: 1, 199: 1,
+            205: 1, 206: 1, 207: 1, 233: 1, 234: 1, 236: 1, 254: 1, 263: 1, 274: 1,
+            307: 1, 333: 1, 341: 1, 366: 1, 384: 1}
+    skipped: {}
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: b8f54ccf8d21c2833e794b42d2e732ce72505b7b5401a2899bb1adea2a07444f
+bibtex: |-
+  @dataset{rong_gong_2018_1323561,
+    author       = {Rong Gong and
+                    Rafael Caro Repetto and
+                    Yile Yang and
+                    Xavier Serra},
+    title        = {Jingju a cappella singing dataset part1},
+    month        = jul,
+    year         = 2018,
+    publisher    = {Zenodo},
+    version      = 7,
+    doi          = {10.5281/zenodo.1323561},
+    url          = {https://doi.org/10.5281/zenodo.1323561}
+  }
+  @article{black2014automatic,
+    title={Automatic identification of emotional cues in Chinese opera singing},
+    author={Black, Dawn AA and Li, Ma and Tian, Mi},
+    journal={ICMPC, Seoul, South Korea},
+    year={2014}
+  }
+license: 'audio files ending with upf or lon: Creative Commons Attribution Non-Commercial
+  4.0 International, audio files ending with qm: http://isophonics.org/SingingVoiceDataset'

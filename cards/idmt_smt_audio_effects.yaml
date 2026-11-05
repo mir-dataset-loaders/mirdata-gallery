@@ -1,0 +1,52 @@
+name: idmt_smt_audio_effects
+summary: The dataset includes 55,044 mono and stereo WAV files of electric guitar
+  and bass notes with 11 different audio effects. Annotations provide information
+  on applied effects, guitar/bass types, and plucking styles. The primary MIR task
+  is music transcription.
+annotations:
+- Instrument
+- NoteData
+tasks:
+- Music Transcription
+stats:
+  computed:
+    mode: local
+    index: b4bedb7f675f892493a84a2e4914126e
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 55044
+    n_audio_files: 55044
+    total_seconds: 110088.0
+    sample_rates: {44.1k: 55044}
+    durations:
+      unit: s
+      width: 1
+      counts: {2: 55044}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 55044
+    n_tracks_loaded: 55044
+    tracks_with: {}
+    annotations: {}
+    skipped:
+      midi_nr: not a mirdata NoteData object (got int)
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: 7dc7c981c75fc297b7ba833d7753fd10729d429491a5058ed335ceae9f85e219
+bibtex: |-
+  @dataset{stein_michael_2023_7544032,
+    author       = {Stein, Michael},
+    title        = {IDMT-SMT-Audio-Effects Dataset},
+    month        = jan,
+    year         = 2023,
+    publisher    = {Zenodo},
+    version      = {1.0.0},
+    doi          = {10.5281/zenodo.7544032},
+    url          = {https://doi.org/10.5281/zenodo.7544032}
+  }
+license: |-
+  Creative Commons BY-NC-ND 4.0.
+  https://creativecommons.org/licenses/by-nc-nd/4.0/

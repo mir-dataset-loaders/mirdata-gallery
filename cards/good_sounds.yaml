@@ -1,0 +1,49 @@
+name: good_sounds
+summary: The Good-Sounds dataset includes monophonic recordings of single notes and
+  scales from 12 instruments, annotated as "Good" or "Bad" with five sub-classes for
+  "Bad". The primary MIR task is Melody Extraction.
+annotations:
+- F0Data
+- Instrument
+tasks:
+- Melody Extraction
+stats:
+  computed:
+    mode: local
+    index: 9cda4e4ab46effbdfcc2be744d593d06
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 16308
+    n_audio_files: 16308
+    total_seconds: 102793.8
+    sample_rates: {48k: 16308}
+    durations:
+      unit: s
+      width: 1
+      counts: {0: 23, 1: 433, 2: 1511, 3: 2119, 4: 2087, 5: 2645, 6: 2161, 7: 1526,
+        8: 1252, 9: 784, 10: 490, 11: 322, 12: 191, 13: 190, 14: 123, 15: 66, 16: 96,
+        17: 60, 18: 63, 19: 46, 20: 25, 21: 19, 22: 23, 23: 12, 24: 16, 25: 6, 26: 4,
+        27: 2, 28: 4, 29: 4, 31: 2, 32: 1, 33: 2}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 16308
+    n_tracks_loaded: 16308
+    tracks_with: {}
+    annotations: {}
+    skipped:
+      pitch_reference: not a mirdata F0Data object (got int)
+    n_missing_files: 0
+    n_track_errors: 0
+    annotation_errors: {}
+summary_hash: a65ba6dfed3c21f413da0a168a90cda419d36b829fbc6bf5c0dd8f593d377a14
+bibtex: |-
+  @inproceedings{romani2015real,
+    title={A Real-Time System for Measuring Sound Goodness in Instrumental Sounds},
+    author={Romani Picas, Oriol and Parra Rodriguez, Hector and Dabiri, Dara and Tokuda, Hiroshi and Hariya, Wataru and Oishi, Koji and Serra, Xavier},
+    booktitle={Audio Engineering Society Convention 138},
+    year={2015},
+    organization={Audio Engineering Society}
+  }
+license: Creative Commons Attribution Share Alike 4.0 International.
