@@ -68,6 +68,11 @@ NUMBER_FIELDS = {
     ("BeatData", "meter_changes"): {"last": 5, "noun": "change", "unit": "changes per track"},
 }
 
+# The annotation types this release doesn't plot yet, as the Home page's note says. The
+# cards keep them and their tags still show. Genre and Instrument have no plots to hide.
+# The tempo worked out from beats stays: only annotated tempo (TempoData) goes.
+HIDDEN_PLOT_TYPES = {"EventData", "EventDataExtended", "SectionData", "TempoData"}
+
 # --- Card rendering ----------------------------------------------------------
 
 
@@ -315,6 +320,7 @@ def ordered_plots(stats, with_beat_tempo=False):
 
     by_type = {}
     entries = (stats.get("annotations") or {}).get("annotations") or {}
+    entries = {prop: e for prop, e in entries.items() if e["type"] not in HIDDEN_PLOT_TYPES}
     annotated_tempo = any(
         e["type"] == "TempoData" and is_grid(e.get("tempo"))
         for e in entries.values()
