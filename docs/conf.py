@@ -45,19 +45,18 @@ html_title = "Mirdata Gallery"  # shown in the header next to the logo
 html_logo = "img/mirdata.png"
 html_permalinks = False  # no ¶ link after the headings
 html_theme_options = {
-    "main_nav_links": {"Home": "index", "Guide": "guide", "Gallery": "gallery"},  # header links
+    "main_nav_links": {"About": "index", "Gallery": "gallery"},  # header links
     "show_breadcrumbs": False,  # a few pages; the header links are the navigation
 }
-# The front page and the Guide have no left sidebar (on the gallery page, gallery.js puts the filters there)
-html_sidebars = {"index": [], "guide": []}
+# The About page (the front page) has no left sidebar (on the gallery page, gallery.js puts the filters there)
+html_sidebars = {"index": []}
 
 # Custom static files, copied after the theme's own so they can override it.
 html_static_path = ["_static"]
 # In this order: of two equally specific rules, the later file's wins.
 html_css_files = [
     "css/page.css",
-    "css/home.css",
-    "css/guide.css",
+    "css/about.css",
     "css/layout.css",
     "css/filters.css",
     "css/list.css",

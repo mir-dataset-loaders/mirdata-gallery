@@ -51,7 +51,10 @@ PLOT_FIELDS = {
     "LyricData": {"lyric_unit": "Lyric unit", "lyrics_per_track": "Lyrics per track"},
     "MultiF0Data": {"frequencies": "Pitches (multi-F0)", "polyphony": "Notes at once"},
     "NoteData": {"pitches": "Note pitch"},
-    "SectionData": {"labels": "Section labels", "section_interval_seconds": "Section length"},
+    "SectionData": {
+        "labels": "Section labels",
+        "section_interval_seconds": "Section length",
+    },
     "TempoData": {"tempo": "Tempo"},
 }
 
@@ -65,13 +68,17 @@ CIRCLE_FIELDS = {("ChordData", "labels"): "chords", ("KeyData", "keys"): "keys"}
 # one "≥ last" bar; noun is what one number counts (hover "2 changes"), unit the
 # axis label. The card keeps every number, so last can change without a recompute.
 NUMBER_FIELDS = {
-    ("BeatData", "meter_changes"): {"last": 5, "noun": "change", "unit": "changes per track"},
+    ("BeatData", "meter_changes"): {
+        "last": 5,
+        "noun": "change",
+        "unit": "changes per track",
+    },
 }
 
-# The annotation types this release doesn't plot yet, as the Home page's note says. The
-# cards keep them and their tags still show. Genre and Instrument have no plots to hide.
-# The tempo worked out from beats stays: only annotated tempo (TempoData) goes.
-HIDDEN_PLOT_TYPES = {"EventData", "EventDataExtended", "SectionData", "TempoData"}
+# # The annotation types this release doesn't plot yet, as the About page's note says. The
+# # cards keep them and their tags still show. Genre and Instrument have no plots to hide.
+# # The tempo worked out from beats stays: only annotated tempo (TempoData) goes.
+# HIDDEN_PLOT_TYPES = {"EventData", "EventDataExtended", "SectionData", "TempoData"}
 
 # --- Card rendering ----------------------------------------------------------
 
@@ -250,10 +257,18 @@ def statistics(stats):
     """The Statistics box: status notes, then every plot."""
     out = ['<div class="panel-box">', '<div class="box-title">Statistics</div>']
     out.extend(note(text) for text in stats_notes(stats))
-    plots = ordered_plots(stats, with_beat_tempo=True) if stats and "error" not in stats else []
+    plots = (
+        ordered_plots(stats, with_beat_tempo=True)
+        if stats and "error" not in stats
+        else []
+    )
     if plots:
         shown = ordered_plots(stats)  # the rest only Combine mode shows
-        out.append(plot_grid([p if p in shown else {**p, "combined_only": True} for p in plots]))
+        out.append(
+            plot_grid(
+                [p if p in shown else {**p, "combined_only": True} for p in plots]
+            )
+        )
     out.append("</div>")
     return "\n".join(out)
 
@@ -320,10 +335,11 @@ def ordered_plots(stats, with_beat_tempo=False):
 
     by_type = {}
     entries = (stats.get("annotations") or {}).get("annotations") or {}
-    entries = {prop: e for prop, e in entries.items() if e["type"] not in HIDDEN_PLOT_TYPES}
+    # entries = {
+    #     prop: e for prop, e in entries.items() if e["type"] not in HIDDEN_PLOT_TYPES
+    # }
     annotated_tempo = any(
-        e["type"] == "TempoData" and is_grid(e.get("tempo"))
-        for e in entries.values()
+        e["type"] == "TempoData" and is_grid(e.get("tempo")) for e in entries.values()
     )
     skip = {"tempo_from_beats"} if annotated_tempo and not with_beat_tempo else set()
     for prop, entry in entries.items():
@@ -408,7 +424,9 @@ def is_counts(value):
     )
 
 
-def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_type=None):
+def plot(
+    field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_type=None
+):
     """What one plot needs: data is a grid, a histogram, points or counts. counted names what the bars (or dots) count, for the hover text.
 
     prop, type and field (None for the audio's) are what Combine mode matches
@@ -433,7 +451,11 @@ def plot(field, data, source, n_tracks=None, n_annotations=None, prop=None, ann_
         counted = "segments" if circle else "values"
     title = PLOT_FIELDS.get(ann_type or "audio", {}).get(field)
     if title is None:  # a field PLOT_FIELDS does not name: from its name
-        words = field.removesuffix("_histogram").removesuffix("_per_annotation").replace("_", " ")
+        words = (
+            field.removesuffix("_histogram")
+            .removesuffix("_per_annotation")
+            .replace("_", " ")
+        )
         title = words[:1].upper() + words[1:]
     return {
         "title": title,

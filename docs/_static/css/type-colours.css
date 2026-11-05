@@ -4,7 +4,7 @@
    and border (the filter pills, At a glance), and a solid one for an active
    pill and the type's dot in the dataset list (--ann-on-solid: text on it).
    Anything else (Instrument, Genre, future values) stays silver. The ids are the
-   sections of the Guide's chart groups (guide.css), titled with the type's name. */
+   sections of the About page's chart groups (about.css), titled with the type's name. */
 [data-ann="BeatData"], #beatdata { --ann-bg: #ffedd5; --ann-text: #9a3412; --ann-border: #fdba74; --ann-solid: #c2410c; --ann-on-solid: #ffffff; }
 [data-ann="TempoData"], #tempodata { --ann-bg: #fff7ed; --ann-text: #c2410c; --ann-border: #fed7aa; --ann-solid: #fb923c; --ann-on-solid: #431407; }
 [data-ann="ChordData"], #chorddata { --ann-bg: #d1fae5; --ann-text: #065f46; --ann-border: #6ee7b7; --ann-solid: #047857; --ann-on-solid: #ffffff; }
