@@ -7,6 +7,7 @@ Home
 .. toctree::
    :hidden:
 
+   guide
    gallery
 
 .. raw:: html
@@ -22,52 +23,43 @@ Home
 
 How to use the Gallery
 ----------------------
+Welcome! The Mirdata Gallery helps you get to know a dataset before you download anything. There's nothing to install and no account to create, and nothing you click here changes any data, so please explore as much as you like.
 
-.. raw:: html
+**Not sure where to start?** Click ``ChordData`` under Annotation types, choose and open any dataset you want. Then ⌘/Ctrl-click the next one to see the two together.
 
-   <div class="landing-steps">
-     <div class="landing-step">
-       <span class="landing-step-number">1</span>
-       <h3>Find</h3>
-       <p>Narrow the list down to the datasets you need.</p>
-       <ul>
-         <li>Search by name.</li>
-         <li>Filter by annotation type (beats, chords, notes…), by task and by license.</li>
-         <li><b>AND</b> needs every picked filter, <b>OR</b> any of them; <b>Clear filters</b> resets.</li>
-       </ul>
-     </div>
-     <div class="landing-step">
-       <span class="landing-step-number">2</span>
-       <h3>Browse</h3>
-       <p>See every match at once and pick one to look at.</p>
-       <ul>
-         <li>Sort by name or by number of tracks.</li>
-         <li>Show a list or icons; the coloured dots are each dataset's annotation types.</li>
-         <li>Click a dataset to open its panel.</li>
-       </ul>
-     </div>
-     <div class="landing-step">
-       <span class="landing-step-number">3</span>
-       <h3>Read</h3>
-       <p>Know what a dataset holds before you download it.</p>
-       <ul>
-         <li>Overview of dataset: tracks, sample rate, duration, license.</li>
-         <li>Charts of the audio and annotations; hover a bar for its value.</li>
-         <li>Click an annotation type to focus on its charts (⌘/Ctrl-click for several); <b>⤢</b> shows them larger.</li>
-         <li>The BibTeX citation and the code to load it.</li>
-       </ul>
-     </div>
-     <div class="landing-step">
-       <span class="landing-step-number">4</span>
-       <h3>Compare</h3>
-       <p>Put several datasets together in one panel.</p>
-       <ul>
-         <li>Switch on <b>Combine</b> (or ⌘/Ctrl-click), then click datasets.</li>
-         <li>Their facts add up; their charts stack, one colour per dataset.</li>
-         <li>Click a name to focus on that dataset; <b>×</b> removes it.</li>
-       </ul>
-     </div>
-   </div>
+.. note::
+
+   `Section` and `Tempo` annotations, and annotations that come from metadata, such as `instrument` and `genre`. We'll be adding them soon, so keep an eye out!
+
+Find datasets
+~~~~~~~~~~~~~
+
+Start with whatever you already know. If you have a dataset in mind, type part of its name in the search box. The search also looks through annotation types and tasks, so "chord" works too.
+
+If you're looking for a kind of data, the filters on the left can help. Click a filter to turn it on, and click it again to turn it off. **Show all** opens the rest.
+
+- **Annotation types** tell you what annotation type is included in the dataset, such as ``BeatData`` for beats, ``ChordData`` for chords or ``NoteData`` for notes.
+- **Tasks** tell you what the data is useful for, such as Beat Tracking or Chord Recognition.
+- **Licenses** gives you a dataset with the selected licenses.
+
+Each group has its own switch. **AND** keeps only the datasets with everything you picked, and **OR** keeps those with at least one. Annotation types start on AND; tasks and licenses start on OR. 
+
+"Showing x of y" tells you how many are left. If you've narrowed things too far, **Clear filters** takes you back to the start.
+
+Look through the list
+~~~~~~~~~~~~~~~~~~~~~
+
+Your matches appear in the list, with their annotation types, number of tracks and license.
+
+The coloured dots show at a glance what a dataset holds, with one dot per annotation type. The colours come in families: orange for rhythm, green for harmony, blue for pitch, indigo for structure, rose for lyrics and yellow for events. Hover over the dots to see their names, or tap them on a touch screen.
+
+- **Sort by** orders the list by name or by number of tracks.
+- The two buttons beside it switch between list and icon views, and your browser remembers your choice.
+
+Click any dataset to open it in the panel beside the list. If you'd like more room for either one, drag the bar between them, and double-click it to reset. On a small screen, the panel sits below the list instead.
+
+
+Found a dataset? The `Guide <guide.html>`_ explains how to read it and its charts, and how to compare datasets.
 
 Using Mirdata
 -------------
