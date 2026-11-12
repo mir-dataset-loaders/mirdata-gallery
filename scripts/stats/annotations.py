@@ -1,9 +1,9 @@
 """Annotation stats of one dataset: grid counts and label counts per annotation property.
 
-Only the ten official mirdata annotation types are read:
-card_builder.annotation_properties finds them, annotation_types.py has one
-Stat class per type. Each property of
-each track is loaded on its own, so a broken file costs only that annotation.
+The ten official mirdata annotation types (card_builder.annotation_properties
+finds them) and Instrument labels (annotation_types.instrument_fields finds
+them on the first track) are read; annotation_types.py has one Stat class per
+type. Each property of each track is loaded on its own, so a broken file costs only that annotation.
 In remote mode the files are first fetched into a folder (remote.py); in local
 mode a local copy is read.
 """
@@ -58,6 +58,7 @@ def read_tracks(ds, verbose=False):
     # track_id -> error while creating the track (none of its annotations read)
     errors = {}
     annotation_errors = {}  # property -> {track_id: error} while loading or reading it
+    instruments_looked_up = False  # instrument fields are found on the first track loaded
 
     for track_id in track_ids:
         try:
@@ -68,6 +69,12 @@ def read_tracks(ds, verbose=False):
             if verbose:
                 print(f"    {track_id}: {errors[track_id]}", file=sys.stderr)
             continue
+        if not instruments_looked_up:
+            instruments_looked_up = True
+            for prop in annotation_types.instrument_fields(track):
+                if prop not in properties:
+                    properties[prop] = "Instrument"
+                    stats[prop] = annotation_types.STATS["Instrument"]()
         for prop, ann_type in properties.items():
             # One property at a time: a broken annotation file costs only that annotation.
             try:
@@ -84,7 +91,12 @@ def read_tracks(ds, verbose=False):
             if used:
                 tracks_with.setdefault(ann_type, set()).add(track_id)
                 continue
-            why = f"not a mirdata {ann_type} object (got {type(value).__name__})"
+            got = type(value).__name__
+            why = (
+                f"no instrument labels (got {got})"
+                if ann_type == "Instrument"
+                else f"not a mirdata {ann_type} object (got {got})"
+            )
             if prop in declared:
                 annotation_errors.setdefault(prop, {})[track_id] = why
             else:

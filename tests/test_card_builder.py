@@ -25,6 +25,21 @@ FIELDS = [
 ]
 
 
+# A card's stats field whose stats read instrument labels
+INSTRUMENT_STATS = {
+    "annotations": {
+        "annotations": {
+            "instrument": {
+                "type": "Instrument",
+                "n_tracks": 1,
+                "n_annotations": 1,
+                "instruments": {"flute": 1},
+            }
+        }
+    }
+}
+
+
 @pytest.fixture
 def ds(fake_mirdata):
     return mirdata.initialize("fake_dataset", data_home=DATA_HOME)
@@ -80,6 +95,35 @@ def test_tasks(ds, monkeypatch):
     ds._multitrack_class = mirdata.core.MultiTrack
     separation = "Source Separation"
     assert separation in tasks(ds), "a multitrack loader should add Source Separation"
+
+
+def test_annotations_instrument(ds, monkeypatch):
+    flute = property(lambda self: "flute")
+    flag = property(lambda self: False)
+    monkeypatch.setattr(fake_dataset_loader.Track, "instrument", flute, raising=False)
+    monkeypatch.setattr(
+        fake_dataset_loader.Track, "is_instrumental", flag, raising=False
+    )
+    assert (
+        "Instrument" not in annotations(ds)
+    ), "a property name alone should not add Instrument: it comes from the stats"
+    assert "Instrument" in annotations(
+        ds, INSTRUMENT_STATS
+    ), "stats with an Instrument entry should add Instrument"
+    card = build_card(ds, stats=INSTRUMENT_STATS)
+    assert (
+        "Instrument" in card["annotations"]
+    ), "build_card should pass its stats on to the annotations field"
+
+
+def test_tasks_instrument(ds):
+    task = "Instrument Recognition"
+    assert task not in tasks(ds), "no Instrument should add no Instrument Recognition"
+    assert task in tasks(
+        ds, INSTRUMENT_STATS
+    ), "Instrument should add Instrument Recognition"
+    card = build_card(ds, stats=INSTRUMENT_STATS)
+    assert task in card["tasks"], "build_card should pass its stats on to the tasks field"
 
 
 def test_annotation_properties(ds):

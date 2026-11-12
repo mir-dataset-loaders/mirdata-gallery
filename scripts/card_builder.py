@@ -33,11 +33,10 @@ FALLBACK_MAP = {
     "syllable": "LyricData",
     "phrase": "LyricData",
     "event": "EventData",
-    "instrument": "Instrument",
 }
 
 # The MIR tasks each annotation type supports, by the names MIR papers use.
-# EventData is too generic to name one; Genre and Instrument have none yet.
+# EventData is too generic to name one; Genre has none yet.
 TASKS = {
     "BeatData": ["Beat Tracking"],
     "ChordData": ["Chord Recognition"],
@@ -48,6 +47,7 @@ TASKS = {
     "NoteData": ["Music Transcription"],
     "SectionData": ["Music Structure Analysis"],
     "TempoData": ["Tempo Estimation"],
+    "Instrument": ["Instrument Recognition"],
 }
 # A loader with a MultiTrack class has the stems to separate
 MULTITRACK_TASK = "Source Separation"
@@ -64,8 +64,8 @@ def build_card(ds, stats=None):
     return {
         "name": ds.name,
         "summary": None,
-        "annotations": annotations(ds),
-        "tasks": tasks(ds),
+        "annotations": annotations(ds, stats),
+        "tasks": tasks(ds, stats),
         "stats": stats,
         "summary_hash": None,
         "bibtex": bibtex(ds),
@@ -81,18 +81,22 @@ def bibtex(ds):
     return clean_text(getattr(ds, "bibtex", None))
 
 
-def annotations(ds):
-    """Sorted list of annotation types the dataset's Track class exposes."""
+def annotations(ds, stats=None):
+    """Sorted list of annotation types: the official ones the dataset's Track class
+    exposes, plus Instrument when the stats read instrument labels."""
     found = set(annotation_properties(ds).values())
+    entries = ((stats or {}).get("annotations") or {}).get("annotations") or {}
+    if any(e.get("type") == "Instrument" for e in entries.values()):
+        found.add("Instrument")
     # Dedicated genre datasets (gtzan_genre, acousticbrainz_genre, ...)
     if ds.name.endswith("_genre"):
         found.add("Genre")
     return sorted(found)
 
 
-def tasks(ds):
+def tasks(ds, stats=None):
     """Sorted list of MIR tasks: those of the card's annotation types, plus Source Separation for a multitrack loader."""
-    found = {task for t in annotations(ds) for task in TASKS.get(t, [])}
+    found = {task for t in annotations(ds, stats) for task in TASKS.get(t, [])}
     if getattr(ds, "_multitrack_class", None):
         found.add(MULTITRACK_TASK)
     return sorted(found)

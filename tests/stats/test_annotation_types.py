@@ -13,6 +13,7 @@ from stats.annotation_types import (
     Beats,
     Chords,
     Events,
+    Instrument,
     Keys,
     Lyrics,
     MultiF0,
@@ -331,6 +332,53 @@ def test_every_label_is_kept():
     ), "every label should be kept, however many there are"
     assert "(other)" not in result["events"], "no labels should be folded into (other)"
     assert list(result["events"])[0] == "kick", "labels should come most common first"
+
+
+def test_instrument():
+    stat = collect(
+        Instrument(), "flute", ["cel", "voi"], "Gt, Gt, Bs", "Pf & Bs", "Violin"
+    )
+    expected = {
+        "instruments": {
+            "Gt": 2,
+            "Bs": 2,
+            "flute": 1,
+            "cel": 1,
+            "voi": 1,
+            "Pf": 1,
+            "Violin": 1,
+        }
+    }
+    assert stat.result() == expected, (
+        "a text, a list, and a text split at ',' and '&' should each give their"
+        " labels, kept as written"
+    )
+    assert (
+        stat.result()["instruments"]["Gt"] == 2
+    ), "an instrument listed twice in one track should count twice"
+    assert (stat.n_tracks, stat.n_annotations) == (
+        5,
+        5,
+    ), "each track's field should count as one track with one annotation"
+
+
+def test_instrument_scores():
+    stat = collect(
+        Instrument(), {"violin": 0.83, "flute": 0.0, "drums": 0.5}, {"piano": 0.2}
+    )
+    expected = {"instruments": {"violin": 1, "drums": 1}}
+    assert stat.result() == expected, "only names scored 0.5 or more should count"
+    assert (
+        stat.n_tracks == 2
+    ), "a track whose scores are all below 0.5 should still count as read"
+
+
+def test_instrument_not_read():
+    stat = Instrument()
+    assert not stat.add(3), "a number (an instrument id) should not be read"
+    assert not stat.add(True), "a flag should not be read"
+    assert not stat.add({"piano": "yes"}), "a dict of non-numbers should not be read"
+    assert stat.n_tracks == 0, "a value that isn't read should not count as a track"
 
 
 # ------------------------------------------------------------ the shared base
