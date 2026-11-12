@@ -72,6 +72,23 @@ def grid(values, unit):
     }
 
 
+def metadata_bpm(value):
+    """The bpm of a tempo stored as a plain per-track value, or None.
+
+    A number (ballroom, groove_midi, ...), a numeric string (rwc_popular:
+    '125.0') or a dict with a "tempo_bpm" key (saraga_carnatic). Anything
+    else, a TempoData included, gives None.
+    """
+    if isinstance(value, dict):
+        value = value.get("tempo_bpm")
+    if not isinstance(value, (int, float, str)):
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
 # ------------------------------------------------------------------- stats
 # One Stat subclass per annotation type. read(value) takes one track's
 # annotation object; result() turns everything read so far into the
@@ -149,7 +166,8 @@ class Stat:
 
 
 class Tempo(Stat):
-    """BPM values of TempoData annotations."""
+    """One bpm per tempo annotation: a TempoData's most confident tempo, or a
+    tempo stored as one plain value per track (see metadata_bpm)."""
 
     annotation = mirdata.annotations.TempoData
 
@@ -157,8 +175,20 @@ class Tempo(Stat):
         super().__init__()
         self.bpm = []
 
+    def add(self, value):
+        """A plain per-track tempo counts as one annotation; anything else goes through Stat.add."""
+        bpm = metadata_bpm(value)
+        if bpm is None:
+            return super().add(value)  # a TempoData, or False (saraga_hindustani stays skipped)
+        self.bpm.append(bpm)
+        self.n_annotations += 1
+        self.n_tracks += 1
+        return True
+
     def read(self, value):
-        self.bpm.extend(float(t) for t in value.tempos)
+        # the most confident tempo (the first on a tie), or the first without confidences
+        best = 0 if value.confidence is None else int(np.argmax(value.confidence))
+        self.bpm.append(float(value.tempos[best]))
 
     def result(self):
         return {
