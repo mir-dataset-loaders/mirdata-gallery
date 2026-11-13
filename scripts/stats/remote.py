@@ -10,8 +10,9 @@ out like a local copy, since mirdata's loaders read files from disk. Each
 zip's file list is read first, by range, so a zip without annotation files
 costs a few KB. A zip that holds some is downloaded whole when it holds no
 audio, and read file by file by range when it does. On a server without
-range support, the whole zip is downloaded. tar.gz and similar archives are
-reported and skipped.
+range support, the whole zip is downloaded. A tar (.tar, .tar.gz, .tgz,
+.tar.bz2, .tar.xz) is streamed and only its matched files are saved; other
+archives (.7z, .rar) are reported and skipped.
 
 Every remote read is checked against one Budget per dataset (MB).
 """
@@ -20,6 +21,7 @@ import io
 import os
 import struct
 import sys
+import tarfile
 import tempfile
 import threading
 import time
@@ -31,9 +33,6 @@ from concurrent.futures import ThreadPoolExecutor
 import requests
 
 MAX_DOWNLOAD_MB = 8000  # budget per dataset: bytes downloaded from its remotes
-
-# Archives that are not zips: they have no table of contents to read by range.
-ARCHIVE_EXTENSIONS = (".tar.gz", ".tgz", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar")
 
 
 class BudgetExceeded(Exception):
@@ -376,8 +375,8 @@ def member_bytes(remote_zip, member):
     return data
 
 
-def match_names(names, wanted, destination_dir=None, unpack_directories=None):
-    """Match the file names in an archive to the wanted index paths.
+def match_name(name, wanted_by_nfc, destination_dir=None, unpack_directories=None):
+    """Find the wanted index path that one archive file name stands for.
 
     An archive name and its index path are often written differently:
 
@@ -385,13 +384,53 @@ def match_names(names, wanted, destination_dir=None, unpack_directories=None):
       paths include it, archive names don't, so it is added.
     - unpack_directories are folders inside the archive (often a wrapper like
       "Repo-master/") whose contents mirdata moves up into destination_dir;
-      they are removed from the names the same way.
+      they are removed from the name the same way.
     - the archive may add more leading folders, so shorter and shorter tails
-      of each name are tried.
+      of the name are tried.
     - an archive made on macOS can store "é" as two characters, so both sides
       are compared in Unicode NFC.
 
-    Folders, and the files macOS adds (__MACOSX/, ._name), are skipped.
+    Folders, and the files macOS adds (__MACOSX/, ._name), never match.
+
+    Args:
+        name (str): a file name in the archive
+        wanted_by_nfc (dict): {NFC form of an index path: index path}, the
+            paths to look for
+        destination_dir (str or None): the folder mirdata unpacks the archive
+            into, relative to data_home
+        unpack_directories (list of str or None): the folders inside the
+            archive whose contents mirdata moves up into destination_dir
+
+    Returns:
+        str or None: the index path, or None when the name is not wanted
+
+    """
+    if (
+        name.endswith("/")
+        or "__MACOSX/" in name
+        or os.path.basename(name).startswith("._")
+    ):
+        return None  # macOS resource forks also end in .wav; they are not audio
+    path = unicodedata.normalize("NFC", name)
+    for folder in unpack_directories or []:
+        folder = folder.strip("/") + "/"
+        if path.startswith(folder):
+            path = path[len(folder) :]
+            break
+    if destination_dir:
+        path = f"{destination_dir}/{path}"
+    parts = path.split("/")
+    for i in range(len(parts)):  # the archive may add leading folders
+        candidate = "/".join(parts[i:])
+        if candidate in wanted_by_nfc:
+            return wanted_by_nfc[candidate]
+    return None
+
+
+def match_names(names, wanted, destination_dir=None, unpack_directories=None):
+    """Match all the file names of an archive to the wanted index paths.
+
+    Each name is matched with match_name, which has the rules.
 
     Args:
         names (list of str): the file names in the archive
@@ -406,28 +445,11 @@ def match_names(names, wanted, destination_dir=None, unpack_directories=None):
 
     """
     wanted_by_nfc = {unicodedata.normalize("NFC", path): path for path in wanted}
-    unpack = [d.strip("/") + "/" for d in unpack_directories or []]
     found = {}
     for name in names:
-        if (
-            name.endswith("/")
-            or "__MACOSX/" in name
-            or os.path.basename(name).startswith("._")
-        ):
-            continue  # macOS resource forks also end in .wav; they are not audio
-        path = unicodedata.normalize("NFC", name)
-        for folder in unpack:
-            if path.startswith(folder):
-                path = path[len(folder) :]
-                break
-        if destination_dir:
-            path = f"{destination_dir}/{path}"
-        parts = path.split("/")
-        for i in range(len(parts)):  # the archive may add leading folders
-            candidate = "/".join(parts[i:])
-            if candidate in wanted_by_nfc:
-                found[wanted_by_nfc[candidate]] = name
-                break
+        path = match_name(name, wanted_by_nfc, destination_dir, unpack_directories)
+        if path is not None:
+            found[path] = name
     return found
 
 
@@ -737,6 +759,81 @@ def fetch_zip(
     return set(matches), written, failed, limit_hit, text
 
 
+def fetch_tar(remote, todo, data_home, session, budget=None):
+    """Fetch the missing index paths that a tar remote holds, streamed.
+
+    A tar has no file list to read first: its files come one after another,
+    and a compressed tar (.tar.gz, .tar.bz2) is one compressed stream. So the
+    archive passes through the network from its start. Each matched file is
+    saved as it passes and every other file is dropped, so only the matched
+    files reach the disk. The download stops early once every todo path is
+    found. A tar whose size the server reports is refused before it starts
+    when it would pass the budget; the bytes are also counted as they arrive.
+
+    Args:
+        remote (RemoteFileMetadata): the tar remote
+        todo (set of str): the index paths still missing
+        data_home (str): the dataset folder
+        session (requests.Session): the session the request is sent with
+        budget (Budget or None): checked and added to; None means no limit
+
+    Returns:
+        * set of str - the todo paths the tar holds, saved or not
+        * set of str - the paths now on disk
+        * dict - {path: why it failed}
+        * None - in fetch_zip's place for the budget message: a tar raises
+          BudgetExceeded instead
+        * str - the log message
+
+    Raises:
+        BudgetExceeded: the tar would pass the budget
+
+    """
+    t0 = time.time()
+    wanted_by_nfc = {unicodedata.normalize("NFC", path): path for path in todo}
+    unpack_directories = getattr(remote, "unpack_directories", None)
+    held, written, failed = set(), set(), {}
+    counted = 0  # bytes of this download already added to the budget
+    r = session.request("GET", remote.url, timeout=60, stream=True)
+    try:
+        r.raise_for_status()
+        if budget and "Content-Length" in r.headers:
+            budget.check(int(r.headers["Content-Length"]))  # too big: refused unread
+        with tarfile.open(fileobj=r.raw, mode="r|*") as archive:
+            for member in archive:
+                if budget:  # add what the stream has read since the last file
+                    budget.check(r.raw.tell() - counted)
+                    budget.add(r.raw.tell() - counted)
+                    counted = r.raw.tell()
+                if not member.isfile():
+                    continue
+                path = match_name(
+                    member.name,
+                    wanted_by_nfc,
+                    remote.destination_dir,
+                    unpack_directories,
+                )
+                if path is None:
+                    continue  # not wanted (audio...): dropped as the stream moves on
+                held.add(path)
+                try:
+                    save_file(data_home, path, archive.extractfile(member).read())
+                    written.add(path)
+                except Exception as e:
+                    failed[path] = f"{type(e).__name__}: {e}"
+                if len(held) == len(todo):
+                    break  # every todo path found: the rest is not downloaded
+        if budget:
+            budget.add(r.raw.tell() - counted)
+    finally:
+        r.close()
+    text = (
+        f"{r.raw.tell() / 1e9:.2f} GB streamed  {len(held)} matched, "
+        f"{len(written)} fetched  ({time.time() - t0:.1f} s)"
+    )
+    return held, written, failed, None, text
+
+
 def fetch_plain(remote, data_home, session, budget=None):
     """Download a remote that is one plain file to where mirdata's download puts it.
 
@@ -815,11 +912,14 @@ def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=No
     limit_hit = None  # the BudgetExceeded message, once the budget ran out
 
     remotes = remotes or {}
-    archive_extensions = (".zip",) + ARCHIVE_EXTENSIONS
+    # An archive is a zip, a tar, or a kind that cannot be read (.7z, .rar, a
+    # single .gz file). Every other remote is a plain file.
     plain_files = {
         key: remote
         for key, remote in remotes.items()
-        if not remote.filename.lower().endswith(archive_extensions)
+        if not remote.filename.lower().endswith(
+            (".zip", ".tar", ".tgz", ".gz", ".bz2", ".xz", ".7z", ".rar")
+        )
     }
     archives = {key: remote for key, remote in remotes.items() if key not in plain_files}
 
@@ -872,17 +972,24 @@ def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=No
         if limit_hit:
             sources.append(log_line(key, remote, f"not read, {limit_hit}"))
             continue
-        if name.endswith(ARCHIVE_EXTENSIONS):
-            sources.append(log_line(key, remote, "not a zip, skipped"))
-            unreadable.append(f"{remote.filename} cannot be read remotely (not a zip)")
+        if not name.endswith((".zip", ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tar.xz")):
+            sources.append(log_line(key, remote, "not a zip or a tar, skipped"))
+            unreadable.append(
+                f"{remote.filename} cannot be read remotely (not a zip or a tar)"
+            )
             continue
         try:
-            held, written, failed, limit_hit, text = fetch_zip(
-                remote, todo, audio, data_home, session, budget, workers, verbose
-            )
+            if name.endswith(".zip"):
+                held, written, failed, limit_hit, text = fetch_zip(
+                    remote, todo, audio, data_home, session, budget, workers, verbose
+                )
+            else:
+                held, written, failed, limit_hit, text = fetch_tar(
+                    remote, todo, data_home, session, budget
+                )
         except BudgetExceeded as e:
             limit_hit = text = str(e)
-        except Exception as e:  # no access, no range support, not a zip...
+        except Exception as e:  # no access, no range support, a broken archive...
             text = f"{type(e).__name__}: {e}"
             unreadable.append(f"{remote.filename}: {text}")
         else:
