@@ -1,20 +1,11 @@
-"""Reading a dataset's remotes: zips by range, its annotation files, and the remote budget.
+"""Fetch the non-audio files of a dataset from its remotes.
 
-Servers like Zenodo honour HTTP range requests ("send me bytes X to Y"), so a
-zip's table of contents can be read from the end of the file and any member
-from its offset, while the rest of the archive is never transferred
-(HTTPFile, member_bytes, match_names).
-
-fetch() writes a dataset's annotation and metadata files into a folder laid
-out like a local copy, since mirdata's loaders read files from disk. Each
-zip's file list is read first, by range, so a zip without annotation files
-costs a few KB. A zip that holds some is downloaded whole when it holds no
-audio, and read file by file by range when it does. On a server without
-range support, the whole zip is downloaded. A tar (.tar, .tar.gz, .tgz,
-.tar.bz2, .tar.xz) is streamed and only its matched files are saved; other
-archives (.7z, .rar) are reported and skipped.
-
-Every remote read is checked against one Budget per dataset (MB).
+mirdata's loaders read files from disk, so fetch() writes the files the index
+lists, all but the audio, into a folder laid out like a local copy. Plain
+files are all downloaded; archives are read smallest first, only while files
+are missing. A zip is read file by file by range when it holds audio and
+downloaded whole when it does not; a tar is streamed. Every download counts
+against one Budget per dataset (MAX_DOWNLOAD_MB).
 """
 
 import io
@@ -33,6 +24,9 @@ from concurrent.futures import ThreadPoolExecutor
 import requests
 
 MAX_DOWNLOAD_MB = 8000  # budget per dataset: bytes downloaded from its remotes
+
+
+# ---- Budget ----
 
 
 class BudgetExceeded(Exception):
@@ -101,6 +95,9 @@ class Budget:
         """
         with self._lock:
             self.bytes += n_bytes
+
+
+# ---- HTTP ----
 
 
 def http_session(workers):
@@ -338,41 +335,118 @@ class HTTPFile(io.RawIOBase):
         return data
 
 
-def member_bytes(remote_zip, member):
-    """Read one file out of a remote zip, decompressed and CRC-checked.
+def download_to_file(url, file, session, budget=None):
+    """Download a URL into an open file, streamed and counted against the budget.
 
-    One range request covers the file's local header and its compressed data.
-    The header's length is only known once it is read, so 4 KB of slack is
-    asked for; a second request covers the rare header that is longer.
+    The budget is checked against the size the server announces before
+    anything is downloaded, then chunk by chunk, so a download that would pass
+    it stops.
 
     Args:
-        remote_zip (HTTPFile): the zip on the server, read by range
-        member (zipfile.ZipInfo): the file, from the zip's file list
+        url (str): the file's URL
+        file (file object): a file on disk, opened for binary writing
+        session (requests.Session): the session the request is sent with
+        budget (Budget or None): checked and added to; None means no limit
 
     Returns:
-        bytes: the file's uncompressed content
+        int: how many bytes were written
 
     Raises:
-        ValueError: a bad local header, an unsupported compression, or a CRC
-            mismatch
+        BudgetExceeded: the download would pass the budget
+        requests.HTTPError: the server answered with an error
 
     """
-    slack = 30 + 4096
-    raw = remote_zip.read_at(member.header_offset, slack + member.compress_size)
-    if raw[:4] != b"PK\x03\x04":
-        raise ValueError("bad local file header")
-    name_len, extra_len = struct.unpack("<HH", raw[26:30])
-    start = 30 + name_len + extra_len
-    data = raw[start : start + member.compress_size]
-    if len(data) < member.compress_size:
-        data = remote_zip.read_at(member.header_offset + start, member.compress_size)
-    if member.compress_type == zipfile.ZIP_DEFLATED:
-        data = zlib.decompress(data, -zlib.MAX_WBITS)
-    elif member.compress_type != zipfile.ZIP_STORED:
-        raise ValueError(f"unsupported zip compression {member.compress_type}")
-    if zlib.crc32(data) != member.CRC:
-        raise ValueError("CRC mismatch")
-    return data
+    r = session.request("GET", url, timeout=60, stream=True)
+    try:
+        r.raise_for_status()
+        if budget and "Content-Length" in r.headers:
+            budget.check(int(r.headers["Content-Length"]))  # too big: refused unread
+        n_bytes = 0
+        for chunk in r.iter_content(1 << 20):
+            if budget:
+                budget.check(len(chunk))
+                budget.add(len(chunk))
+            file.write(chunk)
+            n_bytes += len(chunk)
+        return n_bytes
+    finally:
+        r.close()
+
+
+# ---- Index paths ----
+
+
+def _entry_path(value):
+    """Get the file path from one index entry.
+
+    Args:
+        value: one entry of a track in the index, normally [path, checksum];
+            other values (None, a multitrack's list of track ids) are not files
+
+    Returns:
+        str or None: the path relative to data_home, or None when the entry is
+            not a file
+
+    """
+    if isinstance(value, list) and value and isinstance(value[0], str) and value[0]:
+        return value[0]
+    return None
+
+
+def annotation_paths(index):
+    """Get the paths of every non-audio file in a dataset index.
+
+    Track and multitrack entries whose key contains "audio" are left out. The
+    index's "metadata" files are always included, since many loaders need them
+    to build a track. A multitrack's "tracks" entry lists its track ids and is
+    not a file.
+
+    Args:
+        index (dict): the dataset index (stats.load_index)
+
+    Returns:
+        set of str: the paths, relative to data_home
+
+    """
+    paths = set()
+    for track in (index.get("tracks") or {}).values():
+        for key, value in (track or {}).items():
+            if "audio" not in key.lower() and _entry_path(value):
+                paths.add(_entry_path(value))
+    for mtrack in (index.get("multitracks") or {}).values():
+        for key, value in (mtrack or {}).items():
+            if key != "tracks" and "audio" not in key.lower() and _entry_path(value):
+                paths.add(_entry_path(value))
+    for value in (index.get("metadata") or {}).values():
+        if _entry_path(value):
+            paths.add(_entry_path(value))
+    return paths
+
+
+def audio_paths(index):
+    """Get the paths of every audio file in a dataset index.
+
+    These are the track and multitrack entries whose key contains "audio",
+    the files annotation_paths leaves out. fetch_zip uses them to tell whether
+    a zip holds audio.
+
+    Args:
+        index (dict): the dataset index (stats.load_index)
+
+    Returns:
+        set of str: the paths, relative to data_home
+
+    """
+    paths = set()
+    for group in ("tracks", "multitracks"):
+        for entry in (index.get(group) or {}).values():
+            for key, value in (entry or {}).items():
+                if "audio" in key.lower() and _entry_path(value):
+                    paths.add(_entry_path(value))
+    return paths
+
+
+# ---- Archive names ----
 
 
 def match_name(name, wanted_by_nfc, destination_dir=None, unpack_directories=None):
@@ -453,74 +527,7 @@ def match_names(names, wanted, destination_dir=None, unpack_directories=None):
     return found
 
 
-def _entry_path(value):
-    """Get the file path from one index entry.
-
-    Args:
-        value: one entry of a track in the index, normally [path, checksum];
-            other values (None, a multitrack's list of track ids) are not files
-
-    Returns:
-        str or None: the path relative to data_home, or None when the entry is
-            not a file
-
-    """
-    if isinstance(value, list) and value and isinstance(value[0], str) and value[0]:
-        return value[0]
-    return None
-
-
-def annotation_paths(index):
-    """Get the paths of every non-audio file in a dataset index.
-
-    Track and multitrack entries whose key contains "audio" are left out. The
-    index's "metadata" files are always included, since many loaders need them
-    to build a track. A multitrack's "tracks" entry lists its track ids and is
-    not a file.
-
-    Args:
-        index (dict): the dataset index (stats.load_index)
-
-    Returns:
-        set of str: the paths, relative to data_home
-
-    """
-    paths = set()
-    for track in (index.get("tracks") or {}).values():
-        for key, value in (track or {}).items():
-            if "audio" not in key.lower() and _entry_path(value):
-                paths.add(_entry_path(value))
-    for mtrack in (index.get("multitracks") or {}).values():
-        for key, value in (mtrack or {}).items():
-            if key != "tracks" and "audio" not in key.lower() and _entry_path(value):
-                paths.add(_entry_path(value))
-    for value in (index.get("metadata") or {}).values():
-        if _entry_path(value):
-            paths.add(_entry_path(value))
-    return paths
-
-
-def audio_paths(index):
-    """Get the paths of every audio file in a dataset index.
-
-    These are the track and multitrack entries whose key contains "audio",
-    the files annotation_paths leaves out. fetch_zip uses them to tell whether
-    a zip holds audio.
-
-    Args:
-        index (dict): the dataset index (stats.load_index)
-
-    Returns:
-        set of str: the paths, relative to data_home
-
-    """
-    paths = set()
-    for group in ("tracks", "multitracks"):
-        for entry in (index.get(group) or {}).values():
-            for key, value in (entry or {}).items():
-                if "audio" in key.lower() and _entry_path(value):
-                    paths.add(_entry_path(value))
-    return paths
+# ---- Saving files ----
 
 
 def save_file(data_home, path, data):
@@ -536,95 +543,6 @@ def save_file(data_home, path, data):
     os.makedirs(os.path.dirname(target), exist_ok=True)
     with open(target, "wb") as f:
         f.write(data)
-
-
-def download_to_file(url, file, session, budget=None):
-    """Download a URL into an open file, streamed and counted against the budget.
-
-    The budget is checked against the size the server announces before
-    anything is downloaded, then chunk by chunk, so a download that would pass
-    it stops.
-
-    Args:
-        url (str): the file's URL
-        file (file object): a file on disk, opened for binary writing
-        session (requests.Session): the session the request is sent with
-        budget (Budget or None): checked and added to; None means no limit
-
-    Returns:
-        int: how many bytes were written
-
-    Raises:
-        BudgetExceeded: the download would pass the budget
-        requests.HTTPError: the server answered with an error
-
-    """
-    r = session.request("GET", url, timeout=60, stream=True)
-    try:
-        r.raise_for_status()
-        if budget and "Content-Length" in r.headers:
-            budget.check(int(r.headers["Content-Length"]))  # too big: refused unread
-        n_bytes = 0
-        for chunk in r.iter_content(1 << 20):
-            if budget:
-                budget.check(len(chunk))
-                budget.add(len(chunk))
-            file.write(chunk)
-            n_bytes += len(chunk)
-        return n_bytes
-    finally:
-        r.close()
-
-
-def open_zip(url, session, budget=None):
-    """Open a remote zip, reading only its file list when the server allows it.
-
-    With range support, only the file list at the end of the zip is read (a
-    few KB), and its files can then be read one by one by range. Without it
-    (the server does not report the size, as on GitHub archives, or ignores
-    range requests), the whole zip is downloaded to a temporary file on disk,
-    which is deleted once the zip is closed or dropped.
-
-    Args:
-        url (str): the zip's URL
-        session (requests.Session): the session the requests are sent with
-        budget (Budget or None): checked and added to; None means no limit
-
-    Returns:
-        * zipfile.ZipFile - the zip
-        * HTTPFile or None - the zip on the server, to read files from by
-          range; None when the whole zip was downloaded
-
-    Raises:
-        BudgetExceeded: the file list, or the whole zip, would pass the budget
-
-    """
-    http = None
-    try:
-        http = HTTPFile(url, session, budget)
-        return zipfile.ZipFile(http), http  # the file list only, read by range
-    except Exception:
-        # zipfile reports a failed read as BadZipFile, hence the ranges_ignored flag
-        if http is not None and not http.ranges_ignored:
-            raise  # a real error, not a server without range support
-    zip_file = tempfile.TemporaryFile()  # on disk, deleted when closed
-    download_to_file(url, zip_file, session, budget)
-    return zipfile.ZipFile(zip_file), None
-
-
-def log_line(key, remote, message):
-    """Make one line of the fetch log: which remote, then what happened to it.
-
-    Args:
-        key (str): the remote's key in the loader's REMOTES
-        remote (RemoteFileMetadata): the remote
-        message (str): what happened to it
-
-    Returns:
-        str: the line, indented, with the key padded to 22 characters
-
-    """
-    return f"  {key:22s} {remote.filename}: {message}"
 
 
 def save_files(matches, read_file, data_home, workers=1, verbose=False):
@@ -646,6 +564,17 @@ def save_files(matches, read_file, data_home, workers=1, verbose=False):
     """
 
     def save(item):
+        """Read and save one file, run in a worker thread.
+
+        Args:
+            item (tuple): (index path, zipfile.ZipInfo), one entry of matches
+
+        Returns:
+            * str - the index path
+            * None, BudgetExceeded or str - None when saved, the
+              BudgetExceeded error, or why it failed
+
+        """
         path, member = item
         try:
             save_file(data_home, path, read_file(member))
@@ -672,166 +601,7 @@ def save_files(matches, read_file, data_home, workers=1, verbose=False):
     return written, failed, limit_message
 
 
-def fetch_zip(
-    remote, todo, audio, data_home, session, budget=None, workers=4, verbose=False
-):
-    """Fetch the missing index paths that a zip remote holds.
-
-    The zip's file list is read first (by range, a few KB). A zip without
-    audio is then downloaded whole in one request, unless that would pass the
-    budget. A zip with audio is read file by file by range, so its audio is
-    never downloaded. On a server without range support, open_zip has already
-    downloaded the whole zip.
-
-    Args:
-        remote (RemoteFileMetadata): the zip remote
-        todo (set of str): the index paths still missing
-        audio (set of str): the index paths of the dataset's audio files
-        data_home (str): the dataset folder
-        session (requests.Session): the session the requests are sent with
-        budget (Budget or None): checked and added to; None means no limit
-        workers (int): how many files are read by range in parallel
-        verbose (bool): if True, print one line per file
-
-    Returns:
-        * set of str - the todo paths the zip holds, saved or not
-        * set of str - the paths now on disk
-        * dict - {path: why it failed}
-        * str or None - the BudgetExceeded message if the budget ran out
-          while saving
-        * str - the log message
-
-    Raises:
-        BudgetExceeded: the file list, or the files to fetch, would pass the
-            budget; nothing is saved
-
-    """
-    t0 = time.time()
-    zf, http = open_zip(remote.url, session, budget)
-
-    # Some zips store UTF-8 names without the UTF-8 flag, and zipfile then reads
-    # them as cp437 ("André" becomes "Andr├⌐"). Read them back as UTF-8, as
-    # mirdata's download_utils.extractall_unicode does.
-    members_by_name = {}
-    for member in zf.infolist():
-        name = member.filename
-        if not member.flag_bits & 0x800:  # 0x800: the zip's UTF-8 flag
-            try:
-                name = name.encode("cp437").decode("utf-8")
-            except (UnicodeEncodeError, UnicodeDecodeError):
-                pass  # not UTF-8 after all: keep the name as zipfile read it
-        members_by_name[name] = member
-    names = list(members_by_name)
-    unpack_directories = getattr(remote, "unpack_directories", None)
-    found = match_names(names, todo, remote.destination_dir, unpack_directories)
-    matches = {path: members_by_name[name] for path, name in found.items()}
-    if not matches:
-        return set(), set(), {}, None, "no annotation files from the index"
-
-    zip_size = http.size if http else sum(m.compress_size for m in zf.infolist())
-    has_audio = bool(match_names(names, audio, remote.destination_dir, unpack_directories))
-    if http and not has_audio and (budget is None or budget.fits(http.size)):
-        # No audio: the whole zip in one request, to a temporary file on disk.
-        # It is the same zip, so the members found above fit it.
-        with tempfile.TemporaryFile() as zip_file:
-            download_to_file(http.url, zip_file, session, budget)
-            written, failed, limit_hit = save_files(
-                matches, zipfile.ZipFile(zip_file).read, data_home, 1, verbose
-            )
-        how = "downloaded whole"
-    elif http:
-        # Audio, or too big to download whole: only the matched files, by range
-        if budget:
-            budget.check(sum(m.compress_size for m in matches.values()))
-        read = lambda member: member_bytes(http, member)  # noqa: E731
-        written, failed, limit_hit = save_files(
-            matches, read, data_home, workers, verbose
-        )
-        how = f"{http.requests} requests, {http.bytes / 1e6:.1f} MB"
-    else:
-        # No range support: open_zip has already downloaded the whole zip
-        written, failed, limit_hit = save_files(matches, zf.read, data_home, 1, verbose)
-        how = "downloaded whole"
-    text = (
-        f"{zip_size / 1e9:.2f} GB  {len(matches)} matched, {len(written)} fetched  "
-        f"({how}, {time.time() - t0:.1f} s)"
-    )
-    return set(matches), written, failed, limit_hit, text
-
-
-def fetch_tar(remote, todo, data_home, session, budget=None):
-    """Fetch the missing index paths that a tar remote holds, streamed.
-
-    A tar has no file list to read first: its files come one after another,
-    and a compressed tar (.tar.gz, .tar.bz2) is one compressed stream. So the
-    archive passes through the network from its start. Each matched file is
-    saved as it passes and every other file is dropped, so only the matched
-    files reach the disk. The download stops early once every todo path is
-    found. A tar whose size the server reports is refused before it starts
-    when it would pass the budget; the bytes are also counted as they arrive.
-
-    Args:
-        remote (RemoteFileMetadata): the tar remote
-        todo (set of str): the index paths still missing
-        data_home (str): the dataset folder
-        session (requests.Session): the session the request is sent with
-        budget (Budget or None): checked and added to; None means no limit
-
-    Returns:
-        * set of str - the todo paths the tar holds, saved or not
-        * set of str - the paths now on disk
-        * dict - {path: why it failed}
-        * None - in fetch_zip's place for the budget message: a tar raises
-          BudgetExceeded instead
-        * str - the log message
-
-    Raises:
-        BudgetExceeded: the tar would pass the budget
-
-    """
-    t0 = time.time()
-    wanted_by_nfc = {unicodedata.normalize("NFC", path): path for path in todo}
-    unpack_directories = getattr(remote, "unpack_directories", None)
-    held, written, failed = set(), set(), {}
-    counted = 0  # bytes of this download already added to the budget
-    r = session.request("GET", remote.url, timeout=60, stream=True)
-    try:
-        r.raise_for_status()
-        if budget and "Content-Length" in r.headers:
-            budget.check(int(r.headers["Content-Length"]))  # too big: refused unread
-        with tarfile.open(fileobj=r.raw, mode="r|*") as archive:
-            for member in archive:
-                if budget:  # add what the stream has read since the last file
-                    budget.check(r.raw.tell() - counted)
-                    budget.add(r.raw.tell() - counted)
-                    counted = r.raw.tell()
-                if not member.isfile():
-                    continue
-                path = match_name(
-                    member.name,
-                    wanted_by_nfc,
-                    remote.destination_dir,
-                    unpack_directories,
-                )
-                if path is None:
-                    continue  # not wanted (audio...): dropped as the stream moves on
-                held.add(path)
-                try:
-                    save_file(data_home, path, archive.extractfile(member).read())
-                    written.add(path)
-                except Exception as e:
-                    failed[path] = f"{type(e).__name__}: {e}"
-                if len(held) == len(todo):
-                    break  # every todo path found: the rest is not downloaded
-        if budget:
-            budget.add(r.raw.tell() - counted)
-    finally:
-        r.close()
-    text = (
-        f"{r.raw.tell() / 1e9:.2f} GB streamed  {len(held)} matched, "
-        f"{len(written)} fetched  ({time.time() - t0:.1f} s)"
-    )
-    return held, written, failed, None, text
+# ---- Plain files ----
 
 
 def fetch_plain(remote, data_home, session, budget=None):
@@ -871,16 +641,293 @@ def fetch_plain(remote, data_home, session, budget=None):
     return path, f"{n_bytes / 1e6:.1f} MB downloaded"
 
 
-def closing_problems(remotes, unmatched, unreadable, limit_hit):
-    """The reason to run locally once every remote is done, if any (a list of at most one).
+# ---- Zip ----
 
-    After the limit, the unread remotes explain the unmatched files, so only
-    the limit is reported.
+
+def member_bytes(remote_zip, member):
+    """Read one file out of a remote zip, decompressed and CRC-checked.
+
+    One range request covers the file's local header and its compressed data.
+    The header's length is only known once it is read, so 4 KB of slack is
+    asked for; a second request covers the rare header that is longer.
+
+    Args:
+        remote_zip (HTTPFile): the zip on the server, read by range
+        member (zipfile.ZipInfo): the file, from the zip's file list
+
+    Returns:
+        bytes: the file's uncompressed content
+
+    Raises:
+        ValueError: a bad local header, an unsupported compression, or a CRC
+            mismatch
+
+    """
+    slack = 30 + 4096
+    raw = remote_zip.read_at(member.header_offset, slack + member.compress_size)
+    if raw[:4] != b"PK\x03\x04":
+        raise ValueError("bad local file header")
+    name_len, extra_len = struct.unpack("<HH", raw[26:30])
+    start = 30 + name_len + extra_len
+    data = raw[start : start + member.compress_size]
+    if len(data) < member.compress_size:
+        data = remote_zip.read_at(member.header_offset + start, member.compress_size)
+    if member.compress_type == zipfile.ZIP_DEFLATED:
+        data = zlib.decompress(data, -zlib.MAX_WBITS)
+    elif member.compress_type != zipfile.ZIP_STORED:
+        raise ValueError(f"unsupported zip compression {member.compress_type}")
+    if zlib.crc32(data) != member.CRC:
+        raise ValueError("CRC mismatch")
+    return data
+
+
+def open_zip(url, session, budget=None):
+    """Open a remote zip, reading only its file list when the server allows it.
+
+    With range support, only the file list at the end of the zip is read (a
+    few KB), and its files can then be read one by one by range. Without it
+    (the server does not report the size, as on GitHub archives, or ignores
+    range requests), the whole zip is downloaded to a temporary file on disk,
+    which is deleted once the zip is closed or dropped.
+
+    Args:
+        url (str): the zip's URL
+        session (requests.Session): the session the requests are sent with
+        budget (Budget or None): checked and added to; None means no limit
+
+    Returns:
+        * zipfile.ZipFile - the zip
+        * HTTPFile or None - the zip on the server, to read files from by
+          range; None when the whole zip was downloaded
+
+    Raises:
+        BudgetExceeded: the file list, or the whole zip, would pass the budget
+
+    """
+    http = None
+    try:
+        http = HTTPFile(url, session, budget)
+        return zipfile.ZipFile(http), http  # the file list only, read by range
+    except Exception:
+        # zipfile reports a failed read as BadZipFile, hence the ranges_ignored flag
+        if http is not None and not http.ranges_ignored:
+            raise  # a real error, not a server without range support
+    zip_file = tempfile.TemporaryFile()  # on disk, deleted when closed
+    download_to_file(url, zip_file, session, budget)
+    return zipfile.ZipFile(zip_file), None
+
+
+def fetch_zip(
+    remote, remaining, audio, data_home, session, budget=None, workers=4, verbose=False
+):
+    """Fetch the missing index paths that a zip remote holds.
+
+    The zip's file list is read first (by range, a few KB). A zip without
+    audio is then downloaded whole in one request, unless that would pass the
+    budget. A zip with audio is read file by file by range, so its audio is
+    never downloaded. On a server without range support, open_zip has already
+    downloaded the whole zip.
+
+    Args:
+        remote (RemoteFileMetadata): the zip remote
+        remaining (set of str): the index paths still missing
+        audio (set of str): the index paths of the dataset's audio files
+        data_home (str): the dataset folder
+        session (requests.Session): the session the requests are sent with
+        budget (Budget or None): checked and added to; None means no limit
+        workers (int): how many files are read by range in parallel
+        verbose (bool): if True, print one line per file
+
+    Returns:
+        * set of str - the remaining paths the zip holds, saved or not
+        * set of str - the paths now on disk
+        * dict - {path: why it failed}
+        * str or None - the BudgetExceeded message if the budget ran out
+          while saving
+        * str - the log message
+
+    Raises:
+        BudgetExceeded: the file list, or the files to fetch, would pass the
+            budget; nothing is saved
+
+    """
+    t0 = time.time()
+    zf, http = open_zip(remote.url, session, budget)
+
+    # Some zips store UTF-8 names without the UTF-8 flag, and zipfile then reads
+    # them as cp437 ("André" becomes "Andr├⌐"). Read them back as UTF-8, as
+    # mirdata's download_utils.extractall_unicode does.
+    members_by_name = {}
+    for member in zf.infolist():
+        name = member.filename
+        if not member.flag_bits & 0x800:  # 0x800: the zip's UTF-8 flag
+            try:
+                name = name.encode("cp437").decode("utf-8")
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                pass  # not UTF-8 after all: keep the name as zipfile read it
+        members_by_name[name] = member
+    names = list(members_by_name)
+    unpack_directories = getattr(remote, "unpack_directories", None)
+    matched_names = match_names(
+        names, remaining, remote.destination_dir, unpack_directories
+    )
+    matches = {path: members_by_name[name] for path, name in matched_names.items()}
+    if not matches:
+        return set(), set(), {}, None, "no annotation files from the index"
+
+    zip_size = http.size if http else sum(m.compress_size for m in zf.infolist())
+    has_audio = bool(
+        match_names(names, audio, remote.destination_dir, unpack_directories)
+    )
+    if http and not has_audio and (budget is None or budget.fits(http.size)):
+        # No audio: the whole zip in one request, to a temporary file on disk.
+        # It is the same zip, so the members matched above fit it.
+        with tempfile.TemporaryFile() as zip_file:
+            download_to_file(http.url, zip_file, session, budget)
+            written, failed, limit_message = save_files(
+                matches, zipfile.ZipFile(zip_file).read, data_home, 1, verbose
+            )
+        how = "downloaded whole"
+    elif http:
+        # Audio, or too big to download whole: only the matched files, by range
+        if budget:
+            budget.check(sum(m.compress_size for m in matches.values()))
+        read = lambda member: member_bytes(http, member)  # noqa: E731
+        written, failed, limit_message = save_files(
+            matches, read, data_home, workers, verbose
+        )
+        how = f"{http.requests} requests, {http.bytes / 1e6:.1f} MB"
+    else:
+        # No range support: open_zip has already downloaded the whole zip
+        written, failed, limit_message = save_files(
+            matches, zf.read, data_home, 1, verbose
+        )
+        how = "downloaded whole"
+    text = (
+        f"{zip_size / 1e9:.2f} GB  {len(matches)} matched, {len(written)} fetched  "
+        f"({how}, {time.time() - t0:.1f} s)"
+    )
+    return set(matches), written, failed, limit_message, text
+
+
+# ---- Tar ----
+
+
+def fetch_tar(remote, remaining, data_home, session, budget=None):
+    """Fetch the missing index paths that a tar remote holds, streamed.
+
+    A tar has no file list to read first: its files come one after another,
+    and a compressed tar (.tar.gz, .tar.bz2) is one compressed stream. So the
+    archive passes through the network from its start. Each matched file is
+    saved as it passes and every other file is dropped, so only the matched
+    files reach the disk. The download stops early once every remaining path is
+    found. A tar whose size the server reports is refused before it starts
+    when it would pass the budget; the bytes are also counted as they arrive.
+
+    Args:
+        remote (RemoteFileMetadata): the tar remote
+        remaining (set of str): the index paths still missing
+        data_home (str): the dataset folder
+        session (requests.Session): the session the request is sent with
+        budget (Budget or None): checked and added to; None means no limit
+
+    Returns:
+        * set of str - the remaining paths the tar holds, saved or not
+        * set of str - the paths now on disk
+        * dict - {path: why it failed}
+        * None - in fetch_zip's place for the budget message: a tar raises
+          BudgetExceeded instead
+        * str - the log message
+
+    Raises:
+        BudgetExceeded: the tar would pass the budget
+
+    """
+    t0 = time.time()
+    wanted_by_nfc = {unicodedata.normalize("NFC", path): path for path in remaining}
+    unpack_directories = getattr(remote, "unpack_directories", None)
+    found, written, failed = set(), set(), {}
+    counted = 0  # bytes of this download already added to the budget
+    r = session.request("GET", remote.url, timeout=60, stream=True)
+    try:
+        r.raise_for_status()
+        if budget and "Content-Length" in r.headers:
+            budget.check(int(r.headers["Content-Length"]))  # too big: refused unread
+        with tarfile.open(fileobj=r.raw, mode="r|*") as archive:
+            for member in archive:
+                if budget:  # add what the stream has read since the last file
+                    budget.check(r.raw.tell() - counted)
+                    budget.add(r.raw.tell() - counted)
+                    counted = r.raw.tell()
+                if not member.isfile():
+                    continue
+                path = match_name(
+                    member.name,
+                    wanted_by_nfc,
+                    remote.destination_dir,
+                    unpack_directories,
+                )
+                if path is None:
+                    continue  # not wanted (audio...): dropped as the stream moves on
+                found.add(path)
+                try:
+                    save_file(data_home, path, archive.extractfile(member).read())
+                    written.add(path)
+                except Exception as e:
+                    failed[path] = f"{type(e).__name__}: {e}"
+                if len(found) == len(remaining):
+                    break  # every remaining path found: the rest is not downloaded
+        if budget:
+            budget.add(r.raw.tell() - counted)
+    finally:
+        r.close()
+    text = (
+        f"{r.raw.tell() / 1e9:.2f} GB streamed  {len(found)} matched, "
+        f"{len(written)} fetched  ({time.time() - t0:.1f} s)"
+    )
+    return found, written, failed, None, text
+
+
+# ---- Fetch ----
+
+
+def log_line(key, remote, message):
+    """Make one line of the fetch log: which remote, then what happened to it.
+
+    Args:
+        key (str): the remote's key in the loader's REMOTES
+        remote (RemoteFileMetadata): the remote
+        message (str): what happened to it
+
+    Returns:
+        str: the line, indented, with the key padded to 22 characters
+
+    """
+    return f"  {key:22s} {remote.filename}: {message}"
+
+
+def reasons_to_run_locally(remotes, unmatched, unreadable, limit_message):
+    """Give the reason the dataset's annotation stats need a local run, if any.
+
+    At most one reason is given. After the budget ran out, the remotes left
+    unread explain the unmatched files, so only the limit is reported.
+
+    Args:
+        remotes (dict): the loader's REMOTES ({} when it has none)
+        unmatched (list of str): the wanted paths no readable remote held
+        unreadable (list of str): "filename: why" for each remote that could
+            not be read
+        limit_message (str or None): the BudgetExceeded message, if the
+            budget ran out
+
+    Returns:
+        list of str: the reason, or an empty list when a local run is not needed
+
     """
     if not remotes:
         return ["no remotes: the annotations have to be downloaded manually"]
-    if limit_hit:
-        return [f"remote limit: {limit_hit}"]
+    if limit_message:
+        return [f"remote limit: {limit_message}"]
     if unmatched:
         why = f"; not readable: {'; '.join(unreadable)}" if unreadable else ""
         return [
@@ -890,15 +937,32 @@ def closing_problems(remotes, unmatched, unreadable, limit_hit):
 
 
 def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=None):
-    """Write the wanted index paths found in the remotes under data_home.
+    """Fetch a dataset's wanted index paths from its remotes into data_home.
 
-    Plain-file remotes are all downloaded first; archives are read after them,
-    unknown size first and then smallest first, only while some wanted paths
-    are still missing. audio (the index's audio paths) tells fetch_zip whether
-    a zip holds audio.
+    1. Every plain-file remote is downloaded, listed in the index or not.
+    2. The archives are put in order: unknown size first, then smallest first.
+    3. The archives are read in that order (fetch_zip, fetch_tar), only while
+       some wanted paths are still missing.
+    4. What no remote held, and the reason to run locally, are reported.
 
-    Returns (fetched, errors, sources, problems): the paths now on disk, why the
-    others are missing, one log line per remote, and the reasons to run locally.
+    Files already in data_home are kept. Once the budget runs out, the
+    remotes not read yet are skipped.
+
+    Args:
+        remotes (dict or None): the loader's REMOTES, {key: RemoteFileMetadata}
+        wanted (set of str): the index paths to fetch (annotation_paths)
+        audio (set of str): the index paths of the audio files (audio_paths)
+        data_home (str): the folder to write into, laid out like a local copy
+        workers (int): how many files are read by range in parallel
+        verbose (bool): if True, print one line per file read from a zip
+        budget (Budget or None): checked and added to; None means no limit
+
+    Returns:
+        * set of str - the wanted paths now on disk
+        * dict - {path: why it is missing}
+        * list of str - the log, one line per remote
+        * list of str - the reason to run locally (at most one), or empty
+
     """
     present = {p for p in wanted if os.path.isfile(os.path.join(data_home, p))}
     fetched, errors, sources = set(present), {}, []
@@ -909,7 +973,7 @@ def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=No
     session = http_session(workers)
     matched = set(present)  # every wanted path some remote holds, fetched or not
     unreadable = []  # "remote: why" for remotes that cannot be read
-    limit_hit = None  # the BudgetExceeded message, once the budget ran out
+    limit_message = None  # the BudgetExceeded message, once the budget ran out
 
     remotes = remotes or {}
     # An archive is a zip, a tar, or a kind that cannot be read (.7z, .rar, a
@@ -921,17 +985,19 @@ def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=No
             (".zip", ".tar", ".tgz", ".gz", ".bz2", ".xz", ".7z", ".rar")
         )
     }
-    archives = {key: remote for key, remote in remotes.items() if key not in plain_files}
+    archives = {
+        key: remote for key, remote in remotes.items() if key not in plain_files
+    }
 
     # 1. Plain files: all of them, listed in the index or not
     for key, remote in plain_files.items():
-        if limit_hit:
-            sources.append(log_line(key, remote, f"not read, {limit_hit}"))
+        if limit_message:
+            sources.append(log_line(key, remote, f"not read, {limit_message}"))
             continue
         try:
             path, text = fetch_plain(remote, data_home, session, budget)
         except BudgetExceeded as e:
-            limit_hit = text = str(e)
+            limit_message = text = str(e)
         except Exception as e:  # no access, server error...
             text = f"{type(e).__name__}: {e}"
             unreadable.append(f"{remote.filename}: {text}")
@@ -945,7 +1011,7 @@ def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=No
     #    GitHub archives of small annotation repos), then smallest first, so
     #    an archive full of audio is opened last, often not at all
     if not wanted - fetched:
-        archives = {}  # the plain files held everything: no archive is opened
+        archives = {}  # the plain files had every wanted path: no archive is opened
     archive_sizes = {}  # key -> size in bytes, None when the server does not say
     for key, remote in list(archives.items()):
         try:  # HTTPFile's HEAD retries on 429 (rate limit)
@@ -965,14 +1031,16 @@ def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=No
     # 3. Archives: only while some wanted paths are still missing
     for key in in_order:
         remote = archives[key]
-        todo = wanted - fetched
-        if not todo:
+        remaining = wanted - fetched
+        if not remaining:
             break
         name = remote.filename.lower()
-        if limit_hit:
-            sources.append(log_line(key, remote, f"not read, {limit_hit}"))
+        if limit_message:
+            sources.append(log_line(key, remote, f"not read, {limit_message}"))
             continue
-        if not name.endswith((".zip", ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tar.xz")):
+        if not name.endswith(
+            (".zip", ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tar.xz")
+        ):
             sources.append(log_line(key, remote, "not a zip or a tar, skipped"))
             unreadable.append(
                 f"{remote.filename} cannot be read remotely (not a zip or a tar)"
@@ -980,27 +1048,34 @@ def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=No
             continue
         try:
             if name.endswith(".zip"):
-                held, written, failed, limit_hit, text = fetch_zip(
-                    remote, todo, audio, data_home, session, budget, workers, verbose
+                found, written, failed, limit_message, text = fetch_zip(
+                    remote,
+                    remaining,
+                    audio,
+                    data_home,
+                    session,
+                    budget,
+                    workers,
+                    verbose,
                 )
             else:
-                held, written, failed, limit_hit, text = fetch_tar(
-                    remote, todo, data_home, session, budget
+                found, written, failed, limit_message, text = fetch_tar(
+                    remote, remaining, data_home, session, budget
                 )
         except BudgetExceeded as e:
-            limit_hit = text = str(e)
+            limit_message = text = str(e)
         except Exception as e:  # no access, no range support, a broken archive...
             text = f"{type(e).__name__}: {e}"
             unreadable.append(f"{remote.filename}: {text}")
         else:
-            matched |= held
+            matched |= found
             fetched |= written
             errors.update(failed)
         sources.append(log_line(key, remote, text))
 
-    # 4. Closing: what no remote held, and the reason to run locally
+    # 4. Closing: what no remote found, and the reason to run locally
     unmatched = sorted(wanted - matched)
     for path in unmatched:
         errors[path] = "not in any readable remote"
-    problems = closing_problems(remotes, unmatched, unreadable, limit_hit)
+    problems = reasons_to_run_locally(remotes, unmatched, unreadable, limit_message)
     return fetched, errors, sources, problems
