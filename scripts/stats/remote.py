@@ -82,7 +82,16 @@ class Budget:
 
 
 def http_session(workers):
-    """A requests session with a connection pool sized for `workers` parallel reads."""
+    """Create a requests session that keeps its connections open between requests.
+
+    Args:
+        workers (int): how many requests run in parallel; the connection pool
+            keeps this many connections
+
+    Returns:
+        requests.Session: the session, for http:// and https:// URLs
+
+    """
     s = requests.Session()
     adapter = requests.adapters.HTTPAdapter(
         pool_connections=workers, pool_maxsize=workers
@@ -96,8 +105,29 @@ class HTTPFile(io.RawIOBase):
     """A read-only, seekable file whose bytes live behind a URL.
 
     Every read becomes one HTTP range request for exactly the bytes asked for,
-    so zipfile can read a multi-GB archive's table of contents from its tail
-    while we download nothing else.
+    so zipfile can read a multi-GB archive's file list from its end while
+    nothing else is downloaded. A HEAD request in __init__ gets the size and
+    follows redirects once.
+
+    Args:
+        url (str): the file's URL
+        session (requests.Session): the session the requests are sent with
+        budget (Budget or None): checked before and charged after every read;
+            None means no limit
+
+    Attributes:
+        url (str): the final URL, after redirects
+        size (int): the file size in bytes, from the server's Content-Length
+        pos (int): the current read position
+        requests (int): how many range requests were sent
+        bytes (int): how many bytes were received
+        ranges_ignored (bool): True once the server answered a range request
+            with the whole file
+
+    Raises:
+        IOError: the HEAD request failed, or the server does not report the
+            file size (so the file cannot be read by range)
+
     """
 
     def __init__(self, url, session, budget=None):
@@ -119,10 +149,23 @@ class HTTPFile(io.RawIOBase):
         self._lock = threading.Lock()
 
     def _request(self, method, **kwargs):
-        """One HTTP request, retried on connection errors and on 429 (rate limit).
+        """Send one HTTP request, retried on connection errors and on 429 (rate limit).
 
-        On 429 we wait as long as the server's Retry-After header asks, so a
+        Up to 6 attempts, waiting 1, 2, 4, ... seconds between them. On 429 it
+        waits at least as long as the server's Retry-After header asks, so a
         burst of requests slows down instead of failing.
+
+        Args:
+            method (str): the HTTP method, "HEAD" or "GET"
+            **kwargs: passed on to requests.Session.request (headers, stream, ...)
+
+        Returns:
+            requests.Response: the first response that is not a 429
+
+        Raises:
+            requests.ConnectionError: the last attempt could not connect
+            IOError: the server answered 429 to every attempt
+
         """
         status = None
         for attempt in range(6):
@@ -145,36 +188,103 @@ class HTTPFile(io.RawIOBase):
         raise IOError(f"server kept answering {status}")
 
     def readable(self):
+        """Tell io and zipfile that this file can be read.
+
+        Returns:
+            bool: always True
+
+        """
         return True
 
     def seekable(self):
+        """Tell io and zipfile that this file supports seek().
+
+        Returns:
+            bool: always True
+
+        """
         return True
 
     def tell(self):
+        """Get the current read position.
+
+        Returns:
+            int: the position, in bytes from the start of the file
+
+        """
         return self.pos
 
     def seek(self, offset, whence=io.SEEK_SET):
+        """Move the read position. No request is sent.
+
+        Args:
+            offset (int): how many bytes to move
+            whence (int): where offset counts from: io.SEEK_SET (the start of
+                the file), io.SEEK_CUR (the current position) or io.SEEK_END
+                (the end of the file)
+
+        Returns:
+            int: the new position
+
+        """
         base = {io.SEEK_SET: 0, io.SEEK_CUR: self.pos, io.SEEK_END: self.size}[whence]
         self.pos = base + offset
         return self.pos
 
-    def read(self, n=-1):
-        if n < 0:
-            n = self.size - self.pos
-        data = self.read_at(self.pos, n)
+    def read(self, length=-1):
+        """Read bytes from the current position with one range request.
+
+        Args:
+            length (int): how many bytes to read; -1 reads to the end of the file
+
+        Returns:
+            bytes: the bytes read, fewer than length at the end of the file
+
+        """
+        if length < 0:
+            length = self.size - self.pos
+        data = self.read_at(self.pos, length)
         self.pos += len(data)
         return data
 
     def readinto(self, buffer):
+        """Read bytes from the current position into a buffer, as io.RawIOBase expects.
+
+        Args:
+            buffer (bytearray or memoryview): filled from its start; its
+                length is how many bytes to read
+
+        Returns:
+            int: how many bytes were written into buffer
+
+        """
         data = self.read(len(buffer))
         buffer[: len(data)] = data
         return len(data)
 
-    def read_at(self, offset, n):
-        """Bytes [offset, offset + n) in one range request. Safe to call from threads."""
-        if n <= 0 or offset >= self.size:
+    def read_at(self, offset, length):
+        """Read bytes at an offset with one range request. Safe to call from threads.
+
+        The read position (tell) does not move. The budget is checked before
+        the request and charged after it.
+
+        Args:
+            offset (int): where to start, in bytes from the start of the file
+            length (int): how many bytes to read
+
+        Returns:
+            bytes: the bytes from offset to offset + length, cut at the end of
+                the file; empty when length <= 0 or offset is past the end
+
+        Raises:
+            RemoteLimit: reading them would pass the budget
+            IOError: the server ignored the range request, or sent other
+                bytes than the ones asked for
+
+        """
+        if length <= 0 or offset >= self.size:
             return b""
-        end = min(offset + n, self.size) - 1
+        end = min(offset + length, self.size) - 1
         if self.budget:
             self.budget.check(end - offset + 1)
         # stream=True: don't read the body until we know it's a range, so a
@@ -206,27 +316,39 @@ class HTTPFile(io.RawIOBase):
         return data
 
 
-def member_bytes(http, info):
-    """The whole content of one zip member, decompressed and CRC-checked.
+def member_bytes(remote_zip, member):
+    """Read one file out of a remote zip, decompressed and CRC-checked.
 
-    One range request for the local header plus the compressed data (the
-    header's extra field is assumed to fit in 4 KB; a second request covers
-    the rare case where it does not).
+    One range request covers the file's local header and its compressed data.
+    The header's length is only known once it is read, so 4 KB of slack is
+    asked for; a second request covers the rare header that is longer.
+
+    Args:
+        remote_zip (HTTPFile): the zip on the server, read by range
+        member (zipfile.ZipInfo): the file, from the zip's file list
+
+    Returns:
+        bytes: the file's uncompressed content
+
+    Raises:
+        ValueError: a bad local header, an unsupported compression, or a CRC
+            mismatch
+
     """
     slack = 30 + 4096
-    raw = http.read_at(info.header_offset, slack + info.compress_size)
+    raw = remote_zip.read_at(member.header_offset, slack + member.compress_size)
     if raw[:4] != b"PK\x03\x04":
         raise ValueError("bad local file header")
     name_len, extra_len = struct.unpack("<HH", raw[26:30])
     start = 30 + name_len + extra_len
-    data = raw[start : start + info.compress_size]
-    if len(data) < info.compress_size:
-        data = http.read_at(info.header_offset + start, info.compress_size)
-    if info.compress_type == zipfile.ZIP_DEFLATED:
+    data = raw[start : start + member.compress_size]
+    if len(data) < member.compress_size:
+        data = remote_zip.read_at(member.header_offset + start, member.compress_size)
+    if member.compress_type == zipfile.ZIP_DEFLATED:
         data = zlib.decompress(data, -zlib.MAX_WBITS)
-    elif info.compress_type != zipfile.ZIP_STORED:
-        raise ValueError(f"unsupported zip compression {info.compress_type}")
-    if zlib.crc32(data) != info.CRC:
+    elif member.compress_type != zipfile.ZIP_STORED:
+        raise ValueError(f"unsupported zip compression {member.compress_type}")
+    if zlib.crc32(data) != member.CRC:
         raise ValueError("CRC mismatch")
     return data
 
@@ -266,19 +388,36 @@ def match_members(zf, wanted, destination_dir=None, unpack_directories=None):
 
 
 def _entry_path(value):
-    """The relative path of one index entry ([path, checksum]), or None."""
+    """Get the file path from one index entry.
+
+    Args:
+        value: one entry of a track in the index, normally [path, checksum];
+            other values (None, a multitrack's list of track ids) are not files
+
+    Returns:
+        str or None: the path relative to data_home, or None when the entry is
+            not a file
+
+    """
     if isinstance(value, list) and value and isinstance(value[0], str) and value[0]:
         return value[0]
     return None
 
 
 def annotation_paths(index):
-    """Relative paths of every non-audio file in the index.
+    """Get the paths of every non-audio file in a dataset index.
 
-    Track and multitrack entries whose key contains "audio" are left out;
-    the index's "metadata" files are always included, since many loaders
-    need them to build a track. A multitrack's "tracks" entry lists its
-    track ids and is not a file.
+    Track and multitrack entries whose key contains "audio" are left out. The
+    index's "metadata" files are always included, since many loaders need them
+    to build a track. A multitrack's "tracks" entry lists its track ids and is
+    not a file.
+
+    Args:
+        index (dict): the dataset index (stats.load_index)
+
+    Returns:
+        set of str: the paths, relative to data_home
+
     """
     paths = set()
     for track in (index.get("tracks") or {}).values():
@@ -295,7 +434,15 @@ def annotation_paths(index):
     return paths
 
 
-def _write(data_home, path, data):
+def save_file(data_home, path, data):
+    """Write bytes to data_home/path, creating the folders it needs.
+
+    Args:
+        data_home (str): the dataset folder
+        path (str): the file's path relative to data_home
+        data (bytes): the file content
+
+    """
     target = os.path.join(data_home, path)
     os.makedirs(os.path.dirname(target), exist_ok=True)
     with open(target, "wb") as f:
@@ -350,35 +497,54 @@ def open_zip(url, session, budget=None):
     return zf, http
 
 
-def source_line(key, remote, text):
-    """One line of the fetch log: which remote, then what happened to it."""
-    return f"  {key:22s} {remote.filename}: {text}"
+def log_line(key, remote, message):
+    """Make one line of the fetch log: which remote, then what happened to it.
+
+    Args:
+        key (str): the remote's key in the loader's REMOTES
+        remote (RemoteFileMetadata): the remote
+        message (str): what happened to it
+
+    Returns:
+        str: the line, indented, with the key padded to 22 characters
+
+    """
+    return f"  {key:22s} {remote.filename}: {message}"
 
 
-def write_members(members, read, data_home, workers=1, verbose=False):
-    """Write each zip member to data_home/<index path>; members is {index path: ZipInfo}.
+def save_files(matches, read_file, data_home, workers=1, verbose=False):
+    """Read each matched archive file and save it to data_home/<index path>.
 
-    read(info) gives one member's bytes. Returns (written, failed, limit_hit):
-    the paths now on disk, {path: why it failed}, and the RemoteLimit message
-    if the budget ran out (those paths are not in failed: the limit is
-    reported once).
+    Args:
+        matches (dict): {index path: zipfile.ZipInfo}, the files to save
+        read_file (callable): read_file(member) gives one file's bytes
+        data_home (str): the dataset folder
+        workers (int): how many files are read in parallel
+        verbose (bool): if True, print one line per file
+
+    Returns:
+        * set of str - the paths now on disk
+        * dict - {path: why it failed}
+        * str or None - the RemoteLimit message if the budget ran out; the
+          paths it stopped are not in the dict above, the limit is reported once
+
     """
 
-    def write(item):
-        path, info = item
+    def save(item):
+        path, member = item
         try:
-            _write(data_home, path, read(info))
+            save_file(data_home, path, read_file(member))
             return path, None
         except RemoteLimit as e:
             return path, e
         except Exception as e:
             return path, f"{type(e).__name__}: {e}"
 
-    written, failed, limit_hit = set(), {}, None
+    written, failed, limit_message = set(), {}, None
     with ThreadPoolExecutor(workers) as pool:
-        for i, (path, error) in enumerate(pool.map(write, members.items()), 1):
+        for i, (path, error) in enumerate(pool.map(save, matches.items()), 1):
             if isinstance(error, RemoteLimit):
-                limit_hit = limit_hit or str(error)
+                limit_message = limit_message or str(error)
                 continue
             if error:
                 failed[path] = error
@@ -386,9 +552,9 @@ def write_members(members, read, data_home, workers=1, verbose=False):
                 written.add(path)
             if verbose:
                 print(f"    {path}: {error or 'ok'}", file=sys.stderr)
-            if i % 200 == 0 and i < len(members):
-                print(f"    ... {i}/{len(members)} files", file=sys.stderr)
-    return written, failed, limit_hit
+            if i % 200 == 0 and i < len(matches):
+                print(f"    ... {i}/{len(matches)} files", file=sys.stderr)
+    return written, failed, limit_message
 
 
 def fetch_zip(remote, todo, data_home, session, budget=None, workers=4, verbose=False):
@@ -410,16 +576,14 @@ def fetch_zip(remote, todo, data_home, session, budget=None, workers=4, verbose=
         # so the members found above fit it.
         zf, http = whole_zip(download_whole(http.url, session, budget)), None
     if http:
-        read = lambda info: member_bytes(http, info)  # noqa: E731
-        written, failed, limit_hit = write_members(
+        read = lambda member: member_bytes(http, member)  # noqa: E731
+        written, failed, limit_hit = save_files(
             members, read, data_home, workers, verbose
         )
         how = f"{http.requests} requests, {http.bytes / 1e6:.1f} MB"
         size = f"{http.size / 1e9:.2f} GB"
     else:  # in memory: no threads needed
-        written, failed, limit_hit = write_members(
-            members, zf.read, data_home, 1, verbose
-        )
+        written, failed, limit_hit = save_files(members, zf.read, data_home, 1, verbose)
         how = "downloaded whole"
         size = f"{sum(i.compress_size for i in zf.infolist()) / 1e9:.2f} GB"
     text = (
@@ -439,7 +603,7 @@ def fetch_file(remote, todo, data_home, session, budget=None):
     if path not in todo:
         return set(), set(), {}, None, "not an annotation file of the index"
     data = download_whole(remote.url, session, budget)
-    _write(data_home, path, data)
+    save_file(data_home, path, data)
     return {path}, {path}, {}, None, f"{len(data) / 1e6:.1f} MB downloaded"
 
 
@@ -472,7 +636,7 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
     if present:
         sources.append(f"  {'cached':22s} {len(present)} files already in {data_home}")
     if not remotes:
-        sources.append("  (no remotes: the annotations have to be downloaded manually)")
+        sources.append("  (no REMOTES link found from the dataset loader.)")
     session = http_session(workers)
     matched = set(present)  # every wanted path some remote holds, fetched or not
     unreadable = []  # "remote: why" for remotes that cannot be read
@@ -484,10 +648,10 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
             break
         name = remote.filename.lower()
         if limit_hit:
-            sources.append(source_line(key, remote, f"not read, {limit_hit}"))
+            sources.append(log_line(key, remote, f"not read, {limit_hit}"))
             continue
         if name.endswith(ARCHIVE_EXTENSIONS):
-            sources.append(source_line(key, remote, "not a zip, skipped"))
+            sources.append(log_line(key, remote, "not a zip, skipped"))
             unreadable.append(f"{remote.filename} cannot be read remotely (not a zip)")
             continue
         try:
@@ -508,7 +672,7 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
             matched |= held
             fetched |= written
             errors.update(failed)
-        sources.append(source_line(key, remote, text))
+        sources.append(log_line(key, remote, text))
 
     unmatched = sorted(wanted - matched)
     for path in unmatched:
