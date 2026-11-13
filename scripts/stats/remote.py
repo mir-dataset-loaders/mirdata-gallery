@@ -700,7 +700,8 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
     """Write the wanted index paths found in the remotes under data_home.
 
     Plain-file remotes are all downloaded first; archives are read after them,
-    only while some wanted paths are still missing.
+    unknown size first and then smallest first, only while some wanted paths
+    are still missing.
 
     Returns (fetched, errors, sources, problems): the paths now on disk, why the
     others are missing, one log line per remote, and the reasons to run locally.
@@ -743,8 +744,30 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
                 fetched.add(path)
         sources.append(log_line(key, remote, text))
 
-    # 2. Archives: only while some wanted paths are still missing
-    for key, remote in archives.items():
+    # 2. Archive order: unknown size first (the server does not say, as on
+    #    GitHub archives of small annotation repos), then smallest first, so
+    #    an archive full of audio is opened last, often not at all
+    if not wanted - fetched:
+        archives = {}  # the plain files held everything: no archive is opened
+    archive_sizes = {}  # key -> size in bytes, None when the server does not say
+    for key, remote in list(archives.items()):
+        try:  # HTTPFile's HEAD retries on 429 (rate limit)
+            archive_sizes[key] = HTTPFile(remote.url, session).size
+        except requests.RequestException as e:  # no access, server error, no connection
+            text = f"{type(e).__name__}: {e}"
+            sources.append(log_line(key, remote, text))
+            unreadable.append(f"{remote.filename}: {text}")
+            del archives[key]
+        except IOError:  # the server does not report the size
+            archive_sizes[key] = None
+    in_order = sorted(
+        archives,
+        key=lambda key: (archive_sizes[key] is not None, archive_sizes[key] or 0),
+    )
+
+    # 3. Archives: only while some wanted paths are still missing
+    for key in in_order:
+        remote = archives[key]
         todo = wanted - fetched
         if not todo:
             break
@@ -771,6 +794,7 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
             errors.update(failed)
         sources.append(log_line(key, remote, text))
 
+    # 4. Closing: what no remote held, and the reason to run locally
     unmatched = sorted(wanted - matched)
     for path in unmatched:
         errors[path] = "not in any readable remote"
