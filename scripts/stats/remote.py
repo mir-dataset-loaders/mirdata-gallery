@@ -13,7 +13,7 @@ MAX_ARCHIVE_MB, and read file by file by range when bigger. On a server
 without range support, zips up to MAX_ARCHIVE_MB are downloaded whole.
 tar.gz and similar archives are reported and skipped.
 
-Every remote read is checked against one Budget per dataset (MB and minutes).
+Every remote read is checked against one Budget per dataset (MB).
 """
 
 import io
@@ -28,13 +28,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import requests
 
-MAX_REMOTE_MB = (
-    2000  # default budget per dataset: annotation data downloaded from the remotes
-)
-
-MAX_REMOTE_MINUTES = (
-    10  # default budget per dataset: time spent reading the annotation remotes
-)
+MAX_DOWNLOAD_MB = 8000  # budget per dataset: bytes downloaded from its remotes
 
 MAX_ARCHIVE_MB = 200  # a zip with annotation files up to this size is downloaded whole
 
@@ -42,41 +36,58 @@ MAX_ARCHIVE_MB = 200  # a zip with annotation files up to this size is downloade
 ARCHIVE_EXTENSIONS = (".tar.gz", ".tgz", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar")
 
 
-class RemoteLimit(Exception):
-    """The remote budget ran out: this part should be computed locally (--local)."""
+class BudgetExceeded(Exception):
+    """Raised when a download would pass the dataset's budget.
+
+    The dataset's annotation stats then need a local run (--local).
+
+    """
 
 
 class Budget:
-    """How much a remote run may read (MB) and how long it may take (minutes).
+    """How many bytes one dataset may download from its remotes.
 
-    Every remote read calls check() with the bytes it is about to fetch, then
-    charge() with what it got; check() raises RemoteLimit once either limit
-    would be passed, so a big download is refused before it starts. None
-    means no limit. Thread-safe: reads run in parallel.
+    Every download calls check() with the bytes it is about to get, then add()
+    with the bytes it got, so a download that would pass the limit is refused
+    before it starts. Thread-safe: range reads run in parallel.
+
+    Args:
+        max_mb (float or None): the limit in MB; None means no limit
+
+    Attributes:
+        max_mb (float or None): the limit in MB
+        bytes (int): how many bytes were downloaded so far
+
     """
 
-    def __init__(self, max_mb=None, max_minutes=None):
+    def __init__(self, max_mb=None):
         self.max_mb = max_mb
-        self.max_minutes = max_minutes
-        self.start = time.monotonic()
         self.bytes = 0
         self._lock = threading.Lock()
 
-    def check(self, more_bytes=0):
-        if (
-            self.max_minutes is not None
-            and time.monotonic() - self.start > self.max_minutes * 60
-        ):
-            raise RemoteLimit(
-                f"took longer than the {self.max_minutes} min remote limit"
-            )
+    def check(self, more_bytes):
+        """Refuse a download that would pass the limit.
+
+        Args:
+            more_bytes (int): how many bytes are about to be downloaded
+
+        Raises:
+            BudgetExceeded: the bytes so far plus more_bytes pass max_mb
+
+        """
         if self.max_mb is not None and self.bytes + more_bytes > self.max_mb * 1e6:
-            raise RemoteLimit(
-                f"needs more than the {self.max_mb} MB remote limit "
+            raise BudgetExceeded(
+                f"needs more than the {self.max_mb} MB download limit "
                 f"({(self.bytes + more_bytes) / 1e6:.1f} MB)"
             )
 
-    def charge(self, n_bytes):
+    def add(self, n_bytes):
+        """Count bytes that were downloaded.
+
+        Args:
+            n_bytes (int): how many bytes were just downloaded
+
+        """
         with self._lock:
             self.bytes += n_bytes
 
@@ -112,7 +123,7 @@ class HTTPFile(io.RawIOBase):
     Args:
         url (str): the file's URL
         session (requests.Session): the session the requests are sent with
-        budget (Budget or None): checked before and charged after every read;
+        budget (Budget or None): checked before and added to after every read;
             None means no limit
 
     Attributes:
@@ -133,7 +144,7 @@ class HTTPFile(io.RawIOBase):
     def __init__(self, url, session, budget=None):
         self.session = session
         self.url = url
-        self.budget = budget  # Budget: every read is checked and charged
+        self.budget = budget  # Budget: every read is checked and added
         head = self._request("HEAD", allow_redirects=True)
         head.raise_for_status()
         if "Content-Length" not in head.headers:
@@ -266,7 +277,7 @@ class HTTPFile(io.RawIOBase):
         """Read bytes at an offset with one range request. Safe to call from threads.
 
         The read position (tell) does not move. The budget is checked before
-        the request and charged after it.
+        the request and added to after it.
 
         Args:
             offset (int): where to start, in bytes from the start of the file
@@ -277,7 +288,7 @@ class HTTPFile(io.RawIOBase):
                 the file; empty when length <= 0 or offset is past the end
 
         Raises:
-            RemoteLimit: reading them would pass the budget
+            BudgetExceeded: reading them would pass the budget
             IOError: the server ignored the range request, or sent other
                 bytes than the ones asked for
 
@@ -312,7 +323,7 @@ class HTTPFile(io.RawIOBase):
             self.requests += 1
             self.bytes += len(data)
         if self.budget:
-            self.budget.charge(len(data))
+            self.budget.add(len(data))
         return data
 
 
@@ -465,7 +476,7 @@ def download_whole(url, session, budget=None):
         for chunk in r.iter_content(1 << 20):
             if budget:
                 budget.check(len(chunk))
-                budget.charge(len(chunk))
+                budget.add(len(chunk))
             chunks.append(chunk)
         return b"".join(chunks)
     finally:
@@ -525,7 +536,7 @@ def save_files(matches, read_file, data_home, workers=1, verbose=False):
     Returns:
         * set of str - the paths now on disk
         * dict - {path: why it failed}
-        * str or None - the RemoteLimit message if the budget ran out; the
+        * str or None - the BudgetExceeded message if the budget ran out; the
           paths it stopped are not in the dict above, the limit is reported once
 
     """
@@ -535,7 +546,7 @@ def save_files(matches, read_file, data_home, workers=1, verbose=False):
         try:
             save_file(data_home, path, read_file(member))
             return path, None
-        except RemoteLimit as e:
+        except BudgetExceeded as e:
             return path, e
         except Exception as e:
             return path, f"{type(e).__name__}: {e}"
@@ -543,7 +554,7 @@ def save_files(matches, read_file, data_home, workers=1, verbose=False):
     written, failed, limit_message = set(), {}, None
     with ThreadPoolExecutor(workers) as pool:
         for i, (path, error) in enumerate(pool.map(save, matches.items()), 1):
-            if isinstance(error, RemoteLimit):
+            if isinstance(error, BudgetExceeded):
                 limit_message = limit_message or str(error)
                 continue
             if error:
@@ -640,7 +651,7 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
     session = http_session(workers)
     matched = set(present)  # every wanted path some remote holds, fetched or not
     unreadable = []  # "remote: why" for remotes that cannot be read
-    limit_hit = None  # the RemoteLimit message, once the budget ran out
+    limit_hit = None  # the BudgetExceeded message, once the budget ran out
 
     for key, remote in (remotes or {}).items():
         todo = wanted - fetched
@@ -663,7 +674,7 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
                 held, written, failed, limit_hit, text = fetch_file(
                     remote, todo, data_home, session, budget
                 )
-        except RemoteLimit as e:
+        except BudgetExceeded as e:
             limit_hit = text = str(e)
         except Exception as e:  # no access, no range support, not a zip...
             text = f"{type(e).__name__}: {e}"
