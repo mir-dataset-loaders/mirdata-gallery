@@ -483,6 +483,51 @@ def download_whole(url, session, budget=None):
         r.close()
 
 
+def download_to_file(url, path, session, budget=None):
+    """Download a URL to a file on disk, streamed and counted against the budget.
+
+    The budget is checked against the size the server announces before
+    anything is downloaded, then chunk by chunk, so a download that would pass
+    it stops. A file that was not fully downloaded is deleted, so a later run
+    never mistakes it for a complete one.
+
+    Args:
+        url (str): the file's URL
+        path (str): where to write the file; its folder is created
+        session (requests.Session): the session the request is sent with
+        budget (Budget or None): checked and added to; None means no limit
+
+    Returns:
+        int: how many bytes were written
+
+    Raises:
+        BudgetExceeded: the download would pass the budget
+        requests.HTTPError: the server answered with an error
+
+    """
+    r = session.request("GET", url, timeout=60, stream=True)
+    try:
+        r.raise_for_status()
+        if budget and "Content-Length" in r.headers:
+            budget.check(int(r.headers["Content-Length"]))  # too big: refused unread
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        n_bytes = 0
+        try:
+            with open(path, "wb") as f:
+                for chunk in r.iter_content(1 << 20):
+                    if budget:
+                        budget.check(len(chunk))
+                        budget.add(len(chunk))
+                    f.write(chunk)
+                    n_bytes += len(chunk)
+        except BaseException:
+            os.remove(path)
+            raise
+        return n_bytes
+    finally:
+        r.close()
+
+
 def whole_zip(data):
     """A ZipFile over a zip downloaded whole, in memory."""
     return zipfile.ZipFile(io.BytesIO(data))
@@ -604,18 +649,33 @@ def fetch_zip(remote, todo, data_home, session, budget=None, workers=4, verbose=
     return set(members), written, failed, limit_hit, text
 
 
-def fetch_file(remote, todo, data_home, session, budget=None):
-    """A plain-file remote, downloaded whole when it is a todo path: (held, written, failed, limit_hit, log text)."""
-    path = (
-        f"{remote.destination_dir}/{remote.filename}"
-        if remote.destination_dir
-        else remote.filename
-    )
-    if path not in todo:
-        return set(), set(), {}, None, "not an annotation file of the index"
-    data = download_whole(remote.url, session, budget)
-    save_file(data_home, path, data)
-    return {path}, {path}, {}, None, f"{len(data) / 1e6:.1f} MB downloaded"
+def fetch_plain(remote, data_home, session, budget=None):
+    """Download a remote that is one plain file to where mirdata's download puts it.
+
+    Every plain file is downloaded, listed in the index or not, because
+    loaders also read files the index does not list (billboard's
+    billboard-2.0-index.csv, good_sounds' sounds.json). A file already on disk
+    is kept and not downloaded again.
+
+    Args:
+        remote (RemoteFileMetadata): the remote, a single file
+        data_home (str): the dataset folder
+        session (requests.Session): the session the request is sent with
+        budget (Budget or None): checked and added to; None means no limit
+
+    Returns:
+        * str - the file's path relative to data_home, as the index writes it
+        * str - the log message: how much was downloaded, or that the file
+          was already on disk
+
+    """
+    # normpath turns a destination_dir of "." into no folder: "./x.csv" -> "x.csv"
+    path = os.path.normpath(os.path.join(remote.destination_dir or "", remote.filename))
+    target = os.path.join(data_home, path)
+    if os.path.isfile(target):
+        return path, "already on disk"
+    n_bytes = download_to_file(remote.url, target, session, budget)
+    return path, f"{n_bytes / 1e6:.1f} MB downloaded"
 
 
 def closing_problems(remotes, unmatched, unreadable, limit_hit):
@@ -639,6 +699,9 @@ def closing_problems(remotes, unmatched, unreadable, limit_hit):
 def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
     """Write the wanted index paths found in the remotes under data_home.
 
+    Plain-file remotes are all downloaded first; archives are read after them,
+    only while some wanted paths are still missing.
+
     Returns (fetched, errors, sources, problems): the paths now on disk, why the
     others are missing, one log line per remote, and the reasons to run locally.
     """
@@ -653,7 +716,35 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
     unreadable = []  # "remote: why" for remotes that cannot be read
     limit_hit = None  # the BudgetExceeded message, once the budget ran out
 
-    for key, remote in (remotes or {}).items():
+    remotes = remotes or {}
+    archive_extensions = (".zip",) + ARCHIVE_EXTENSIONS
+    plain_files = {
+        key: remote
+        for key, remote in remotes.items()
+        if not remote.filename.lower().endswith(archive_extensions)
+    }
+    archives = {key: remote for key, remote in remotes.items() if key not in plain_files}
+
+    # 1. Plain files: all of them, listed in the index or not
+    for key, remote in plain_files.items():
+        if limit_hit:
+            sources.append(log_line(key, remote, f"not read, {limit_hit}"))
+            continue
+        try:
+            path, text = fetch_plain(remote, data_home, session, budget)
+        except BudgetExceeded as e:
+            limit_hit = text = str(e)
+        except Exception as e:  # no access, server error...
+            text = f"{type(e).__name__}: {e}"
+            unreadable.append(f"{remote.filename}: {text}")
+        else:
+            if path in wanted:
+                matched.add(path)
+                fetched.add(path)
+        sources.append(log_line(key, remote, text))
+
+    # 2. Archives: only while some wanted paths are still missing
+    for key, remote in archives.items():
         todo = wanted - fetched
         if not todo:
             break
@@ -666,14 +757,9 @@ def fetch(remotes, wanted, data_home, workers=4, verbose=False, budget=None):
             unreadable.append(f"{remote.filename} cannot be read remotely (not a zip)")
             continue
         try:
-            if name.endswith(".zip"):
-                held, written, failed, limit_hit, text = fetch_zip(
-                    remote, todo, data_home, session, budget, workers, verbose
-                )
-            else:
-                held, written, failed, limit_hit, text = fetch_file(
-                    remote, todo, data_home, session, budget
-                )
+            held, written, failed, limit_hit, text = fetch_zip(
+                remote, todo, data_home, session, budget, workers, verbose
+            )
         except BudgetExceeded as e:
             limit_hit = text = str(e)
         except Exception as e:  # no access, no range support, not a zip...
