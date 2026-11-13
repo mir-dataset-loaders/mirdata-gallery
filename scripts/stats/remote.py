@@ -3,7 +3,7 @@
 Servers like Zenodo honour HTTP range requests ("send me bytes X to Y"), so a
 zip's table of contents can be read from the end of the file and any member
 from its offset, while the rest of the archive is never transferred
-(HTTPFile, member_bytes, match_members).
+(HTTPFile, member_bytes, match_names).
 
 fetch() writes a dataset's annotation and metadata files into a folder laid
 out like a local copy, since mirdata's loaders read files from disk. Each
@@ -22,6 +22,7 @@ import struct
 import sys
 import threading
 import time
+import unicodedata
 import zipfile
 import zlib
 from concurrent.futures import ThreadPoolExecutor
@@ -364,36 +365,57 @@ def member_bytes(remote_zip, member):
     return data
 
 
-def match_members(zf, wanted, destination_dir=None, unpack_directories=None):
-    """{index path: ZipInfo} for zip members whose path is listed in the index.
+def match_names(names, wanted, destination_dir=None, unpack_directories=None):
+    """Match the file names in an archive to the wanted index paths.
 
-    destination_dir is the folder mirdata unpacks this zip into; index paths
-    include it, zip member names don't. unpack_directories are folders inside
-    the zip (often a wrapper like "Repo-master/") whose contents mirdata moves
-    up into destination_dir after unpacking; they are stripped from member
-    names the same way.
+    An archive name and its index path are often written differently:
+
+    - destination_dir is the folder mirdata unpacks the archive into; index
+      paths include it, archive names don't, so it is added.
+    - unpack_directories are folders inside the archive (often a wrapper like
+      "Repo-master/") whose contents mirdata moves up into destination_dir;
+      they are removed from the names the same way.
+    - the archive may add more leading folders, so shorter and shorter tails
+      of each name are tried.
+    - an archive made on macOS can store "é" as two characters, so both sides
+      are compared in Unicode NFC.
+
+    Folders, and the files macOS adds (__MACOSX/, ._name), are skipped.
+
+    Args:
+        names (list of str): the file names in the archive
+        wanted (set of str): the index paths to look for
+        destination_dir (str or None): the folder mirdata unpacks the archive
+            into, relative to data_home
+        unpack_directories (list of str or None): the folders inside the
+            archive whose contents mirdata moves up into destination_dir
+
+    Returns:
+        dict: {index path: archive name}, for every wanted path found
+
     """
+    wanted_by_nfc = {unicodedata.normalize("NFC", path): path for path in wanted}
     unpack = [d.strip("/") + "/" for d in unpack_directories or []]
     found = {}
-    for info in zf.infolist():
-        name = info.filename
+    for name in names:
         if (
-            info.is_dir()
+            name.endswith("/")
             or "__MACOSX/" in name
             or os.path.basename(name).startswith("._")
         ):
             continue  # macOS resource forks also end in .wav; they are not audio
+        path = unicodedata.normalize("NFC", name)
         for folder in unpack:
-            if name.startswith(folder):
-                name = name[len(folder) :]
+            if path.startswith(folder):
+                path = path[len(folder) :]
                 break
         if destination_dir:
-            name = f"{destination_dir}/{name}"
-        parts = name.split("/")
+            path = f"{destination_dir}/{path}"
+        parts = path.split("/")
         for i in range(len(parts)):  # the archive may add leading folders
             candidate = "/".join(parts[i:])
-            if candidate in wanted:
-                found[candidate] = info
+            if candidate in wanted_by_nfc:
+                found[wanted_by_nfc[candidate]] = name
                 break
     return found
 
@@ -622,10 +644,28 @@ def fetch_zip(remote, todo, data_home, session, budget=None, workers=4, verbose=
     """
     t0 = time.time()
     zf, http = open_zip(remote.url, session, budget)
-    members = match_members(
-        zf, todo, remote.destination_dir, getattr(remote, "unpack_directories", None)
+
+    # Some zips store UTF-8 names without the UTF-8 flag, and zipfile then reads
+    # them as cp437 ("André" becomes "Andr├⌐"). Read them back as UTF-8, as
+    # mirdata's download_utils.extractall_unicode does.
+    members_by_name = {}
+    for member in zf.infolist():
+        name = member.filename
+        if not member.flag_bits & 0x800:  # 0x800: the zip's UTF-8 flag
+            try:
+                name = name.encode("cp437").decode("utf-8")
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                pass  # not UTF-8 after all: keep the name as zipfile read it
+        members_by_name[name] = member
+    found = match_names(
+        list(members_by_name),
+        todo,
+        remote.destination_dir,
+        getattr(remote, "unpack_directories", None),
     )
-    if not members:
+    matches = {path: members_by_name[name] for path, name in found.items()}
+
+    if not matches:
         return set(), set(), {}, None, "no annotation files from the index"
     if http and http.size <= MAX_ARCHIVE_MB * 1e6:
         # Small: one download instead of a request per file. It is the same zip,
@@ -634,19 +674,19 @@ def fetch_zip(remote, todo, data_home, session, budget=None, workers=4, verbose=
     if http:
         read = lambda member: member_bytes(http, member)  # noqa: E731
         written, failed, limit_hit = save_files(
-            members, read, data_home, workers, verbose
+            matches, read, data_home, workers, verbose
         )
         how = f"{http.requests} requests, {http.bytes / 1e6:.1f} MB"
         size = f"{http.size / 1e9:.2f} GB"
     else:  # in memory: no threads needed
-        written, failed, limit_hit = save_files(members, zf.read, data_home, 1, verbose)
+        written, failed, limit_hit = save_files(matches, zf.read, data_home, 1, verbose)
         how = "downloaded whole"
         size = f"{sum(i.compress_size for i in zf.infolist()) / 1e9:.2f} GB"
     text = (
-        f"{size}  {len(members)} matched, {len(written)} fetched  "
+        f"{size}  {len(matches)} matched, {len(written)} fetched  "
         f"({how}, {time.time() - t0:.1f} s)"
     )
-    return set(members), written, failed, limit_hit, text
+    return set(matches), written, failed, limit_hit, text
 
 
 def fetch_plain(remote, data_home, session, budget=None):
