@@ -147,6 +147,7 @@ def dataset_stats(
         _, missing, sources, problems = remote.fetch(
             ds.remotes,
             remote.annotation_paths(index),
+            remote.audio_paths(index),
             data_home,
             workers=workers,
             verbose=verbose,
