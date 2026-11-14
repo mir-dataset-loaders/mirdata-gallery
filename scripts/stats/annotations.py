@@ -144,10 +144,11 @@ def dataset_stats(
     if local:
         problems, sources, missing = [], [f"  local                  {data_home}"], {}
     else:
+        wanted, audio = remote.index_paths(index)
         _, missing, sources, problems = remote.fetch(
             ds.remotes,
-            remote.annotation_paths(index),
-            remote.audio_paths(index),
+            wanted,
+            audio,
             data_home,
             workers=workers,
             verbose=verbose,

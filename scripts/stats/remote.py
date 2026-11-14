@@ -100,26 +100,6 @@ class Budget:
 # ---- HTTP ----
 
 
-def http_session(workers):
-    """Create a requests session that keeps its connections open between requests.
-
-    Args:
-        workers (int): how many requests run in parallel; the connection pool
-            keeps this many connections
-
-    Returns:
-        requests.Session: the session, for http:// and https:// URLs
-
-    """
-    s = requests.Session()
-    adapter = requests.adapters.HTTPAdapter(
-        pool_connections=workers, pool_maxsize=workers
-    )
-    s.mount("https://", adapter)
-    s.mount("http://", adapter)
-    return s
-
-
 class HTTPFile(io.RawIOBase):
     """A read-only, seekable file whose bytes live behind a URL.
 
@@ -206,60 +186,28 @@ class HTTPFile(io.RawIOBase):
             time.sleep(wait)
         raise IOError(f"server kept answering {status}")
 
+    # The standard file methods zipfile calls. No request is sent until read().
+
     def readable(self):
-        """Tell io and zipfile that this file can be read.
-
-        Returns:
-            bool: always True
-
-        """
+        """Always True."""
         return True
 
     def seekable(self):
-        """Tell io and zipfile that this file supports seek().
-
-        Returns:
-            bool: always True
-
-        """
+        """Always True."""
         return True
 
     def tell(self):
-        """Get the current read position.
-
-        Returns:
-            int: the position, in bytes from the start of the file
-
-        """
+        """The current read position."""
         return self.pos
 
     def seek(self, offset, whence=io.SEEK_SET):
-        """Move the read position. No request is sent.
-
-        Args:
-            offset (int): how many bytes to move
-            whence (int): where offset counts from: io.SEEK_SET (the start of
-                the file), io.SEEK_CUR (the current position) or io.SEEK_END
-                (the end of the file)
-
-        Returns:
-            int: the new position
-
-        """
+        """Move the read position, as io does."""
         base = {io.SEEK_SET: 0, io.SEEK_CUR: self.pos, io.SEEK_END: self.size}[whence]
         self.pos = base + offset
         return self.pos
 
     def read(self, length=-1):
-        """Read bytes from the current position with one range request.
-
-        Args:
-            length (int): how many bytes to read; -1 reads to the end of the file
-
-        Returns:
-            bytes: the bytes read, fewer than length at the end of the file
-
-        """
+        """Read from the current position with one range request (-1: to the end)."""
         if length < 0:
             length = self.size - self.pos
         data = self.read_at(self.pos, length)
@@ -267,16 +215,7 @@ class HTTPFile(io.RawIOBase):
         return data
 
     def readinto(self, buffer):
-        """Read bytes from the current position into a buffer, as io.RawIOBase expects.
-
-        Args:
-            buffer (bytearray or memoryview): filled from its start; its
-                length is how many bytes to read
-
-        Returns:
-            int: how many bytes were written into buffer
-
-        """
+        """Fill buffer from the current position, as io.RawIOBase expects."""
         data = self.read(len(buffer))
         buffer[: len(data)] = data
         return len(data)
@@ -376,74 +315,34 @@ def download_to_file(url, file, session, budget=None):
 # ---- Index paths ----
 
 
-def _entry_path(value):
-    """Get the file path from one index entry.
+def index_paths(index):
+    """Split the file paths of a dataset index into non-audio and audio.
 
-    Args:
-        value: one entry of a track in the index, normally [path, checksum];
-            other values (None, a multitrack's list of track ids) are not files
-
-    Returns:
-        str or None: the path relative to data_home, or None when the entry is
-            not a file
-
-    """
-    if isinstance(value, list) and value and isinstance(value[0], str) and value[0]:
-        return value[0]
-    return None
-
-
-def annotation_paths(index):
-    """Get the paths of every non-audio file in a dataset index.
-
-    Track and multitrack entries whose key contains "audio" are left out. The
-    index's "metadata" files are always included, since many loaders need them
-    to build a track. A multitrack's "tracks" entry lists its track ids and is
-    not a file.
+    An index file is [path, checksum]. A track or multitrack file whose key
+    contains "audio" is audio; every other one, and every file of the index's
+    "metadata" (many loaders need it to build a track), is not. A multitrack's
+    "tracks" entry lists its track ids and is not a file.
 
     Args:
         index (dict): the dataset index (stats.load_index)
 
     Returns:
-        set of str: the paths, relative to data_home
+        * set of str - the non-audio paths, relative to data_home
+        * set of str - the audio paths, relative to data_home
 
     """
-    paths = set()
-    for track in (index.get("tracks") or {}).values():
-        for key, value in (track or {}).items():
-            if "audio" not in key.lower() and _entry_path(value):
-                paths.add(_entry_path(value))
-    for mtrack in (index.get("multitracks") or {}).values():
-        for key, value in (mtrack or {}).items():
-            if key != "tracks" and "audio" not in key.lower() and _entry_path(value):
-                paths.add(_entry_path(value))
-    for value in (index.get("metadata") or {}).values():
-        if _entry_path(value):
-            paths.add(_entry_path(value))
-    return paths
-
-
-def audio_paths(index):
-    """Get the paths of every audio file in a dataset index.
-
-    These are the track and multitrack entries whose key contains "audio",
-    the files annotation_paths leaves out. fetch_zip uses them to tell whether
-    a zip holds audio.
-
-    Args:
-        index (dict): the dataset index (stats.load_index)
-
-    Returns:
-        set of str: the paths, relative to data_home
-
-    """
-    paths = set()
+    non_audio, audio = set(), set()
     for group in ("tracks", "multitracks"):
         for entry in (index.get(group) or {}).values():
             for key, value in (entry or {}).items():
-                if "audio" in key.lower() and _entry_path(value):
-                    paths.add(_entry_path(value))
-    return paths
+                is_file = isinstance(value, list) and value and value[0]
+                if key == "tracks" or not is_file:
+                    continue  # a multitrack's track ids, or no file
+                (audio if "audio" in key.lower() else non_audio).add(value[0])
+    for value in (index.get("metadata") or {}).values():
+        if isinstance(value, list) and value and value[0]:
+            non_audio.add(value[0])
+    return non_audio, audio
 
 
 # ---- Archive names ----
@@ -501,48 +400,7 @@ def match_name(name, wanted_by_nfc, destination_dir=None, unpack_directories=Non
     return None
 
 
-def match_names(names, wanted, destination_dir=None, unpack_directories=None):
-    """Match all the file names of an archive to the wanted index paths.
-
-    Each name is matched with match_name, which has the rules.
-
-    Args:
-        names (list of str): the file names in the archive
-        wanted (set of str): the index paths to look for
-        destination_dir (str or None): the folder mirdata unpacks the archive
-            into, relative to data_home
-        unpack_directories (list of str or None): the folders inside the
-            archive whose contents mirdata moves up into destination_dir
-
-    Returns:
-        dict: {index path: archive name}, for every wanted path found
-
-    """
-    wanted_by_nfc = {unicodedata.normalize("NFC", path): path for path in wanted}
-    found = {}
-    for name in names:
-        path = match_name(name, wanted_by_nfc, destination_dir, unpack_directories)
-        if path is not None:
-            found[path] = name
-    return found
-
-
 # ---- Saving files ----
-
-
-def save_file(data_home, path, data):
-    """Write bytes to data_home/path, creating the folders it needs.
-
-    Args:
-        data_home (str): the dataset folder
-        path (str): the file's path relative to data_home
-        data (bytes): the file content
-
-    """
-    target = os.path.join(data_home, path)
-    os.makedirs(os.path.dirname(target), exist_ok=True)
-    with open(target, "wb") as f:
-        f.write(data)
 
 
 def save_files(matches, read_file, data_home, workers=1, verbose=False):
@@ -577,7 +435,10 @@ def save_files(matches, read_file, data_home, workers=1, verbose=False):
         """
         path, member = item
         try:
-            save_file(data_home, path, read_file(member))
+            target = os.path.join(data_home, path)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with open(target, "wb") as f:
+                f.write(read_file(member))
             return path, None
         except BudgetExceeded as e:
             return path, e
@@ -754,31 +615,33 @@ def fetch_zip(
     t0 = time.time()
     zf, http = open_zip(remote.url, session, budget)
 
-    # Some zips store UTF-8 names without the UTF-8 flag, and zipfile then reads
-    # them as cp437 ("André" becomes "Andr├⌐"). Read them back as UTF-8, as
-    # mirdata's download_utils.extractall_unicode does.
-    members_by_name = {}
+    # Match each file of the zip to the index: a wanted path, an audio file, or
+    # neither.
+    remaining_by_nfc = {unicodedata.normalize("NFC", p): p for p in remaining}
+    audio_by_nfc = {unicodedata.normalize("NFC", p): p for p in audio}
+    unpack_directories = getattr(remote, "unpack_directories", None)
+    matches, has_audio = {}, False
     for member in zf.infolist():
         name = member.filename
-        if not member.flag_bits & 0x800:  # 0x800: the zip's UTF-8 flag
+        # Some zips store UTF-8 names without the UTF-8 flag (0x800), and zipfile
+        # then reads them as cp437 ("André" becomes "Andr├⌐"). Read them back
+        # as UTF-8, as mirdata's download_utils.extractall_unicode does.
+        if not member.flag_bits & 0x800:
             try:
                 name = name.encode("cp437").decode("utf-8")
             except (UnicodeEncodeError, UnicodeDecodeError):
                 pass  # not UTF-8 after all: keep the name as zipfile read it
-        members_by_name[name] = member
-    names = list(members_by_name)
-    unpack_directories = getattr(remote, "unpack_directories", None)
-    matched_names = match_names(
-        names, remaining, remote.destination_dir, unpack_directories
-    )
-    matches = {path: members_by_name[name] for path, name in matched_names.items()}
+        path = match_name(
+            name, remaining_by_nfc, remote.destination_dir, unpack_directories
+        )
+        if path is not None:
+            matches[path] = member
+        elif match_name(name, audio_by_nfc, remote.destination_dir, unpack_directories):
+            has_audio = True
     if not matches:
         return set(), set(), {}, None, "no annotation files from the index"
 
     zip_size = http.size if http else sum(m.compress_size for m in zf.infolist())
-    has_audio = bool(
-        match_names(names, audio, remote.destination_dir, unpack_directories)
-    )
     if http and not has_audio and (budget is None or budget.fits(http.size)):
         # No audio: the whole zip in one request, to a temporary file on disk.
         # It is the same zip, so the members matched above fit it.
@@ -871,7 +734,10 @@ def fetch_tar(remote, remaining, data_home, session, budget=None):
                     continue  # not wanted (audio...): dropped as the stream moves on
                 found.add(path)
                 try:
-                    save_file(data_home, path, archive.extractfile(member).read())
+                    target = os.path.join(data_home, path)
+                    os.makedirs(os.path.dirname(target), exist_ok=True)
+                    with open(target, "wb") as f:
+                        f.write(archive.extractfile(member).read())
                     written.add(path)
                 except Exception as e:
                     failed[path] = f"{type(e).__name__}: {e}"
@@ -950,8 +816,8 @@ def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=No
 
     Args:
         remotes (dict or None): the loader's REMOTES, {key: RemoteFileMetadata}
-        wanted (set of str): the index paths to fetch (annotation_paths)
-        audio (set of str): the index paths of the audio files (audio_paths)
+        wanted (set of str): the index paths to fetch (index_paths: non-audio)
+        audio (set of str): the index paths of the audio files (index_paths: audio)
         data_home (str): the folder to write into, laid out like a local copy
         workers (int): how many files are read by range in parallel
         verbose (bool): if True, print one line per file read from a zip
@@ -970,7 +836,14 @@ def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=No
         sources.append(f"  {'cached':22s} {len(present)} files already in {data_home}")
     if not remotes:
         sources.append("  (no REMOTES link found from the dataset loader.)")
-    session = http_session(workers)
+    # One session for every request: it keeps connections open and reuses them
+    # (no new TLS handshake per request), one connection per parallel read.
+    session = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(
+        pool_connections=workers, pool_maxsize=workers
+    )
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
     matched = set(present)  # every wanted path some remote holds, fetched or not
     unreadable = []  # "remote: why" for remotes that cannot be read
     limit_message = None  # the BudgetExceeded message, once the budget ran out
