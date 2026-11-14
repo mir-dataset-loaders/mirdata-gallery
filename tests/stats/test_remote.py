@@ -5,6 +5,7 @@ local server (conftest.py, fake_remotes); a test may serve other files. The
 server's request log shows what was actually downloaded.
 """
 
+import hashlib
 import io
 import os
 import pathlib
@@ -453,6 +454,8 @@ def break_truncated_tar(server):
     annotations_remote = fake_dataset_loader.REMOTES["annotations"]
     annotations_remote.filename = "annotations.tar.gz"
     annotations_remote.url = server.url("annotations.tar.gz")
+    # REMOTES lists the checksum of the whole tar, as uploaded
+    annotations_remote.checksum = hashlib.md5(data).hexdigest()
 
 
 def break_metadata_404(server):

@@ -8,6 +8,7 @@ downloaded whole when it does not; a tar is streamed. Every download counts
 against one Budget per dataset (MAX_DOWNLOAD_MB).
 """
 
+import hashlib
 import io
 import os
 import struct
@@ -16,6 +17,7 @@ import tarfile
 import tempfile
 import threading
 import time
+import types
 import unicodedata
 import zipfile
 import zlib
@@ -687,6 +689,10 @@ def fetch_tar(remote, remaining, data_home, session, budget=None):
     found. A tar whose size the server reports is refused before it starts
     when it would pass the budget; the bytes are also counted as they arrive.
 
+    A tar read to its end has its MD5 compared with the checksum in REMOTES,
+    as mirdata's download does: tarfile reads a tar cut off on the server as a
+    shorter tar, without an error.
+
     Args:
         remote (RemoteFileMetadata): the tar remote
         remaining (set of str): the index paths still missing
@@ -704,6 +710,8 @@ def fetch_tar(remote, remaining, data_home, session, budget=None):
 
     Raises:
         BudgetExceeded: the tar would pass the budget
+        IOError: the tar was read to its end and its MD5 is not the checksum
+            in REMOTES (the tar on the server is broken)
 
     """
     t0 = time.time()
@@ -712,11 +720,21 @@ def fetch_tar(remote, remaining, data_home, session, budget=None):
     found, written, failed = set(), set(), {}
     counted = 0  # bytes of this download already added to the budget
     r = session.request("GET", remote.url, timeout=60, stream=True)
+    md5 = hashlib.md5()  # of every byte read, to compare with the REMOTES checksum
+
+    def read(size=-1):
+        """Read from the response and add the bytes to the MD5."""
+        data = r.raw.read(size)
+        md5.update(data)
+        return data
+
     try:
         r.raise_for_status()
         if budget and "Content-Length" in r.headers:
             budget.check(int(r.headers["Content-Length"]))  # too big: refused unread
-        with tarfile.open(fileobj=r.raw, mode="r|*") as archive:
+        # tarfile only calls read() on the file it gets
+        stream = types.SimpleNamespace(read=read)
+        with tarfile.open(fileobj=stream, mode="r|*") as archive:
             for member in archive:
                 if budget:  # add what the stream has read since the last file
                     budget.check(r.raw.tell() - counted)
@@ -743,6 +761,16 @@ def fetch_tar(remote, remaining, data_home, session, budget=None):
                     failed[path] = f"{type(e).__name__}: {e}"
                 if len(found) == len(remaining):
                     break  # every remaining path found: the rest is not downloaded
+            else:
+                # Read to its end: the MD5 can be checked once the bytes tarfile
+                # left (end blocks, padding) are read too
+                while read(1 << 20):
+                    pass
+                if remote.checksum and md5.hexdigest() != remote.checksum:
+                    raise IOError(
+                        "the tar's MD5 is not the checksum in REMOTES: "
+                        "the tar on the server is broken"
+                    )
         if budget:
             budget.add(r.raw.tell() - counted)
     finally:
