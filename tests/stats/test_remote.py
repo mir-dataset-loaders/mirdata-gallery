@@ -1,33 +1,37 @@
-"""compute() in remote mode, against the fake remote server (tests/fake_remote_server.py).
+"""remote.py against the fake remote server (tests/fake_remote_server.py).
 
 The fake dataset's remotes are audio.zip, annotations.zip and metadata.csv on a
-local server (conftest.py, fake_remotes). A remote run should give exactly the
-numbers of a local run, or say why it cannot (needs_local). Only
-test_real_server_supports_range goes online.
+local server (conftest.py, fake_remotes); a test may serve other files. The
+server's request log shows what was actually downloaded.
 """
 
 import io
+import os
+import pathlib
 import socket
 import tarfile
 import time
+import unicodedata
 import zipfile
 
-import mirdata
 import pytest
 import requests
+from mirdata.download_utils import RemoteFileMetadata
 
 import fake_dataset_loader
 from fake_dataset_loader import DATA_HOME
 from fake_remote_server import dataset_files, zip_bytes
-from stats import annotations, compute, load_index
+from stats import remote
 
-ANNOTATION_FILES = [
+ANNOTATION_FILES = {
     "annotations/beats/track1.txt",
     "annotations/beats/track2.txt",
     "annotations/beats/track3.txt",
     "annotations/chords/track1.lab",
     "annotations/chords/track2.lab",
-]
+}
+WANTED = ANNOTATION_FILES | {"metadata.csv"}  # the fake index's non-audio paths
+AUDIO = {"audio/track1.wav", "audio/track2.wav", "audio/track3.wav"}
 
 
 @pytest.fixture(autouse=True)
@@ -38,34 +42,63 @@ def waits(monkeypatch):
     return waits
 
 
-def remote_run(tmp_path, **kwargs):
-    return compute("fake_dataset", str(tmp_path / "fetch"), **kwargs)
+def fetch_fake(data_home, budget=None):
+    """fetch() on the fake dataset's remotes, as annotations.dataset_stats calls it."""
+    return remote.fetch(
+        fake_dataset_loader.REMOTES, WANTED, AUDIO, str(data_home), budget=budget
+    )
 
 
-def local_run(**kwargs):
-    return compute("fake_dataset", DATA_HOME, local=True, **kwargs)
-
-
-def without_sources(part):
-    """A part without its log lines, which say where the files came from."""
-    return {key: value for key, value in part.items() if key != "sources"}
+def serve(server, name, data, failure=None):
+    """Serve data as name (failing in that mode, if given); return its remote."""
+    server.files[name] = data
+    if failure:
+        server.failures[name] = failure
+    return RemoteFileMetadata(filename=name, url=server.url(name), checksum="")
 
 
 def saved_files(folder):
     return sorted(str(p.relative_to(folder)) for p in folder.rglob("*") if p.is_file())
 
 
-def bytes_asked(server, name):
-    """How many bytes of one file the GET requests asked for (a GET without Range: all)."""
+def file_contents(folder, paths):
+    """{path: bytes} of these paths under folder."""
+    return {path: (pathlib.Path(folder) / path).read_bytes() for path in sorted(paths)}
+
+
+def ranges(server, name):
+    """(first, last) byte of each GET for one file; a GET without Range is the whole file."""
     size = len(server.files[name])
-    total = 0
+    result = []
     for byte_range in server.gets(name):
         if byte_range is None:
-            total += size
+            result.append((0, size - 1))
         else:
-            start, end = map(int, byte_range.removeprefix("bytes=").split("-"))
-            total += min(end, size - 1) - start + 1
-    return total
+            first, last = map(int, byte_range.removeprefix("bytes=").split("-"))
+            result.append((first, min(last, size - 1)))
+    return result
+
+
+def track_by_track():
+    """The fake dataset's audio and annotation files in one dict, each track's audio first."""
+    files = {**dataset_files("audio"), **dataset_files("annotations")}
+
+    def order(path):
+        track = os.path.splitext(os.path.basename(path))[0]
+        return track, not path.startswith("audio/"), path
+
+    return {path: files[path] for path in sorted(files, key=order)}
+
+
+def tar_bytes(files):
+    """A .tar.gz holding {member name: bytes}."""
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as tar:
+        for name, data in files.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tar.addfile(info, io.BytesIO(data))
+    return buffer.getvalue()
 
 
 def closed_port_url(name):
@@ -76,97 +109,317 @@ def closed_port_url(name):
     return f"http://127.0.0.1:{port}/{name}"
 
 
-def serve_annotations(server, files):
-    """Serve annotations.zip with these {member name: bytes} instead."""
-    server.files["annotations.zip"] = zip_bytes(files)
+# --------------------------------------------------------------------- Budget
 
 
-# ------------------------------------------------------------- nothing broken
+def test_budget_check_refuses_over_limit():
+    budget = remote.Budget(max_mb=1)
+    budget.add(600_000)
+    budget.check(400_000)  # up to the limit is allowed
+    with pytest.raises(remote.BudgetExceeded):
+        budget.check(400_001)
+    assert budget.bytes == 600_000, "a check should never change the bytes counted"
 
 
-def test_remote(fake_remotes, tmp_path):
-    remote, local = remote_run(tmp_path), local_run()
-    for part in ("audio", "annotations"):
-        assert without_sources(remote[part]) == without_sources(
-            local[part]
-        ), f"remote {part} should equal a local run, apart from the log lines"
+# ------------------------------------------------------------------- HTTPFile
 
-    saved = saved_files(tmp_path / "fetch")
-    expected = ANNOTATION_FILES + ["metadata.csv"]
+
+def test_read_at_returns_exact_bytes(fake_remotes):
+    data = fake_remotes.files["audio.zip"]
+    http = remote.HTTPFile(fake_remotes.url("audio.zip"), requests.Session())
     assert (
-        saved == expected
-    ), "only the annotation files and the metadata file should be saved, no audio"
-    audio_zip = len(fake_remotes.files["audio.zip"])
+        http.read_at(100, 50) == data[100:150]
+    ), "read_at should return exactly the bytes asked for"
+    assert fake_remotes.gets("audio.zip") == [
+        "bytes=100-149"
+    ], "read_at should send one request whose Range header names those bytes"
+
+
+def test_read_at_ignored_range_sets_flag_and_raises(fake_remotes):
+    fake_remotes.failures["audio.zip"] = "ignore range"
+    budget = remote.Budget(max_mb=100)
+    http = remote.HTTPFile(fake_remotes.url("audio.zip"), requests.Session(), budget)
+    with pytest.raises(IOError):
+        http.read_at(100, 50)
     assert (
-        bytes_asked(fake_remotes, "audio.zip") < audio_zip / 10
-    ), "a zip with no annotation file should be read only for its table of contents"
-    whole = fake_remotes.gets("annotations.zip").count(None)
+        http.ranges_ignored
+    ), "a whole-file answer to a range request should set ranges_ignored"
     assert (
-        whole == 1
-    ), "a zip under MAX_ARCHIVE_MB should be downloaded whole, in one request"
-    metadata_gets = fake_remotes.gets("metadata.csv")
-    assert metadata_gets == [None], "a plain file should be downloaded whole"
+        http.bytes == 0 and budget.bytes == 0
+    ), "the whole file sent instead should not be read"
 
 
-def test_remote_audio_only(fake_remotes, tmp_path):
-    result = remote_run(tmp_path, parts=["audio"])
+def test_read_at_refused_by_budget_before_request(fake_remotes):
+    budget = remote.Budget(max_mb=50 / 1e6)  # 50 bytes
+    http = remote.HTTPFile(fake_remotes.url("audio.zip"), requests.Session(), budget)
+    with pytest.raises(remote.BudgetExceeded):
+        http.read_at(0, 100)
     assert (
-        result["audio"] == local_run()["audio"]
-    ), "audio should be counted from the index"
-    assert fake_remotes.requests == [], "the audio part should send no request"
+        fake_remotes.gets("audio.zip") == []
+    ), "a read that would pass the budget should send no request"
 
 
-def test_remote_big_zip(fake_remotes, tmp_path, monkeypatch):
-    monkeypatch.setattr("stats.remote.MAX_ARCHIVE_MB", 0)  # every zip counts as big
-    ann = remote_run(tmp_path)["annotations"]
-    expected = without_sources(local_run()["annotations"])
+# ----------------------------------------------------------- download_to_file
+
+
+def test_download_refused_by_content_length(fake_remotes):
+    budget = remote.Budget(max_mb=100 / 1e6)  # 100 bytes
+    file = io.BytesIO()
+    with pytest.raises(remote.BudgetExceeded):
+        remote.download_to_file(
+            fake_remotes.url("audio.zip"), file, requests.Session(), budget
+        )
     assert (
-        without_sources(ann) == expected
-    ), "a big zip read by range should give the local numbers"
-    gets = fake_remotes.gets("annotations.zip")
-    assert None not in gets, "a big zip should never be downloaded whole, only by range"
+        budget.bytes == 0
+    ), "a Content-Length over the budget should be refused unread"
+    assert file.getvalue() == b"", "a refused download should write nothing"
 
 
-def test_remote_cached_files(fake_remotes, tmp_path):
-    remote_run(tmp_path)
-    fake_remotes.requests.clear()
-    ann = remote_run(tmp_path)["annotations"]
+# ---------------------------------------------------------------- index_paths
+
+
+def test_index_paths_splits_audio_and_non_audio():
+    index = {
+        "tracks": {
+            "track1": {
+                "audio_mono": ["audio/track1_mono.wav", "md5"],
+                "beats": ["annotations/track1.beats", "md5"],
+                "chords": [None, None],
+            },
+        },
+        "multitracks": {
+            "song1": {
+                "tracks": ["track1"],
+                "audio_mix": ["audio/song1_mix.wav", "md5"],
+                "notes": ["annotations/song1.mid", "md5"],
+            },
+        },
+        "metadata": {"titles": ["metadata/titles.csv", "md5"]},
+    }
+    non_audio, audio = remote.index_paths(index)
+    expected_non_audio = {
+        "annotations/track1.beats",
+        "annotations/song1.mid",
+        "metadata/titles.csv",
+    }
+    expected_audio = {"audio/track1_mono.wav", "audio/song1_mix.wav"}
     assert (
-        fake_remotes.requests == []
-    ), "files already in the folder should not be fetched again"
-    assert ann["status"] == "ok", "a run from cached files should still be ok"
+        non_audio == expected_non_audio
+    ), "every file whose key has no 'audio', and every metadata file, should be non-audio"
+    assert (
+        audio == expected_audio
+    ), "every track or multitrack file whose key contains 'audio' should be audio"
 
 
-@pytest.mark.parametrize(
-    "prefix, unpack_directories, destination_dir",
-    [
-        # like GitHub archives: everything inside repo-main/, which mirdata moves up
-        pytest.param(
-            "repo-main/annotations/", ["repo-main"], None, id="wrapper folder"
+# ----------------------------------------------------------------- match_name
+
+
+def test_match_name_unicode_nfd_vs_nfc():
+    path = unicodedata.normalize("NFC", "annotations/André.txt")  # é: one character
+    name = unicodedata.normalize("NFD", path)  # é: e + accent, as macOS writes it
+    assert (
+        remote.match_name(name, {path: path}) == path
+    ), "an archive name in NFD should match the same index path in NFC"
+
+
+# ---------------------------------------------------------------- fetch_plain
+
+
+def test_fetch_plain_removes_partial_file_on_failure(fake_remotes, tmp_path):
+    # Without a size, the budget can only stop the download midway; it arrives
+    # in 1 MB pieces, so the first one is written before the budget stops it.
+    plain = serve(fake_remotes, "big.csv", b"x" * 3_000_000, failure="no length")
+    budget = remote.Budget(max_mb=1.5)
+    with pytest.raises(remote.BudgetExceeded):
+        remote.fetch_plain(plain, str(tmp_path), requests.Session(), budget)
+    assert budget.bytes > 0, "the download should start before the budget stops it"
+    assert (
+        saved_files(tmp_path) == []
+    ), "a download stopped midway should leave no partial file"
+
+
+# ------------------------------------------------------------------------ Zip
+
+
+def test_open_zip_with_range_reads_only_file_list(fake_remotes):
+    data = fake_remotes.files["audio.zip"]
+    file_list_start = zipfile.ZipFile(io.BytesIO(data)).start_dir
+    zf, http = remote.open_zip(fake_remotes.url("audio.zip"), requests.Session())
+    assert (
+        http is not None
+    ), "a server with range support should not need a whole download"
+    assert set(zf.namelist()) == set(
+        dataset_files("audio")
+    ), "the zip's file list should be read"
+    asked = ranges(fake_remotes, "audio.zip")
+    assert all(
+        first >= file_list_start for first, _ in asked
+    ), "only the file list at the end of the zip should be downloaded"
+
+
+def test_fetch_zip_with_audio_never_requests_audio(fake_remotes, tmp_path):
+    data = zip_bytes(track_by_track(), zipfile.ZIP_STORED)
+    bundle = serve(fake_remotes, "bundle.zip", data)
+    _, written, failed, _, _ = remote.fetch_zip(
+        bundle, ANNOTATION_FILES, AUDIO, str(tmp_path), requests.Session()
+    )
+    assert (
+        written == ANNOTATION_FILES and failed == {}
+    ), "every wanted file in the zip should be saved"
+    assert file_contents(tmp_path, ANNOTATION_FILES) == file_contents(
+        DATA_HOME, ANNOTATION_FILES
+    ), "each file should be saved with the bytes it has in the zip"
+
+    # Each audio file's bytes in the zip: from its header to the next file's header
+    zf = zipfile.ZipFile(io.BytesIO(data))
+    starts = sorted(m.header_offset for m in zf.infolist()) + [zf.start_dir]
+    next_start = dict(zip(starts, starts[1:]))
+    audio_spans = [
+        (m.header_offset, next_start[m.header_offset])
+        for m in zf.infolist()
+        if m.filename in AUDIO
+    ]
+    asked = ranges(fake_remotes, "bundle.zip")
+
+    def bytes_asked(start, end):
+        return len(
+            {
+                b
+                for first, last in asked
+                for b in range(max(first, start), min(last + 1, end))
+            }
+        )
+
+    assert None not in fake_remotes.gets(
+        "bundle.zip"
+    ), "a zip with audio should never be downloaded whole"
+    assert not any(
+        start <= first < end for first, _ in asked for start, end in audio_spans
+    ), "no range request should start inside an audio file"
+    assert all(
+        bytes_asked(start, end) < end - start for start, end in audio_spans
+    ), "no audio file should be downloaded"
+
+
+# ------------------------------------------------------------------------ Tar
+
+
+def test_fetch_tar_saves_only_matched_files(fake_remotes, tmp_path):
+    bundle = serve(fake_remotes, "bundle.tar.gz", tar_bytes(track_by_track()))
+    _, written, failed, _, _ = remote.fetch_tar(
+        bundle, ANNOTATION_FILES, str(tmp_path), requests.Session()
+    )
+    assert (
+        written == ANNOTATION_FILES and failed == {}
+    ), "every wanted file in the tar should be saved"
+    assert saved_files(tmp_path) == sorted(
+        ANNOTATION_FILES
+    ), "only the wanted files should be written, no audio"
+    assert file_contents(tmp_path, ANNOTATION_FILES) == file_contents(
+        DATA_HOME, ANNOTATION_FILES
+    ), "each file should be saved with the bytes it has in the tar"
+
+
+# ---------------------------------------------------------------------- fetch
+
+
+def test_fetch_all_files_end_to_end(fake_remotes, tmp_path):
+    fetched, missing, _, problems = fetch_fake(tmp_path)
+    assert fetched == WANTED, "every wanted path should be fetched"
+    assert missing == {}, "no wanted path should be missing"
+    assert problems == [], "a run where every file is fetched needs no local run"
+    assert saved_files(tmp_path) == sorted(
+        WANTED
+    ), "the files should be laid out like a local copy, with no audio"
+    assert file_contents(tmp_path, WANTED) == file_contents(
+        DATA_HOME, WANTED
+    ), "each file should have the bytes of the local copy"
+
+
+def test_fetch_archive_order_unknown_size_then_smallest(fake_remotes, tmp_path):
+    beats = dataset_files("annotations")
+    padding = b"\0" * 100_000  # makes an archive bigger, never wanted
+    remotes = {
+        "large": serve(
+            fake_remotes,
+            "large.zip",
+            zip_bytes(
+                {
+                    "annotations/beats/track2.txt": beats[
+                        "annotations/beats/track2.txt"
+                    ],
+                    "padding.bin": padding,
+                },
+                zipfile.ZIP_STORED,
+            ),
         ),
-        # the zip holds beats/track1.txt, which mirdata unpacks into annotations/
-        pytest.param("", None, "annotations", id="destination_dir"),
-        # both: repo-main/beats/track1.txt, moved up and unpacked into annotations/
-        pytest.param("repo-main/", ["repo-main"], "annotations", id="both"),
-    ],
-)
-def test_remote_zip_layout(
-    fake_remotes, tmp_path, prefix, unpack_directories, destination_dir
-):
-    files = dataset_files("annotations")  # annotations/beats/track1.txt, ...
-    inside = {prefix + p.removeprefix("annotations/"): d for p, d in files.items()}
-    serve_annotations(fake_remotes, inside)
-    remote = fake_dataset_loader.REMOTES["annotations"]
-    remote.unpack_directories = unpack_directories
-    remote.destination_dir = destination_dir
-    ann = remote_run(tmp_path)["annotations"]
-    expected = without_sources(local_run()["annotations"])
+        "small": serve(
+            fake_remotes,
+            "small.zip",
+            zip_bytes(
+                {"annotations/beats/track3.txt": beats["annotations/beats/track3.txt"]},
+                zipfile.ZIP_STORED,
+            ),
+        ),
+        "unknown": serve(
+            fake_remotes,
+            "unknown.zip",
+            zip_bytes(
+                {
+                    "annotations/beats/track1.txt": beats[
+                        "annotations/beats/track1.txt"
+                    ],
+                    "padding.bin": padding * 2,
+                },
+                zipfile.ZIP_STORED,
+            ),
+            failure="no length",
+        ),
+    }
+    wanted = {
+        "annotations/beats/track1.txt",
+        "annotations/beats/track2.txt",
+        "annotations/beats/track3.txt",
+    }
+    fetched, _, _, _ = remote.fetch(remotes, wanted, set(), str(tmp_path))
+    opened = list(
+        dict.fromkeys(
+            name for method, name, _ in fake_remotes.requests if method == "GET"
+        )
+    )
+    expected = ["unknown.zip", "small.zip", "large.zip"]
+    assert fetched == wanted, "every wanted path should be fetched"
     assert (
-        without_sources(ann) == expected
-    ), "zip members should be matched to index paths the way mirdata unpacks the zip"
+        opened == expected
+    ), "archives should be opened unknown size first, then smallest to largest"
 
 
-# ------------------------------------------------- the server or the files break
+def test_fetch_stops_opening_archives_when_done(fake_remotes, tmp_path):
+    fetched, _, _, _ = fetch_fake(tmp_path)
+    assert fetched == WANTED, "every wanted path should be fetched"
+    assert (
+        fake_remotes.gets("audio.zip") == []
+    ), "once every wanted path is fetched, no other archive should be opened"
+
+
+def test_fetch_after_budget_skips_remaining_remotes(fake_remotes, tmp_path):
+    metadata_size = len(fake_remotes.files["metadata.csv"])
+    # the plain file fits, the first read of an archive does not
+    budget = remote.Budget(max_mb=(metadata_size + 10) / 1e6)
+    _, _, sources, problems = fetch_fake(tmp_path, budget)
+    audio_lines = [line for line in sources if "audio.zip" in line]
+    assert (
+        len(audio_lines) == 1 and "not read" in audio_lines[0]
+    ), "a remote after the budget ran out should be logged as not read"
+    assert (
+        fake_remotes.gets("audio.zip") == []
+    ), "a remote after the budget ran out should not be downloaded"
+    assert len(problems) == 1 and problems[0].startswith(
+        "remote limit"
+    ), "the reason to run locally should be the remote limit"
+
+
+# ------------------------------------------- fetch: the server or the files break
 
 
 def break_404(server):
@@ -194,16 +447,12 @@ def break_short_range(server):
     server.failures["annotations.zip"] = "short range"
 
 
-def break_tar(server):
-    buffer = io.BytesIO()
-    with tarfile.open(fileobj=buffer, mode="w:gz") as tar:
-        for path, data in dataset_files("annotations").items():
-            info = tarfile.TarInfo(path)
-            info.size = len(data)
-            tar.addfile(info, io.BytesIO(data))
-    server.files["annotations.tar.gz"] = buffer.getvalue()
-    remote = fake_dataset_loader.REMOTES["annotations"]
-    remote.filename, remote.url = "annotations.tar.gz", server.url("annotations.tar.gz")
+def break_truncated_tar(server):
+    data = tar_bytes(dataset_files("annotations"))
+    server.files["annotations.tar.gz"] = data[: len(data) // 2]
+    annotations_remote = fake_dataset_loader.REMOTES["annotations"]
+    annotations_remote.filename = "annotations.tar.gz"
+    annotations_remote.url = server.url("annotations.tar.gz")
 
 
 def break_metadata_404(server):
@@ -219,124 +468,66 @@ def break_metadata_404(server):
         (break_web_page, "annotations.zip"),
         (break_truncated, "annotations.zip"),
         (break_short_range, "annotations.zip"),
-        (break_tar, "annotations.tar.gz"),
+        (break_truncated_tar, "annotations.tar.gz"),
         (break_metadata_404, "metadata.csv"),
     ],
     ids=lambda x: getattr(x, "__name__", x).removeprefix("break_"),
 )
-def test_remote_unreadable_remote(fake_remotes, tmp_path, break_remote, name):
+def test_fetch_unreadable_remote(fake_remotes, tmp_path, break_remote, name):
     break_remote(fake_remotes)
-    result = remote_run(tmp_path)
-    ann = result["annotations"]
-    assert (
-        ann["status"] == "needs_local"
-    ), "a remote that cannot be read should make it needs_local"
-    named = any(name in problem for problem in ann["problems"])
-    assert named, f"a problem should name the remote that could not be read ({name})"
-    assert (
-        result["audio"] == local_run()["audio"]
-    ), "the audio part should not be affected"
+    _, _, _, problems = fetch_fake(tmp_path)
+    assert problems, "a remote that cannot be read should need a local run"
+    named = any(name in problem for problem in problems)
+    assert named, "the reason should name the remote that could not be read"
 
 
 @pytest.mark.parametrize("mode", ["no length", "ignore range"])
-def test_remote_no_range_support(fake_remotes, tmp_path, mode):
+def test_fetch_no_range_support(fake_remotes, tmp_path, mode):
     fake_remotes.failures["annotations.zip"] = mode
-    ann = remote_run(tmp_path)["annotations"]
-    expected = without_sources(local_run()["annotations"])
+    fetched, _, _, problems = fetch_fake(tmp_path)
+    assert None in fake_remotes.gets(
+        "annotations.zip"
+    ), f"a zip on a server with {mode} should be downloaded whole"
     assert (
-        without_sources(ann) == expected
-    ), f"a server with {mode} should still work: the zip is downloaded whole"
+        fetched == WANTED and problems == []
+    ), f"a server with {mode} should still give every wanted path"
 
 
-def test_remote_rate_limit(fake_remotes, tmp_path, waits):
+def test_fetch_rate_limit(fake_remotes, tmp_path, waits):
     fake_remotes.failures["annotations.zip"] = "429 once"
-    ann = remote_run(tmp_path)["annotations"]
+    fetched, _, _, problems = fetch_fake(tmp_path)
     assert waits and waits[0] >= 3, "a 429 should wait as long as Retry-After asks"
-    assert ann["status"] == "ok", "after the wait, the retry should succeed"
+    assert (
+        fetched == WANTED and problems == []
+    ), "after the wait, the retry should succeed"
 
 
 @pytest.mark.parametrize(
-    "big", [False, True], ids=["downloaded whole", "read by range"]
+    "prefix, unpack_directories, destination_dir",
+    [
+        # like GitHub archives: everything inside repo-main/, which mirdata moves up
+        pytest.param(
+            "repo-main/annotations/", ["repo-main"], None, id="wrapper folder"
+        ),
+        # the zip holds beats/track1.txt, which mirdata unpacks into annotations/
+        pytest.param("", None, "annotations", id="destination_dir"),
+        # both: repo-main/beats/track1.txt, moved up and unpacked into annotations/
+        pytest.param("repo-main/", ["repo-main"], "annotations", id="both"),
+    ],
 )
-def test_remote_corrupt_file_in_zip(fake_remotes, tmp_path, monkeypatch, big):
-    if big:
-        monkeypatch.setattr("stats.remote.MAX_ARCHIVE_MB", 0)
-    files = dataset_files("annotations")
-    good = files["annotations/chords/track1.lab"]
-    data = zip_bytes(files, zipfile.ZIP_STORED)  # stored: the file's bytes appear as is
-    assert data.count(good) == 1
-    corrupt = good.replace(b"C:maj", b"D:maj")  # changed after zipping: wrong CRC
-    fake_remotes.files["annotations.zip"] = data.replace(good, corrupt)
-    ann = remote_run(tmp_path)["annotations"]
+def test_fetch_zip_layout(
+    fake_remotes, tmp_path, prefix, unpack_directories, destination_dir
+):
+    files = dataset_files("annotations")  # annotations/beats/track1.txt, ...
+    inside = {prefix + p.removeprefix("annotations/"): d for p, d in files.items()}
+    fake_remotes.files["annotations.zip"] = zip_bytes(inside)
+    annotations_remote = fake_dataset_loader.REMOTES["annotations"]
+    annotations_remote.unpack_directories = unpack_directories
+    annotations_remote.destination_dir = destination_dir
+    fetched, _, _, problems = fetch_fake(tmp_path)
     assert (
-        ann["status"] == "incomplete"
-    ), "a corrupt file should make it incomplete, not needs_local"
-    assert ann["problems"] == [], "a corrupt file is no reason to run locally"
-    missing, lost = set(ann["missing_files"]), {"annotations/chords/track1.lab"}
-    assert missing == lost, "only the corrupt file should be lost"
-    assert (
-        ann["annotations"]["chords"]["n_tracks"] == 1
-    ), "the property should lose only the track whose file is corrupt"
-    assert (
-        ann["annotations"]["beats"]["n_tracks"] == 3
-    ), "other properties should not be affected"
-
-
-def test_remote_missing_file(fake_remotes, tmp_path):
-    files = dataset_files("annotations")
-    del files["annotations/beats/track3.txt"]
-    serve_annotations(fake_remotes, files)
-    ann = remote_run(tmp_path)["annotations"]
-    assert (
-        ann["status"] == "needs_local"
-    ), "a file no remote holds should make it needs_local"
-    assert any(
-        "not found" in problem for problem in ann["problems"]
-    ), "the problem should say files were not found"
-    assert (
-        "annotations/beats/track3.txt" in ann["missing_files"]
-    ), "missing_files should name the file"
-
-
-def test_remote_no_remotes(fake_mirdata, tmp_path):
-    ann = remote_run(tmp_path)["annotations"]  # fake_dataset_loader.REMOTES is None
-    assert (
-        ann["status"] == "needs_local"
-    ), "a dataset without remotes should be needs_local"
-    assert any(
-        "no remotes" in problem for problem in ann["problems"]
-    ), "the problem should say there are no remotes"
-
-
-@pytest.mark.parametrize(
-    "limit", [{"max_mb": 0.0001}, {"max_minutes": 0}], ids=["size", "time"]
-)
-def test_remote_budget(fake_remotes, tmp_path, limit):
-    ds = mirdata.initialize("fake_dataset", data_home=str(tmp_path))
-    ann = annotations.dataset_stats(ds, str(tmp_path), load_index(ds), **limit)
-    assert (
-        ann["status"] == "needs_local"
-    ), "passing the remote budget should make it needs_local"
-    hit = any("remote limit" in problem for problem in ann["problems"])
-    assert hit, "the problem should say the remote limit was hit"
-
-
-# ------------------------------------------------------------------ online
-
-
-@pytest.mark.online
-def test_real_server_supports_range():
-    """The fake server answers like Zenodo is assumed to: checked here on a real remote, 1 byte read."""
-    url = mirdata.initialize("orchset").remotes["all"].url
-    head = requests.head(url, allow_redirects=True, timeout=30)
-    assert head.status_code == 200, f"{url} should be reachable"
-    size = head.headers.get("Content-Length")
-    assert size and int(size) > 0, "a real server should report the file size"
-    r = requests.get(head.url, headers={"Range": "bytes=0-0"}, timeout=30)
-    assert r.status_code == 206, "a range request should get 206, not the whole file"
-    assert (
-        r.headers.get("Content-Range") == f"bytes 0-0/{size}"
-    ), "Content-Range should say which bytes"
-    assert (
-        r.content == b"P"
-    ), "exactly the first byte should come back (a zip starts with PK)"
+        fetched == WANTED and problems == []
+    ), "zip files should be matched to index paths the way mirdata unpacks the zip"
+    assert file_contents(tmp_path, ANNOTATION_FILES) == file_contents(
+        DATA_HOME, ANNOTATION_FILES
+    ), "each file should be saved at its index path"
