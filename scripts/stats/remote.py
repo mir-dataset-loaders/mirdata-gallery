@@ -329,8 +329,8 @@ def index_paths(index):
         index (dict): the dataset index (stats.load_index)
 
     Returns:
-        * set of str - the non-audio paths, relative to data_home
-        * set of str - the audio paths, relative to data_home
+        non_audio (set of str): the non-audio paths, relative to data_home
+        audio (set of str): the audio paths, relative to data_home
 
     """
     non_audio, audio = set(), set()
@@ -416,10 +416,11 @@ def save_files(matches, read_file, data_home, workers=1, verbose=False):
         verbose (bool): if True, print one line per file
 
     Returns:
-        * set of str - the paths now on disk
-        * dict - {path: why it failed}
-        * str or None - the BudgetExceeded message if the budget ran out; the
-          paths it stopped are not in the dict above, the limit is reported once
+        written (set of str): the paths now on disk
+        failed (dict): {path: why it failed}
+        limit_message (str or None): the BudgetExceeded message if the budget
+            ran out; the paths it stopped are not in failed, the limit is
+            reported once
 
     """
 
@@ -430,9 +431,9 @@ def save_files(matches, read_file, data_home, workers=1, verbose=False):
             item (tuple): (index path, zipfile.ZipInfo), one entry of matches
 
         Returns:
-            * str - the index path
-            * None, BudgetExceeded or str - None when saved, the
-              BudgetExceeded error, or why it failed
+            path (str): the index path
+            error (None, BudgetExceeded or str): None when saved, the
+                BudgetExceeded error, or why it failed
 
         """
         path, member = item
@@ -482,9 +483,9 @@ def fetch_plain(remote, data_home, session, budget=None):
         budget (Budget or None): checked and added to; None means no limit
 
     Returns:
-        * str - the file's path relative to data_home, as the index writes it
-        * str - the log message: how much was downloaded, or that the file
-          was already on disk
+        path (str): the file's path relative to data_home, as the index writes it
+        text (str): the log message: how much was downloaded, or that the file
+            was already on disk
 
     """
     # normpath turns a destination_dir of "." into no folder: "./x.csv" -> "x.csv"
@@ -559,9 +560,9 @@ def open_zip(url, session, budget=None):
         budget (Budget or None): checked and added to; None means no limit
 
     Returns:
-        * zipfile.ZipFile - the zip
-        * HTTPFile or None - the zip on the server, to read files from by
-          range; None when the whole zip was downloaded
+        zf (zipfile.ZipFile): the zip
+        http (HTTPFile or None): the zip on the server, to read files from by
+            range; None when the whole zip was downloaded
 
     Raises:
         BudgetExceeded: the file list, or the whole zip, would pass the budget
@@ -602,12 +603,12 @@ def fetch_zip(
         verbose (bool): if True, print one line per file
 
     Returns:
-        * set of str - the remaining paths the zip holds, saved or not
-        * set of str - the paths now on disk
-        * dict - {path: why it failed}
-        * str or None - the BudgetExceeded message if the budget ran out
-          while saving
-        * str - the log message
+        found (set of str): the remaining paths the zip holds, saved or not
+        written (set of str): the paths now on disk
+        failed (dict): {path: why it failed}
+        limit_message (str or None): the BudgetExceeded message if the budget
+            ran out while saving
+        text (str): the log message
 
     Raises:
         BudgetExceeded: the file list, or the files to fetch, would pass the
@@ -701,12 +702,12 @@ def fetch_tar(remote, remaining, data_home, session, budget=None):
         budget (Budget or None): checked and added to; None means no limit
 
     Returns:
-        * set of str - the remaining paths the tar holds, saved or not
-        * set of str - the paths now on disk
-        * dict - {path: why it failed}
-        * None - in fetch_zip's place for the budget message: a tar raises
-          BudgetExceeded instead
-        * str - the log message
+        found (set of str): the remaining paths the tar holds, saved or not
+        written (set of str): the paths now on disk
+        failed (dict): {path: why it failed}
+        limit_message (None): always None, in fetch_zip's place: a tar raises
+            BudgetExceeded instead
+        text (str): the log message
 
     Raises:
         BudgetExceeded: the tar would pass the budget
@@ -852,10 +853,11 @@ def fetch(remotes, wanted, audio, data_home, workers=4, verbose=False, budget=No
         budget (Budget or None): checked and added to; None means no limit
 
     Returns:
-        * set of str - the wanted paths now on disk
-        * dict - {path: why it is missing}
-        * list of str - the log, one line per remote
-        * list of str - the reason to run locally (at most one), or empty
+        fetched (set of str): the wanted paths now on disk
+        errors (dict): {path: why it is missing}
+        sources (list of str): the log, one line per remote
+        problems (list of str): the reason to run locally (at most one), or
+            empty
 
     """
     present = {p for p in wanted if os.path.isfile(os.path.join(data_home, p))}
