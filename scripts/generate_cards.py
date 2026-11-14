@@ -24,6 +24,7 @@ Usage:
 
 import argparse
 import os
+import shutil
 import tempfile
 
 import mirdata
@@ -58,11 +59,14 @@ def update_stats(ds, old, options):
             "kept",
         )  # computed from this same index, and no flag asks for a rerun
     root = options["datasets_dir"] if options["local"] else options["fetch_root"]
-    result = stats.compute(
-        ds.name,
-        os.path.join(root, ds.name),
-        local=options["local"],
-    )
+    data_home = os.path.join(root, ds.name)
+    try:
+        result = stats.compute(ds.name, data_home, local=options["local"])
+    finally:
+        # A remote run fetched this dataset's files into fetch_root: delete them,
+        # so the next dataset has the whole disk again. A local copy is kept.
+        if not options["local"]:
+            shutil.rmtree(data_home, ignore_errors=True)
     mode = "local" if options["local"] else "remote"
     new = stats.to_card.result_to_card_stats(result, mode, checksum)
     chosen = stats.to_card.choose(old_stats, new, checksum)

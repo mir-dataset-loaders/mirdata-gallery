@@ -130,14 +130,13 @@ def dataset_stats(
     local=False,
     workers=4,
     verbose=False,
-    max_mb=remote.MAX_REMOTE_MB,
-    max_minutes=remote.MAX_REMOTE_MINUTES,
+    max_mb=remote.MAX_DOWNLOAD_MB,
 ):
     """Annotation stats of one dataset, read from a local copy (local=True) or fetched from its remotes.
 
     ds is initialized with data_home: the local copy (stats.compute checks it
     exists), or the folder the annotation files are fetched into. A remote run
-    needs index (stats.load_index) and reads at most max_mb in max_minutes.
+    needs index (stats.load_index) and downloads at most max_mb.
     The result carries "status" (ok, incomplete or needs_local), "problems"
     (why a local run is needed), "sources" (one line per remote, or the local
     folder) and "missing_files" ({path: why it was not fetched}).
@@ -145,13 +144,15 @@ def dataset_stats(
     if local:
         problems, sources, missing = [], [f"  local                  {data_home}"], {}
     else:
+        wanted, audio = remote.index_paths(index)
         _, missing, sources, problems = remote.fetch(
             ds.remotes,
-            remote.annotation_paths(index),
+            wanted,
+            audio,
             data_home,
             workers=workers,
             verbose=verbose,
-            budget=remote.Budget(max_mb, max_minutes),  # one for the whole dataset
+            budget=remote.Budget(max_mb),  # one for the whole dataset
         )
         sources = index_notes(index) + sources
     stats = read_tracks(ds, verbose)
