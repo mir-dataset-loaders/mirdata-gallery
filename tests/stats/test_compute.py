@@ -5,11 +5,14 @@ Every expected number comes from the table in tests/fake_dataset_loader.py.
 
 import shutil
 
+import mirdata
+
 import fake_dataset_loader
 from fake_dataset_loader import DATA_HOME
 import stats
 from stats import compute
 from stats.annotation_types import grid
+from stats.annotations import collect_stats_candidates, drop_excluded_names
 
 
 def compute_local(data_home=DATA_HOME, **kwargs):
@@ -251,6 +254,32 @@ def test_compute_guessed_property(fake_mirdata, monkeypatch):
     ), "a guessed property that is not an annotation should be reported as skipped"
     assert ann["annotation_errors"] == {}, "a wrong guess from the name is not an error"
     assert ann["status"] == "ok", "a skipped property should not change the status"
+
+
+def test_drop_excluded_names():
+    names = [
+        "beats",
+        "tempo",
+        "_track_metadata",
+        "audio",
+        "audio_mic",
+        "Audio_Mix",
+        "tempo_path",
+        "musicxml_paths",
+    ]
+    assert drop_excluded_names(names) == ["beats", "tempo"], (
+        "private names, names with audio and file paths should be dropped;"
+        " the rest kept, sorted"
+    )
+
+
+def test_collect_stats_candidates(fake_mirdata):
+    ds = mirdata.initialize("fake_dataset", data_home=DATA_HOME)
+    found = collect_stats_candidates(ds.track("track1"))
+    assert found == ["beats", "chords", "title", "track_id"], (
+        "every property and attribute of the track should be a candidate,"
+        " except audio, file paths and private names"
+    )
 
 
 def test_compute_crashing_part(fake_mirdata, monkeypatch):

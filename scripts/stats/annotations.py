@@ -11,6 +11,8 @@ mode a local copy is read.
 import logging
 import sys
 
+import mirdata.core
+
 import card_builder
 from stats import annotation_types, remote
 
@@ -35,6 +37,55 @@ class quiet_logging:
 def error_text(e):
     """An exception as one line: "ValueError: bad line"."""
     return f"{type(e).__name__}: {e}"
+
+
+def drop_excluded_names(names):
+    """Drop the names of a track that the stats never read.
+
+    A name is dropped when it is private (starts with "_"), loads audio
+    (contains "audio": reading it loads the whole audio file) or holds a
+    file path (ends with "_path" or "_paths", as mirdata names every path).
+
+    Args:
+        names (iterable of str): names of a track's properties and attributes
+
+    Returns:
+        list of str: the names left, sorted
+
+    """
+    return sorted(
+        name
+        for name in names
+        if not name.startswith("_")
+        and "audio" not in name.lower()
+        and not name.endswith(("_path", "_paths"))
+    )
+
+
+def collect_stats_candidates(track):
+    """List the names of a track that the stats may read.
+
+    The candidates are the properties of the track's class (plain and
+    cached) and the attributes the track set when it was created, minus the
+    names drop_excluded_names() removes.
+
+    Args:
+        track (mirdata.core.Track): a track of an initialized dataset
+
+    Returns:
+        list of str: the candidate names, sorted
+
+    """
+    track_class = type(track)
+    properties = {
+        name
+        for name in dir(track_class)
+        if isinstance(
+            getattr(track_class, name, None),
+            (property, mirdata.core.cached_property),
+        )
+    }
+    return drop_excluded_names(properties | set(vars(track)))
 
 
 def read_tracks(ds, verbose=False):
