@@ -638,12 +638,10 @@ assert set(STATS) == ANNOTATION_TYPES | {
 def choose_stat(name, value):
     """Choose the annotation type of a name of a track, from its first non-empty value.
 
-    Rule 1, the value: the value is unpacked (a dict, a MultiAnnotator or a
-    list gives its items) and the first item whose class name is a type in
-    STATS gives that type. Rule 2, the name: when no item has such a class
-    and the name holds the word "tempo" (the name split on "_"), the type is
-    TempoData, read by Tempo as a plain per-track bpm (120.0, "125.0" or
-    {"tempo_bpm": 80}). Anything else is not read.
+    Rule 1, the value: the first unpacked item whose class name is in STATS
+    gives its type. Rule 2, the name (split on "_"): the word "tempo" gives
+    TempoData, "key" or "keys" KeyData; Tempo and Keys also read plain values
+    (120.0, 'C minor'). Anything else is not read.
 
     Args:
         name (str): the name of a property or attribute of the track
@@ -657,6 +655,9 @@ def choose_stat(name, value):
     for _, item in unpack(value):
         if type(item).__name__ in STATS:
             return type(item).__name__
-    if "tempo" in name.lower().split("_"):
+    words = name.lower().split("_")
+    if "tempo" in words:
         return "TempoData"
+    if "key" in words or "keys" in words:
+        return "KeyData"
     return None

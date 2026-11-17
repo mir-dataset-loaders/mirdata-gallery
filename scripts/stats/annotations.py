@@ -8,7 +8,6 @@ annotation. In remote mode the files are first fetched into a folder
 import logging
 import sys
 
-import mirdata.annotations
 import mirdata.core
 
 from stats import annotation_types, remote
@@ -103,7 +102,7 @@ def read_tracks(ds, verbose=False):
     track_ids = ds.track_ids
     types = {}  # name -> annotation type, chosen from its first non-empty value
     stats = {}  # name -> the Stat that reads it
-    by_name = set()  # names typed TempoData by the tempo word, not by their value
+    by_name = set()  # names typed by a word in the name (tempo, key), not by their value
     dropped = set()  # names whose first non-empty value has no type: never read again
     held = {}  # name with no type yet -> {track_id: error} while reading it
     # annotation type -> ids of tracks with at least one such annotation
@@ -139,14 +138,14 @@ def read_tracks(ds, verbose=False):
                         continue
                     types[name] = ann_type
                     stats[name] = annotation_types.STATS[ann_type]()
-                    if ann_type == "TempoData" and not any(
-                        isinstance(item, mirdata.annotations.TempoData)
+                    if not any(
+                        type(item).__name__ == ann_type
                         for _, item in annotation_types.unpack(value)
                     ):
                         by_name.add(name)
                     if name in held:
                         annotation_errors[name] = held.pop(name)
-                used = stats[name].add(value)
+                used = stats[name].add(value, track)
             except Exception as e:
                 found = annotation_errors if name in types else held
                 found.setdefault(name, {})[track_id] = error_text(e)

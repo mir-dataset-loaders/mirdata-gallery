@@ -269,6 +269,31 @@ def test_compute_tempo_by_name(fake_mirdata, monkeypatch):
     assert ann["status"] == "ok", "a skipped tempo value should not change the status"
 
 
+def test_compute_key_by_name(fake_mirdata, monkeypatch):
+    # fma_keys: the key and its mode are two names; da_tacos: an essentia dict
+    keys = {"track1": "F#", "track2": "E major | E minor", "track3": {"key": b"C"}}
+    modes = {"track1": "Major", "track2": "minor", "track3": "minor"}
+    key = property(lambda self: keys[self.track_id])
+    mode = property(lambda self: modes[self.track_id])
+    monkeypatch.setattr(fake_dataset_loader.Track, "key", key, raising=False)
+    monkeypatch.setattr(fake_dataset_loader.Track, "mode", mode, raising=False)
+    ann = compute_local()["annotations"]
+    entry = ann["annotations"]["key"]
+    assert (
+        entry["type"] == "KeyData"
+    ), "a plain value under the key word should be typed KeyData"
+    assert entry["keys"] == {"F#:major": 1, "E:major": 1, "E:minor": 1}, (
+        "every key in a string should be read; one without a mode takes the"
+        " track's mode"
+    )
+    assert "mode" not in ann["annotations"], "mode alone should not be read"
+    assert ann["skipped"] == {
+        "key": "not a mirdata KeyData object (got dict)"
+    }, "a key value that is not text should be listed in skipped"
+    assert ann["annotation_errors"] == {}, "an unreadable key value is not an error"
+    assert ann["status"] == "ok", "a skipped key value should not change the status"
+
+
 def test_compute_errors_held(fake_mirdata, monkeypatch):
     def onsets(self):
         if self.track_id == "track1":

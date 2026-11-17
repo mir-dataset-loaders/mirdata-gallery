@@ -442,6 +442,15 @@ def test_choose_stat_by_name():
     assert (
         choose_stat("tempo_beats", beats([1.0, 2.0])) == "BeatData"
     ), "the value should come first: an annotation under a tempo name keeps its own type"
+    key_names = {
+        "key": "C minor",  # giantsteps_key
+        "keys_music21": [{"time": 0, "key": object()}],  # haydn_op20
+        "key_number": 6,  # fma_keys
+    }
+    for name, value in key_names.items():
+        assert (
+            choose_stat(name, value) == "KeyData"
+        ), f"a plain value under a key or keys name should be KeyData ({name})"
 
 
 def test_choose_stat_none():
@@ -452,13 +461,15 @@ def test_choose_stat_none():
         "title": "Anna (Go To Him)",
         "duration": 120.0,
         "tempos": 120.0,
+        "keyboard": "Steinway",
+        "mode": "Major",
         "vggish": (np.zeros(2), np.zeros(2)),
         "my_beats": MyBeats(np.array([1.0]), "s", None, None),
     }
     for name, value in not_read.items():
         assert choose_stat(name, value) is None, (
             f"{name} should not be read: no class name in STATS, and no"
-            " tempo word in the name"
+            " tempo, key or keys word in the name"
         )
 
 
