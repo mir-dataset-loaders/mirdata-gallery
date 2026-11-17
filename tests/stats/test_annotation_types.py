@@ -4,6 +4,7 @@ Numeric fields are compared with grid() of the values a Stat should collect;
 the exact bins are checked by hand only in test_grid*.
 """
 
+import mirdata.datasets.baf
 import numpy as np
 import pytest
 from mirdata import annotations
@@ -19,6 +20,7 @@ from stats.annotation_types import (
     Notes,
     Sections,
     Tempo,
+    choose_stat,
     grid,
     is_empty,
 )
@@ -50,6 +52,18 @@ def bars(*lengths):
 def events(*labels):
     return annotations.EventData(
         intervals(*[(i, i + 1) for i in range(len(labels))]), "s", list(labels), "open"
+    )
+
+
+def events_extended(*labels):
+    """baf's EventDataExtended: events with a tag each."""
+    return mirdata.datasets.baf.EventDataExtended(
+        intervals(*[(i, i + 1) for i in range(len(labels))]),
+        "s",
+        list(labels),
+        "open",
+        ["tag"] * len(labels),
+        "open",
     )
 
 
@@ -331,6 +345,79 @@ def test_every_label_is_kept():
     ), "every label should be kept, however many there are"
     assert "(other)" not in result["events"], "no labels should be folded into (other)"
     assert list(result["events"])[0] == "kick", "labels should come most common first"
+
+
+def test_events_extended():
+    result = collect(Events(), events_extended("kick", "snare")).result()
+    expected = {"events": {"kick": 1, "snare": 1}}
+    assert result == expected, "Events should count baf's EventDataExtended labels"
+
+
+# ---------------------------------------------------------------- choose_stat
+
+
+def test_choose_stat_by_value():
+    sections = annotations.SectionData(intervals((0, 10)), "s", ["verse"], "open")
+    f0 = annotations.F0Data(
+        np.array([0.0, 0.01]),
+        "s",
+        np.array([440.0, 440.0]),
+        "hz",
+        np.array([1.0, 1.0]),
+        "binary",
+    )
+    chords = annotations.ChordData(intervals((0, 1)), "s", ["C:maj"], "harte")
+    two_annotators = annotations.MultiAnnotator(
+        ["ann1", "ann2"], [sections, sections], annotations.SectionData
+    )
+    chosen = {
+        "beats": choose_stat("beats", beats([1.0, 2.0])),
+        "leadsheet_chords": choose_stat("leadsheet_chords", chords),
+        "pitch_contours": choose_stat("pitch_contours", {"E": f0, "A": f0}),
+        "sections_uppercase": choose_stat("sections_uppercase", two_annotators),
+        "tempo_v2": choose_stat("tempo_v2", tempos([120.0])),
+        "matches": choose_stat("matches", events_extended("kick")),
+    }
+    expected = {
+        "beats": "BeatData",
+        "leadsheet_chords": "ChordData",
+        "pitch_contours": "F0Data",
+        "sections_uppercase": "SectionData",
+        "tempo_v2": "TempoData",
+        "matches": "EventDataExtended",
+    }
+    assert chosen == expected, (
+        "an annotation, or one inside a dict or MultiAnnotator, should give the"
+        " name of its class, whatever the name of the property"
+    )
+
+
+def test_choose_stat_by_name():
+    for value in (120.0, 96, "125.0", {"tempo_bpm": 80}):
+        assert (
+            choose_stat("tempo", value) == "TempoData"
+        ), f"a plain value under a tempo name should be TempoData ({value!r})"
+    assert (
+        choose_stat("tempo_beats", beats([1.0, 2.0])) == "BeatData"
+    ), "the value should come first: an annotation under a tempo name keeps its own type"
+
+
+def test_choose_stat_none():
+    class MyBeats(annotations.BeatData):
+        pass
+
+    not_read = {
+        "title": "Anna (Go To Him)",
+        "duration": 120.0,
+        "tempos": 120.0,
+        "vggish": (np.zeros(2), np.zeros(2)),
+        "my_beats": MyBeats(np.array([1.0]), "s", None, None),
+    }
+    for name, value in not_read.items():
+        assert choose_stat(name, value) is None, (
+            f"{name} should not be read: no class name in STATS, and no"
+            " tempo word in the name"
+        )
 
 
 # ------------------------------------------------------------ the shared base

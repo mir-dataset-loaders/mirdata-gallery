@@ -98,6 +98,7 @@ ENTRY_FIELDS = {
     },
     "ChordData": {"labels": COUNTS, "qualities": COUNTS},
     "EventData": {"events": COUNTS},
+    "EventDataExtended": {"events": COUNTS},
     "F0Data": {"frequencies": GRID},
     "KeyData": {"keys": COUNTS, "modes": COUNTS},
     "LyricData": {"lyric_unit": COUNTS, "lyrics_per_track": GRID},

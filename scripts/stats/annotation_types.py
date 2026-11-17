@@ -3,7 +3,8 @@
 A Stat reads one property's annotations track by track (add, read) and
 turns them into grid counts and label counts at the end (result). A property
 can hold several annotations at once (a dict, a MultiAnnotator or a list):
-each one is read, and the track is counted once.
+each one is read, and the track is counted once. choose_stat() picks the
+annotation type of a track's name.
 """
 
 from collections import Counter
@@ -11,9 +12,8 @@ from collections import Counter
 import mirdata.annotations
 import numpy as np
 
-# The official mirdata annotation types (BeatData, ChordData, ... TempoData): the
-# only ones the stats cover. Properties the card detection labels otherwise
-# (Instrument, Genre) are ignored.
+# The official mirdata annotation types (BeatData, ChordData, ... TempoData).
+# STATS maps each one, and baf's EventDataExtended, to the Stat that reads it.
 ANNOTATION_TYPES = {
     cls.__name__ for cls in mirdata.annotations.Annotation.__subclasses__()
 }
@@ -543,6 +543,37 @@ STATS = {
     "KeyData": Keys,
     "LyricData": Lyrics,
     "EventData": Events,
+    # baf's EventData with a tag per event: Events reads its event labels
+    "EventDataExtended": Events,
 }
-assert all(stat.annotation.__name__ == name for name, stat in STATS.items())
-assert set(STATS) == ANNOTATION_TYPES, "one Stat per official annotation type"
+assert all(STATS[name].annotation.__name__ == name for name in ANNOTATION_TYPES)
+assert set(STATS) == ANNOTATION_TYPES | {
+    "EventDataExtended"
+}, "one Stat per official annotation type, plus baf's EventDataExtended"
+
+
+def choose_stat(name, value):
+    """Choose the annotation type of a name of a track, from its first non-empty value.
+
+    Rule 1, the value: the value is unpacked (a dict, a MultiAnnotator or a
+    list gives its items) and the first item whose class name is a type in
+    STATS gives that type. Rule 2, the name: when no item has such a class
+    and the name holds the word "tempo" (the name split on "_"), the type is
+    TempoData, read by Tempo as a plain per-track bpm (120.0, "125.0" or
+    {"tempo_bpm": 80}). Anything else is not read.
+
+    Args:
+        name (str): the name of a property or attribute of the track
+        value (object): its value on one track, not empty (is_empty)
+
+    Returns:
+        str or None: the annotation type, a key of STATS, or None when the
+            stats do not read the name
+
+    """
+    for _, item in unpack(value):
+        if type(item).__name__ in STATS:
+            return type(item).__name__
+    if "tempo" in name.lower().split("_"):
+        return "TempoData"
+    return None
