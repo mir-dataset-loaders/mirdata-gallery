@@ -8,6 +8,7 @@ In remote mode the files are first fetched into a folder (remote.py); in local
 mode a local copy is read.
 """
 
+import collections
 import logging
 import sys
 
@@ -38,7 +39,25 @@ def error_text(e):
 
 
 def read_tracks(ds, verbose=False):
-    """Load every track of an initialized dataset and summarize its annotations."""
+    """Load every track of an initialized dataset and summarize its annotations.
+
+    Args:
+        ds (mirdata.core.Dataset): an initialized dataset
+        verbose (bool): print each track's result to stderr as it goes
+
+    Returns:
+        dict: the annotation stats, with
+            n_tracks (int): how many tracks the dataset has
+            n_tracks_loaded (int): how many of them could be created
+            tracks_with (dict): {annotation type: tracks with one}
+            annotations (dict): {property: its stats entry}
+            skipped (dict): {guessed property: why its values could not be used}
+            errors (dict): {track_id: error} for tracks that could not be created
+            annotation_errors (dict): {property: {"n_tracks", "messages"}},
+                messages being one {"error", "n_tracks"} per distinct error
+                message, most common first
+
+    """
     # the same detection as the card's annotations field, official types only
     properties = {
         prop: ann_type
@@ -107,7 +126,11 @@ def read_tracks(ds, verbose=False):
         "annotation_errors": {
             prop: {
                 "n_tracks": len(by_track),
-                "examples": dict(list(by_track.items())[:3]),
+                # tracks with the same message become one entry, most common first
+                "messages": [
+                    {"error": error, "n_tracks": n}
+                    for error, n in collections.Counter(by_track.values()).most_common()
+                ],
             }
             for prop, by_track in sorted(annotation_errors.items())
         },

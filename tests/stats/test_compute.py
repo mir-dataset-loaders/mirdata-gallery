@@ -181,8 +181,13 @@ def test_compute_broken_annotation_file(fake_mirdata, tmp_path):
     assert failed == {
         "beats"
     }, "only the property whose file is broken should get an error"
-    tracks = set(ann["annotation_errors"]["beats"]["examples"])
-    assert tracks == {"track2"}, "the error should name the track whose file is broken"
+    beat_errors = ann["annotation_errors"]["beats"]
+    assert (
+        beat_errors["n_tracks"] == 1
+    ), "the error should count the one track whose file is broken"
+    assert (
+        len(beat_errors["messages"]) == 1
+    ), "the broken file should give one error message"
     beats, chords = ann["annotations"]["beats"], ann["annotations"]["chords"]
     assert (
         beats["n_tracks"] == 2
@@ -223,11 +228,13 @@ def test_compute_not_mirdata_annotation(fake_mirdata, monkeypatch):
 
     monkeypatch.setattr(fake_dataset_loader, "load_chords", chords_as_a_dict)
     ann = compute_local()["annotations"]
-    tracks = set(ann["annotation_errors"]["chords"]["examples"])
-    assert tracks == {"track1", "track2"}, (
+    chord_errors = ann["annotation_errors"]["chords"]
+    assert chord_errors["n_tracks"] == 2, (
         "a value that is not the type its hint names should be an annotation error"
         " for each track that returns one"
     )
+    counts = [message["n_tracks"] for message in chord_errors["messages"]]
+    assert counts == [2], "the same error on two tracks should be one message for both"
     assert (
         "chords" not in ann["annotations"]
     ), "a property with no value of its type should get no annotations entry"

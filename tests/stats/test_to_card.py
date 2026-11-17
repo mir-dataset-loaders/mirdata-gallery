@@ -42,7 +42,10 @@ ANNOTATIONS = {  # a remote run where track3 failed and one beats file was corru
     "skipped": {"title": "not a mirdata ChordData object (got str)"},
     "errors": {"track3": "ValueError: cannot build track3"},
     "annotation_errors": {
-        "beats": {"n_tracks": 1, "examples": {"track2": "ValueError: bad line"}}
+        "beats": {
+            "n_tracks": 1,
+            "messages": [{"error": "ValueError: bad line", "n_tracks": 1}],
+        }
     },
     "status": "incomplete",
     "problems": [],
@@ -88,8 +91,9 @@ def test_result_to_card_stats():
         "tracks_with",
         "annotations",
         "skipped",
+        "annotation_errors",
     }
-    counts = {"n_missing_files", "n_track_errors", "annotation_errors"}
+    counts = {"n_missing_files", "n_track_errors"}
     assert (
         set(ann) == kept | counts
     ), "annotations should drop the log lines and the per-file details"
@@ -97,10 +101,6 @@ def test_result_to_card_stats():
         assert ann[key] == ANNOTATIONS[key], f"{key} should be kept as it is"
     assert ann["n_missing_files"] == 1, "missing_files should become their number"
     assert ann["n_track_errors"] == 1, "track errors should become their number"
-    per_property = {"beats": 1}
-    assert (
-        ann["annotation_errors"] == per_property
-    ), "annotation errors should become tracks per property"
 
     beats, notes = ann["annotations"]["beats"], ann["annotations"]["notes"]
     meter = {3: 1}
