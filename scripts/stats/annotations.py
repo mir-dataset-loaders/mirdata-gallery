@@ -5,6 +5,7 @@ annotation. In remote mode the files are first fetched into a folder
 (remote.py); in local mode a local copy is read.
 """
 
+import collections
 import logging
 import sys
 
@@ -180,7 +181,11 @@ def read_tracks(ds, verbose=False):
         "annotation_errors": {
             prop: {
                 "n_tracks": len(by_track),
-                "examples": dict(list(by_track.items())[:3]),
+                # tracks with the same message become one entry, most common first
+                "messages": [
+                    {"error": error, "n_tracks": n}
+                    for error, n in collections.Counter(by_track.values()).most_common()
+                ],
             }
             for prop, by_track in sorted(annotation_errors.items())
         },

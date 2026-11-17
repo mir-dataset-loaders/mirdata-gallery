@@ -184,8 +184,13 @@ def test_compute_broken_annotation_file(fake_mirdata, tmp_path):
     assert failed == {
         "beats"
     }, "only the property whose file is broken should get an error"
-    tracks = set(ann["annotation_errors"]["beats"]["examples"])
-    assert tracks == {"track2"}, "the error should name the track whose file is broken"
+    beat_errors = ann["annotation_errors"]["beats"]
+    assert (
+        beat_errors["n_tracks"] == 1
+    ), "the error should count the one track whose file is broken"
+    assert (
+        len(beat_errors["messages"]) == 1
+    ), "the broken file should give one error message"
     beats, chords = ann["annotations"]["beats"], ann["annotations"]["chords"]
     assert (
         beats["n_tracks"] == 2

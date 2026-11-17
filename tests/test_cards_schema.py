@@ -126,6 +126,31 @@ def check_counts(value, where):
     assert whole, f"{where} should count whole numbers >= 0"
 
 
+def check_annotation_errors(value):
+    """Check a card's annotation_errors field.
+
+    Args:
+        value (dict): {property: {"n_tracks", "messages"}}, each message an
+            {"error", "n_tracks"}, with the message counts adding up to n_tracks
+
+    """
+    assert isinstance(value, dict), "annotation_errors should be {property: errors}"
+    for prop, failed in value.items():
+        where = f"annotation_errors {prop}"
+        keys = isinstance(failed, dict) and set(failed) == {"n_tracks", "messages"}
+        assert keys, f"{where} should hold n_tracks and messages"
+        assert is_count(failed["n_tracks"]), f"{where} n_tracks should be a count"
+        for message in failed["messages"]:
+            keys = set(message) == {"error", "n_tracks"}
+            assert keys, f"{where}: each message should hold error and n_tracks"
+            text = isinstance(message["error"], str) and message["error"].strip()
+            assert text, f"{where}: each error should be non-empty text"
+            assert is_count(message["n_tracks"]), f"{where}: each n_tracks a count"
+        total = sum(message["n_tracks"] for message in failed["messages"])
+        adds_up = total == failed["n_tracks"]
+        assert adds_up, f"{where}: the message counts should add up to n_tracks"
+
+
 def check_grid(value, where):
     if value is None:
         return  # no values to count, e.g. no track with two beats
@@ -272,7 +297,7 @@ def check_stats(stats):
         loaded = ann["n_tracks_loaded"] <= ann["n_tracks"]
         assert loaded, "no more tracks should load than there are"
         check_counts(ann["tracks_with"], "tracks_with")
-        check_counts(ann["annotation_errors"], "annotation_errors")
+        check_annotation_errors(ann["annotation_errors"])
         assert isinstance(ann["skipped"], dict), "skipped should be {property: why}"
         for prop, entry in ann["annotations"].items():
             check_entry(prop, entry)
