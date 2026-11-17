@@ -106,7 +106,12 @@ def print_audio(part_stats):
 
 
 def print_annotations(part_stats):
-    """The terminal block for one dataset's annotations."""
+    """Print the terminal block for one dataset's annotations.
+
+    Args:
+        part_stats (dict): the annotations part of a stats.compute result
+
+    """
     print("\n".join(part_stats.get("sources", [])))
     brief = (
         part_stats["status"] == "needs_local"
@@ -135,8 +140,8 @@ def print_annotations(part_stats):
             f"  {prop} failed on {failed['n_tracks']} tracks"
             + ("" if brief else ", e.g.")
         )
-        for track_id, error in list(failed["examples"].items())[: 0 if brief else 3]:
-            print(f"    {track_id}: {error[:150]}")
+        for message in [] if brief else failed["messages"]:
+            print(f"    {message['n_tracks']} tracks: {message['error']}")
     if part_stats["errors"]:
         print(f"  errors:                 {len(part_stats['errors'])}")
         for track_id, error in list(part_stats["errors"].items())[: 0 if brief else 5]:
