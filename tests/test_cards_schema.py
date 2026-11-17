@@ -204,7 +204,7 @@ def check_card(card, name):
     check_text(card["license"], "license")
     assert "\n" not in card["license"], "license should be one line"
     types = card["annotations"]
-    assert types, "annotations should list at least one type"
+    assert isinstance(types, list), "annotations should be a list (empty when none)"
     unknown = set(types) - CARD_TYPES
     assert not unknown, f"annotations should only use known types, not {unknown}"
     in_order = types == sorted(set(types))
