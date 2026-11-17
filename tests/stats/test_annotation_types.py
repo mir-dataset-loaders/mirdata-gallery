@@ -311,6 +311,48 @@ def test_keys():
     ), "modes should count the part after the colon; a key without one is (none)"
 
 
+def test_keys_plain_strings():
+    # giantsteps_key, beatport_key (a list), multivox: one key per track, as text
+    stat = collect(
+        Keys(), "C minor", "E major | E minor", ["E minor ", " E major"], "Fm", "X"
+    )
+    keys = {"E:minor": 2, "E:major": 2, "C:minor": 1, "Fm": 1, "X": 1}
+    assert (
+        stat.result()["keys"] == keys
+    ), "every key in a string, a list or split on | should count, as a root:mode label"
+    modes = {"minor": 3, "major": 2, "(none)": 2}
+    assert (
+        stat.result()["modes"] == modes
+    ), "a key string's mode should count; one without a mode is (none)"
+    assert (stat.n_tracks, stat.n_annotations) == (
+        5,
+        5,
+    ), "each plain value should count as one track with one annotation"
+
+
+def test_keys_mode_from_track():
+    class Track:  # fma_keys: the key and its mode are two names of the track
+        mode = "Major"
+
+    stat = Keys()
+    stat.add("F#", Track())
+    stat.add("C minor", Track())
+    keys = {"F#:major": 1, "C:minor": 1}
+    assert (
+        stat.result()["keys"] == keys
+    ), "a key without a mode should take the track's mode; one with a mode keeps it"
+
+
+def test_keys_not_read():
+    stat = Keys()
+    da_tacos = {"key": b"C", "scale": b"major", "strength": 0.8}
+    assert not stat.add(da_tacos), "a dict (da_tacos' essentia estimate) should not be read"
+    assert not stat.add(6), "a number (fma_keys' key_number) should not be read"
+    music21 = [{"time": 0, "key": object()}]
+    assert not stat.add(music21), "a list of non-strings (haydn_op20) should not be read"
+    assert stat.n_tracks == 0, "a value that isn't read should not count as a track"
+
+
 def test_lyrics():
     def lyrics(*words, unit="words"):
         return annotations.LyricData(
@@ -481,6 +523,27 @@ def test_chord_quality():
         assert (
             Chords.chord_quality(label) == quality
         ), f"{label} should have quality {quality}"
+
+
+def test_key_label():
+    class Track:
+        mode = "Major"
+
+    expected = [
+        ("C minor", None, "C:minor"),
+        ("Eb minor dorian", None, "Eb:minor dorian"),
+        (" E major", None, "E:major"),
+        ("A Minor", None, "A:minor"),
+        ("C:minor", None, "C:minor"),
+        ("Fm", None, "Fm"),
+        ("X", None, "X"),
+        ("F#", Track(), "F#:major"),
+        ("C minor", Track(), "C:minor"),
+    ]
+    for key, track, label in expected:
+        assert (
+            Keys.key_label(key, track) == label
+        ), f"{key!r} (track mode {getattr(track, 'mode', None)!r}) should be {label!r}"
 
 
 def test_bar_lengths():

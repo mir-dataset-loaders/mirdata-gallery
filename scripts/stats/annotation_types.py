@@ -138,8 +138,18 @@ class Stat:
         )
         self.parts = Counter()  # dict keys / annotator ids the annotations came from
 
-    def add(self, value):
-        """Read one track's annotation(s); False when there is no mirdata annotation of this type."""
+    def add(self, value, track=None):
+        """Read one track's annotation(s) of this type.
+
+        Args:
+            value (object): the value of one name of the track
+            track (mirdata.core.Track or None): that track, for a Stat that
+                also reads another of its names (Keys reads its mode)
+
+        Returns:
+            bool: False when there is no mirdata annotation of this type
+
+        """
         found = [(k, v) for k, v in unpack(value) if isinstance(v, self.annotation)]
         if not found:
             return False
@@ -175,8 +185,17 @@ class Tempo(Stat):
         super().__init__()
         self.bpm = []
 
-    def add(self, value):
-        """A plain per-track tempo counts as one annotation; anything else goes through Stat.add."""
+    def add(self, value, track=None):
+        """Read one track's tempo: a plain bpm counts as one annotation, anything else goes through Stat.add.
+
+        Args:
+            value (object): the value of one name of the track
+            track (mirdata.core.Track or None): not used
+
+        Returns:
+            bool: False when there is no tempo to read
+
+        """
         bpm = metadata_bpm(value)
         if bpm is None:
             return super().add(value)  # a TempoData, or False (saraga_hindustani stays skipped)
@@ -456,7 +475,7 @@ class Sections(Stat):
 
 
 class Keys(Stat):
-    """Key labels and modes of KeyData annotations."""
+    """Key labels and modes of KeyData annotations, or of keys stored as plain strings."""
 
     annotation = mirdata.annotations.KeyData
 
@@ -464,6 +483,36 @@ class Keys(Stat):
         super().__init__()
         self.keys = Counter()
         self.modes = Counter()
+
+    def add(self, value, track=None):
+        """Read one track's keys: plain key strings count as one annotation, anything else goes through Stat.add.
+
+        Args:
+            value (object): the value of one name of the track: a string
+                ('C minor', 'E major | E minor'), a list of strings, or a KeyData
+            track (mirdata.core.Track or None): that track, whose mode a key
+                without one takes (key_label)
+
+        Returns:
+            bool: False when there is no key to read
+
+        """
+        keys = [value] if isinstance(value, str) else value
+        if not isinstance(keys, (list, tuple)) or not all(
+            isinstance(k, str) for k in keys
+        ):
+            return super().add(value)  # a KeyData, or False (da_tacos' dict)
+        labels = [
+            self.key_label(k, track)
+            for item in keys
+            for k in item.split("|")
+            if k.strip()
+        ]
+        self.keys.update(labels)
+        self.modes.update(self.key_mode(k) for k in labels)
+        self.n_annotations += 1
+        self.n_tracks += 1
+        return True
 
     def read(self, value):
         keys = [str(k) for k in value.keys]
@@ -475,6 +524,30 @@ class Keys(Stat):
             "keys": dict(self.keys.most_common()),
             "modes": dict(self.modes.most_common()),
         }
+
+    @staticmethod
+    def key_label(key, track=None):
+        """Write a key string as a KeyData label, "root:mode".
+
+        The first space becomes ":" ('C minor' -> 'C:minor'), a key without a
+        mode takes the track's plain-string mode (fma_keys: 'F#' and 'Major'
+        -> 'F#:major'), and the mode is lowercased. Anything else stays as given.
+
+        Args:
+            key (str): one key, e.g. 'C minor', 'Fm', 'X'
+            track (mirdata.core.Track or None): its track
+
+        Returns:
+            str: the key label
+
+        """
+        key = key.strip()
+        if ":" not in key:
+            key = key.replace(" ", ":", 1)
+        root, _, mode = key.partition(":")
+        if not mode and isinstance(getattr(track, "mode", None), str):
+            mode = track.mode
+        return f"{root}:{mode.strip().lower()}" if mode.strip() else root
 
     @staticmethod
     def key_mode(key):
@@ -495,7 +568,17 @@ class Lyrics(Stat):
         )  # one value per track: its words, syllables, ... over all its annotations
         self.track_lyrics = 0
 
-    def add(self, value):
+    def add(self, value, track=None):
+        """Read one track's lyrics through Stat.add, and keep how many lyrics it has.
+
+        Args:
+            value (object): the value of one name of the track
+            track (mirdata.core.Track or None): not used
+
+        Returns:
+            bool: False when there is no LyricData to read
+
+        """
         self.track_lyrics = 0
         if not super().add(value):
             return False
