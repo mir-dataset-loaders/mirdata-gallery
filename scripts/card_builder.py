@@ -1,43 +1,15 @@
 """What goes into a card: one function per field, and build_card to put them together.
 
 Each field function takes an initialized mirdata Dataset (from ``mirdata.initialize``)
-and returns the value to store in the card. Function names match the card
-fields on purpose, so build_card reads like the card itself. clean_text tidies
-mirdata's text (license, bibtex, the loader docstring) for the YAML.
+or the card's stats, and returns the value to store in the card. Function names
+match the card fields on purpose, so build_card reads like the card itself.
+clean_text tidies mirdata's text (license, bibtex, the loader docstring) for the YAML.
 """
 
 import textwrap
-import typing
-
-import mirdata
-import mirdata.annotations
-
-# FIXME: NEEDS FIX
-
-# For track properties without a usable return type hint: if the property
-# name contains the keyword, it counts as that annotation type. Substring
-# match, first keyword in this order wins.
-FALLBACK_MAP = {
-    "beat": "BeatData",
-    "chord": "ChordData",
-    "key": "KeyData",
-    "tempo": "TempoData",
-    "section": "SectionData",
-    "pitch": "F0Data",
-    "f0": "F0Data",
-    "melody": "F0Data",
-    "note": "NoteData",
-    "midi": "NoteData",
-    "lyric": "LyricData",
-    "phoneme": "LyricData",
-    "syllable": "LyricData",
-    "phrase": "LyricData",
-    "event": "EventData",
-    "instrument": "Instrument",
-}
 
 # The MIR tasks each annotation type supports, by the names MIR papers use.
-# EventData is too generic to name one; Genre and Instrument have none yet.
+# EventData (and baf's EventDataExtended) is too generic to name one.
 TASKS = {
     "BeatData": ["Beat Tracking"],
     "ChordData": ["Chord Recognition"],
@@ -57,15 +29,15 @@ def build_card(ds, stats=None):
     """The card dict for one initialized dataset; keys in card order.
 
     stats is the card's stats field, from generate_cards.update_stats() (new,
-    kept from the old card, or None). summary and summary_hash are left None:
-    the LLM summary is made from the card's tasks, so generate_cards fills
-    them in afterwards.
+    kept from the old card, or None); annotations and tasks come from it.
+    summary and summary_hash are left None: the LLM summary is made from the
+    card's tasks, so generate_cards fills them in afterwards.
     """
     return {
         "name": ds.name,
         "summary": None,
-        "annotations": annotations(ds),
-        "tasks": tasks(ds),
+        "annotations": annotations(stats),
+        "tasks": tasks(ds, stats),
         "stats": stats,
         "summary_hash": None,
         "bibtex": bibtex(ds),
@@ -81,72 +53,18 @@ def bibtex(ds):
     return clean_text(getattr(ds, "bibtex", None))
 
 
-def annotations(ds):
-    """Sorted list of annotation types the dataset's Track class exposes."""
-    found = set(annotation_properties(ds).values())
-    # Dedicated genre datasets (gtzan_genre, acousticbrainz_genre, ...)
-    if ds.name.endswith("_genre"):
-        found.add("Genre")
-    return sorted(found)
+def annotations(stats):
+    """Sorted list of the annotation types the stats read; empty without stats entries."""
+    entries = ((stats or {}).get("annotations") or {}).get("annotations") or {}
+    return sorted({entry["type"] for entry in entries.values()})
 
 
-def tasks(ds):
+def tasks(ds, stats):
     """Sorted list of MIR tasks: those of the card's annotation types, plus Source Separation for a multitrack loader."""
-    found = {task for t in annotations(ds) for task in TASKS.get(t, [])}
+    found = {task for t in annotations(stats) for task in TASKS.get(t, [])}
     if getattr(ds, "_multitrack_class", None):
         found.add(MULTITRACK_TASK)
     return sorted(found)
-
-
-def annotation_properties(ds, guess=True):
-    """{property name: annotation type} for every annotation property of the dataset's Track class.
-
-    The card's annotations field lists the types; the stats read the
-    properties of the official mirdata types. guess=False keeps only the
-    properties whose return hint names the type (none guessed from FALLBACK_MAP).
-    """
-    found = {}
-    track_class = getattr(ds, "_track_class", None)
-    for attr in dir(track_class):
-        if attr.startswith("_"):
-            continue
-        item = getattr(track_class, attr, None)
-        if isinstance(item, (property, mirdata.core.cached_property)):
-            ann_cls = _annotation_class_name(attr, item, guess)
-            if ann_cls:
-                found[attr] = ann_cls
-    return found
-
-
-def _annotation_class_name(attr_name, item, guess=True):
-    """Annotation class name a property returns, or None if it isn't one."""
-    # @property stores the getter as .fget, @cached_property as .func
-    func = getattr(item, "func", None) or getattr(item, "fget", None)
-    if not func:
-        return None
-
-    # 1. Return type hint, e.g. -> Optional[BeatData]
-    ret = getattr(func, "__annotations__", {}).get("return")
-    if ret:
-        for arg in typing.get_args(ret):  # unwrap Optional[...] / Union[...]
-            if arg is not type(None):
-                ret = arg
-                break
-        if (
-            isinstance(ret, type)
-            and issubclass(ret, mirdata.annotations.Annotation)
-            and ret is not mirdata.annotations.Annotation
-        ):
-            return ret.__name__
-    if not guess:
-        return None
-
-    # 2. Keyword in the property name
-    attr_lower = attr_name.lower()
-    for keyword, class_name in FALLBACK_MAP.items():
-        if keyword in attr_lower:
-            return class_name
-    return None
 
 
 def clean_text(text):

@@ -1,18 +1,16 @@
 """Annotation stats of one dataset: grid counts and label counts per annotation property.
 
-Only the ten official mirdata annotation types are read:
-card_builder.annotation_properties finds them, annotation_types.py has one
-Stat class per type. Each property of
-each track is loaded on its own, so a broken file costs only that annotation.
-In remote mode the files are first fetched into a folder (remote.py); in local
-mode a local copy is read.
+Each name of each track is read on its own, so a broken file costs only that
+annotation. In remote mode the files are first fetched into a folder
+(remote.py); in local mode a local copy is read.
 """
 
 import collections
 import logging
 import sys
 
-import card_builder
+import mirdata.core
+
 from stats import annotation_types, remote
 
 
@@ -38,45 +36,82 @@ def error_text(e):
     return f"{type(e).__name__}: {e}"
 
 
+def drop_excluded_names(names):
+    """Drop the names of a track that the stats never read.
+
+    A name is dropped when it is private (starts with "_"), loads audio
+    (contains "audio": reading it loads the whole audio file) or holds a
+    file path (ends with "_path" or "_paths", as mirdata names every path).
+
+    Args:
+        names (iterable of str): names of a track's properties and attributes
+
+    Returns:
+        list of str: the names left, sorted
+
+    """
+    return sorted(
+        name
+        for name in names
+        if not name.startswith("_")
+        and "audio" not in name.lower()
+        and not name.endswith(("_path", "_paths"))
+    )
+
+
+def collect_stats_candidates(track):
+    """List the names of a track that the stats may read.
+
+    The candidates are the properties of the track's class (plain and
+    cached) and the attributes the track set when it was created, minus the
+    names drop_excluded_names() removes.
+
+    Args:
+        track (mirdata.core.Track): a track of an initialized dataset
+
+    Returns:
+        list of str: the candidate names, sorted
+
+    """
+    track_class = type(track)
+    properties = {
+        name
+        for name in dir(track_class)
+        if isinstance(
+            getattr(track_class, name, None),
+            (property, mirdata.core.cached_property),
+        )
+    }
+    return drop_excluded_names(properties | set(vars(track)))
+
+
 def read_tracks(ds, verbose=False):
     """Load every track of an initialized dataset and summarize its annotations.
 
+    Each candidate name gets its type from its first non-empty value
+    (choose_stat); a name with no type is not read again. Errors from before
+    a name had a type are held, then count as annotation errors.
+
     Args:
         ds (mirdata.core.Dataset): an initialized dataset
-        verbose (bool): print each track's result to stderr as it goes
+        verbose (bool): print every track and error to stderr
 
     Returns:
-        dict: the annotation stats, with
-            n_tracks (int): how many tracks the dataset has
-            n_tracks_loaded (int): how many of them could be created
-            tracks_with (dict): {annotation type: tracks with one}
-            annotations (dict): {property: its stats entry}
-            skipped (dict): {guessed property: why its values could not be used}
-            errors (dict): {track_id: error} for tracks that could not be created
-            annotation_errors (dict): {property: {"n_tracks", "messages"}},
-                messages being one {"error", "n_tracks"} per distinct error
-                message, most common first
+        dict: the track counts, annotations, skipped, errors and annotation_errors
 
     """
-    # the same detection as the card's annotations field, official types only
-    properties = {
-        prop: ann_type
-        for prop, ann_type in card_builder.annotation_properties(ds).items()
-        if ann_type in annotation_types.ANNOTATION_TYPES
-    }
-    # typed by their return hint: a value of another type is an error, not a wrong guess
-    declared = card_builder.annotation_properties(ds, guess=False)
     track_ids = ds.track_ids
-    stats = {
-        prop: annotation_types.STATS[ann_type]()
-        for prop, ann_type in properties.items()
-    }
+    types = {}  # name -> annotation type, chosen from its first non-empty value
+    stats = {}  # name -> the Stat that reads it
+    by_name = set()  # names typed by a word in the name (tempo, key), not by their value
+    dropped = set()  # names whose first non-empty value has no type: never read again
+    held = {}  # name with no type yet -> {track_id: error} while reading it
     # annotation type -> ids of tracks with at least one such annotation
     tracks_with = {}
-    skipped = {}  # guessed property -> why its values could not be used
+    skipped = {}  # name -> why its values could not be used
     # track_id -> error while creating the track (none of its annotations read)
     errors = {}
-    annotation_errors = {}  # property -> {track_id: error} while loading or reading it
+    annotation_errors = {}  # name with a type -> {track_id: error} while reading it
 
     for track_id in track_ids:
         try:
@@ -87,33 +122,53 @@ def read_tracks(ds, verbose=False):
             if verbose:
                 print(f"    {track_id}: {errors[track_id]}", file=sys.stderr)
             continue
-        for prop, ann_type in properties.items():
-            # One property at a time: a broken annotation file costs only that annotation.
+        for name in collect_stats_candidates(track):
+            if name in dropped:
+                continue
+            # One name at a time: a broken annotation file costs only that annotation.
             try:
                 with quiet_logging():
-                    value = getattr(track, prop)
+                    value = getattr(track, name)
                 if annotation_types.is_empty(value):
                     continue
-                used = stats[prop].add(value)
+                if name not in types:
+                    ann_type = annotation_types.choose_stat(name, value)
+                    if ann_type is None:
+                        dropped.add(name)
+                        held.pop(name, None)
+                        continue
+                    types[name] = ann_type
+                    stats[name] = annotation_types.STATS[ann_type]()
+                    if not any(
+                        type(item).__name__ == ann_type
+                        for _, item in annotation_types.unpack(value)
+                    ):
+                        by_name.add(name)
+                    if name in held:
+                        annotation_errors[name] = held.pop(name)
+                used = stats[name].add(value, track)
             except Exception as e:
-                annotation_errors.setdefault(prop, {})[track_id] = error_text(e)
+                found = annotation_errors if name in types else held
+                found.setdefault(name, {})[track_id] = error_text(e)
                 if verbose:
-                    print(f"    {track_id} {prop}: {error_text(e)}", file=sys.stderr)
+                    print(f"    {track_id} {name}: {error_text(e)}", file=sys.stderr)
                 continue
             if used:
-                tracks_with.setdefault(ann_type, set()).add(track_id)
+                tracks_with.setdefault(types[name], set()).add(track_id)
                 continue
-            why = f"not a mirdata {ann_type} object (got {type(value).__name__})"
-            if prop in declared:
-                annotation_errors.setdefault(prop, {})[track_id] = why
+            why = f"not a mirdata {types[name]} object (got {type(value).__name__})"
+            if name in by_name:
+                skipped[name] = why
             else:
-                skipped[prop] = why
+                annotation_errors.setdefault(name, {})[track_id] = why
         if verbose:
             print(f"    {track_id}: ok", file=sys.stderr)
 
+    for name, by_track in held.items():
+        skipped[name] = f"could not be read ({next(iter(by_track.values()))})"
     annotations = {
-        prop: {"type": properties[prop], **stat.summary(), **stat.result()}
-        for prop, stat in sorted(stats.items())
+        name: {"type": types[name], **stat.summary(), **stat.result()}
+        for name, stat in sorted(stats.items())
         if stat.n_tracks
     }
     return {
