@@ -78,7 +78,7 @@ NUMBER_FIELDS = {
 # The annotation types this release doesn't plot yet, as the About page's note says. The
 # cards keep them and their tags still show. Genre and Instrument have no plots to hide.
 # The tempo worked out from beats stays: only annotated tempo (TempoData) goes.
-HIDDEN_PLOT_TYPES = {"EventData", "EventDataExtended", "SectionData", "TempoData"}
+HIDDEN_PLOT_TYPES = {"EventData", "EventDataExtended", "SectionData"}
 
 # --- Card rendering ----------------------------------------------------------
 

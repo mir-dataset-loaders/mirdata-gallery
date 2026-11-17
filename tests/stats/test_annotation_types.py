@@ -63,16 +63,64 @@ def collect(stat, *values):
 # ---------------------------------------------------------------- one Stat each
 
 
-def test_tempo():
-    track1 = annotations.TempoData(intervals((0, 10)), "s", np.array([120.0]), "bpm")
-    track2 = annotations.TempoData(
-        intervals((0, 10), (10, 20)), "s", np.array([90.0, 180.0]), "bpm"
+def tempos(values, confidence=None):
+    """A TempoData whose values all span the same 0-10 s, like giantsteps_tempo's candidates."""
+    return annotations.TempoData(
+        intervals(*[(0, 10)] * len(values)),
+        "s",
+        np.array(values, dtype=float),
+        "bpm",
+        None if confidence is None else np.array(confidence, dtype=float),
+        None if confidence is None else "likelihood",
     )
+
+
+def test_tempo():
+    track1 = tempos([120.0], [1.0])
+    track2 = tempos([87.0, 174.0], [0.22, 0.78])
     result = collect(Tempo(), track1, track2).result()
-    expected = {"tempo": grid([120.0, 90.0, 180.0], "bpm")}
+    expected = {"tempo": grid([120.0, 174.0], "bpm")}
     assert (
         result == expected
-    ), "every tempo of every annotation should be counted on one 1-bpm grid"
+    ), "each annotation should give one tempo, its most confident, on one 1-bpm grid"
+
+
+def test_tempo_first_value():
+    tie = tempos([127.0, 139.0], [0.5, 0.5])
+    no_confidence = tempos([90.0, 180.0])
+    result = collect(Tempo(), tie, no_confidence).result()
+    expected = {"tempo": grid([127.0, 90.0], "bpm")}
+    assert (
+        result == expected
+    ), "the first tempo should be taken on a confidence tie, or without confidences"
+
+
+def test_tempo_plain_values():
+    carnatic = {
+        "tempo_apm": 425,
+        "tempo_bpm": 106,
+        "sama_interval": 4.522,
+        "beats_per_cycle": 32,
+        "subdivisions": 4,
+    }
+    stat = collect(Tempo(), 120.5, 90, "125.0", carnatic)
+    expected = {"tempo": grid([120.5, 90.0, 125.0, 106.0], "bpm")}
+    assert (
+        stat.result() == expected
+    ), "a number, a numeric string and saraga_carnatic's tempo_bpm should each be one tempo"
+    assert (stat.n_tracks, stat.n_annotations) == (
+        4,
+        4,
+    ), "each plain tempo should count as one track with one annotation"
+
+
+def test_tempo_not_read():
+    # saraga_hindustani: per-section tempos in matras per minute, -1 when unmetered
+    hindustani = {"Alap": {"tempo": -1, "start_time": 0.0, "duration": 38.1}}
+    stat = Tempo()
+    assert not stat.add(hindustani), "a dict without tempo_bpm should not be read"
+    assert not stat.add("fast"), "a string that isn't a number should not be read"
+    assert stat.n_tracks == 0, "a value that isn't read should not count as a track"
 
 
 def test_beats():
