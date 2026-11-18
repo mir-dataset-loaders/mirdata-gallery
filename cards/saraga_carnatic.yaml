@@ -99,13 +99,10 @@ stats:
         type: SectionData
         n_tracks: 119
         n_annotations: 119
-        labels: {Caraṇam: 147, Pallavi: 114, Anupallavi: 84, Vocal ālāp: 42, Kalpanā svara: 34,
-          Violin ālāp: 28, Nereval: 18, Tani āvartana: 11, Muktāyi svara: 11, Ciṭṭa svara: 11,
-          '-': 9, Jati svara: 2, Verse: 2, Tānam: 2, Caraṇam sahānā: 2, Ślōka: 2,
-          Caraṇam vasanta: 1, Caraṇam yamuna kalyāṇi: 1, Caraṇam sindhubhairavi: 1,
-          Viruttam: 1, Tiśram: 1, Mēl kālam: 1, Anupallavi kāpi: 1, Caraṇam hamsānandi: 1,
-          Rāgamālika svara: 1, Pallavi nāṭakurinji: 1, Caraṇam bāgēśrī: 1, Caraṇam hamīr kalyāṇi: 1,
-          Caraṇam dēś: 1, Caraṇaṁ suraṭi rāgamālika: 1, Jatisvara: 1}
+        sections_per_annotation:
+          unit: sections
+          width: 1
+          counts: {1: 10, 2: 2, 3: 29, 4: 29, 5: 15, 6: 14, 7: 8, 8: 7, 9: 4, 10: 1}
         section_interval_seconds:
           unit: s
           width: 1
