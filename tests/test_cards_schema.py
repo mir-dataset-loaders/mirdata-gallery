@@ -104,7 +104,7 @@ ENTRY_FIELDS = {
     "LyricData": {"lyric_unit": COUNTS, "lyrics_per_track": GRID},
     "MultiF0Data": {"frequencies": GRID, "polyphony": COUNTS},
     "NoteData": {"pitches": GRID},
-    "SectionData": {"labels": COUNTS, "section_interval_seconds": GRID},
+    "SectionData": {"sections_per_annotation": GRID, "section_interval_seconds": GRID},
     "TempoData": {"tempo": GRID},
 }
 
