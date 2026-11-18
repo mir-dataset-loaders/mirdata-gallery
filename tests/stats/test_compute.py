@@ -53,9 +53,6 @@ def test_compute(fake_mirdata):
     assert (
         ann["tracks_with"] == tracks_with
     ), "each type should count only the tracks that have it"
-    assert (
-        ann["skipped"] == {}
-    ), "a property whose values are its type should not be skipped"
     assert ann["errors"] == {}, "errors should list only the tracks that fail to load"
     assert (
         ann["annotation_errors"] == {}
@@ -189,7 +186,7 @@ def test_compute_broken_annotation_file(fake_mirdata, tmp_path):
         beat_errors["n_tracks"] == 1
     ), "the error should count the one track whose file is broken"
     assert (
-        len(beat_errors["messages"]) == 1
+        len(beat_errors["logs"]) == 1
     ), "the broken file should give one error message"
     beats, chords = ann["annotations"]["beats"], ann["annotations"]["chords"]
     assert (
@@ -240,7 +237,6 @@ def test_compute_not_an_annotation(fake_mirdata, monkeypatch):
         "a name whose first value is not an annotation should get no entry,"
         " whatever its type hint or its name"
     )
-    assert ann["skipped"] == {}, "a name dropped for its value should not be listed"
     assert ann["annotation_errors"] == {}, "a name dropped for its value is not an error"
     assert ann["status"] == "ok", "a dropped name should not change the status"
 
@@ -267,11 +263,20 @@ def test_compute_tempo_by_name(fake_mirdata, monkeypatch):
     assert entry["tempo"] == grid(
         [120, 80], "bpm"
     ), "every value that is a number should be read as a bpm"
-    assert ann["skipped"] == {
-        "tempo": "not a mirdata TempoData object (got str)"
-    }, "a tempo value that is not a number should be listed in skipped"
-    assert ann["annotation_errors"] == {}, "an unreadable tempo value is not an error"
-    assert ann["status"] == "ok", "a skipped tempo value should not change the status"
+    assert ann["annotation_errors"] == {
+        "tempo": {
+            "n_tracks": 1,
+            "logs": [
+                {
+                    "error": "WrongFormat: not a mirdata TempoData object (got str)",
+                    "n_tracks": 1,
+                }
+            ],
+        }
+    }, "a tempo value that is not a number should be a WrongFormat annotation error"
+    assert (
+        ann["status"] == "incomplete"
+    ), "an unusable tempo value should make the status incomplete"
 
 
 def test_compute_key_by_name(fake_mirdata, monkeypatch):
@@ -292,11 +297,20 @@ def test_compute_key_by_name(fake_mirdata, monkeypatch):
         " track's mode"
     )
     assert "mode" not in ann["annotations"], "mode alone should not be read"
-    assert ann["skipped"] == {
-        "key": "not a mirdata KeyData object (got dict)"
-    }, "a key value that is not text should be listed in skipped"
-    assert ann["annotation_errors"] == {}, "an unreadable key value is not an error"
-    assert ann["status"] == "ok", "a skipped key value should not change the status"
+    assert ann["annotation_errors"] == {
+        "key": {
+            "n_tracks": 1,
+            "logs": [
+                {
+                    "error": "WrongFormat: not a mirdata KeyData object (got dict)",
+                    "n_tracks": 1,
+                }
+            ],
+        }
+    }, "a key value that is not text should be a WrongFormat annotation error"
+    assert (
+        ann["status"] == "incomplete"
+    ), "an unusable key value should make the status incomplete"
 
 
 def test_compute_errors_held(fake_mirdata, monkeypatch):
@@ -317,9 +331,12 @@ def test_compute_errors_held(fake_mirdata, monkeypatch):
     errors = ann["annotation_errors"]["onsets"]
     assert errors == {
         "n_tracks": 2,
-        "messages": [
+        "logs": [
             {"error": "ValueError: broken onsets file", "n_tracks": 1},
-            {"error": "not a mirdata BeatData object (got str)", "n_tracks": 1},
+            {
+                "error": "WrongFormat: not a mirdata BeatData object (got str)",
+                "n_tracks": 1,
+            },
         ],
     }, (
         "an error held before the name had a type, and a later value that is not"
@@ -336,13 +353,17 @@ def test_compute_never_read(fake_mirdata, monkeypatch):
         fake_dataset_loader.Track, "spectrogram", property(spectrogram), raising=False
     )
     ann = compute_local()["annotations"]
-    assert ann["skipped"] == {
-        "spectrogram": "could not be read (FileNotFoundError: no spectrogram file)"
-    }, "a name that could not be read on any track should be listed in skipped"
+    assert ann["annotation_errors"] == {
+        "spectrogram": {
+            "n_tracks": 3,
+            "logs": [
+                {"error": "FileNotFoundError: no spectrogram file", "n_tracks": 3}
+            ],
+        }
+    }, "a name that could not be read on any track should keep each track's error"
     assert (
-        ann["annotation_errors"] == {}
-    ), "a name that never had a type should not be an annotation error"
-    assert ann["status"] == "ok", "a name never read should not change the status"
+        ann["status"] == "incomplete"
+    ), "a name never read should make the status incomplete"
 
 
 def test_drop_excluded_names():
@@ -394,10 +415,17 @@ def test_compute_instrument(fake_mirdata, monkeypatch):
     assert (
         ann["tracks_with"]["Instrument"] == 3
     ), "tracks_with should count the tracks with instrument labels"
-    assert ann["skipped"] == {
-        "instrument_id": "no instrument labels (got int)"
-    }, "a number in an instrument field should be reported as skipped"
-    assert ann["status"] == "ok", "a skipped instrument field should not change the status"
+    assert ann["annotation_errors"] == {
+        "instrument_id": {
+            "n_tracks": 3,
+            "logs": [
+                {"error": "WrongFormat: no instrument labels (got int)", "n_tracks": 3}
+            ],
+        }
+    }, "a number in an instrument field should be a WrongFormat annotation error"
+    assert (
+        ann["status"] == "incomplete"
+    ), "an unusable instrument field should make the status incomplete"
 
 
 def test_compute_crashing_part(fake_mirdata, monkeypatch):

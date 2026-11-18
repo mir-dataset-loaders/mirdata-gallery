@@ -1,12 +1,26 @@
 """The card's "stats" field, made from a computed result, and when to replace it.
 
-A card keeps the numbers, grid counts, statuses and problems, with counts
-instead of per-file and per-track error lists; annotation errors keep their
-messages, one per distinct message. Its "computed" block records the mode and the
-index checksum, so a later run knows whether the stats are still current.
+A card keeps the numbers, grid counts, statuses and problems, with a count
+instead of the per-file error list and track errors counted by exception type;
+annotation errors keep their messages, one per distinct message. Its "computed"
+block records the mode and the index checksum, so a later run knows whether the
+stats are still current.
 """
 
+import collections
+
 MODES = ("remote", "local")
+
+# Exception types that track_errors counts by name; any other counts as "Others".
+ERROR_TYPES = (
+    "FileNotFoundError",
+    "ValueError",
+    "KeyError",
+    "TypeError",
+    "IndexError",
+    "AttributeError",
+    "OSError",
+)
 
 # Keys copied from each part's result; everything else (log lines, per-file
 # dicts) stays out of the card.
@@ -26,7 +40,6 @@ ANNOTATION_KEYS = (
     "n_tracks_loaded",
     "tracks_with",
     "annotations",
-    "skipped",
 )
 
 
@@ -37,11 +50,23 @@ def audio_to_card(part):
     return {key: part[key] for key in AUDIO_KEYS if key in part}
 
 
+def track_errors(errors):
+    """The tracks per exception type, most first, for {track_id: "ValueError: ..."}."""
+    names = (error.split(": ", 1)[0] for error in errors.values())
+    counts = collections.Counter(
+        name if name in ERROR_TYPES else "Others" for name in names
+    )
+    return {
+        "n_tracks": len(errors),
+        "logs": [{"error": name, "n_tracks": n} for name, n in counts.most_common()],
+    }
+
+
 def annotations_to_card(part):
     """The annotations part as stored in a card.
 
-    Per-file and per-track details become counts; annotation errors keep their
-    messages with their counts.
+    Per-file details become a count, track errors a count per exception type;
+    annotation errors keep their messages with their counts.
 
     Args:
         part (dict): the annotations part of a stats.compute result
@@ -68,7 +93,7 @@ def annotations_to_card(part):
         for prop, entry in card.get("annotations", {}).items()
     }
     card["n_missing_files"] = len(part.get("missing_files", {}))
-    card["n_track_errors"] = len(part.get("errors", {}))
+    card["track_errors"] = track_errors(part.get("errors", {}))
     card["annotation_errors"] = part.get("annotation_errors", {})
     return card
 

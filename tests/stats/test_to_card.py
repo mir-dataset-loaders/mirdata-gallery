@@ -39,12 +39,11 @@ ANNOTATIONS = {  # a remote run where track3 failed and one beats file was corru
             "polyphony": {"1": 3, "2": 1},
         },
     },
-    "skipped": {"title": "not a mirdata ChordData object (got str)"},
     "errors": {"track3": "ValueError: cannot build track3"},
     "annotation_errors": {
         "beats": {
             "n_tracks": 1,
-            "messages": [{"error": "ValueError: bad line", "n_tracks": 1}],
+            "logs": [{"error": "ValueError: bad line", "n_tracks": 1}],
         }
     },
     "status": "incomplete",
@@ -90,17 +89,19 @@ def test_result_to_card_stats():
         "n_tracks_loaded",
         "tracks_with",
         "annotations",
-        "skipped",
         "annotation_errors",
     }
-    counts = {"n_missing_files", "n_track_errors"}
+    counts = {"n_missing_files", "track_errors"}
     assert (
         set(ann) == kept | counts
     ), "annotations should drop the log lines and the per-file details"
     for key in kept - {"annotations"}:
         assert ann[key] == ANNOTATIONS[key], f"{key} should be kept as it is"
     assert ann["n_missing_files"] == 1, "missing_files should become their number"
-    assert ann["n_track_errors"] == 1, "track errors should become their number"
+    track_errors = {"n_tracks": 1, "logs": [{"error": "ValueError", "n_tracks": 1}]}
+    assert (
+        ann["track_errors"] == track_errors
+    ), "track errors should become their count per exception type"
 
     beats, notes = ann["annotations"]["beats"], ann["annotations"]["notes"]
     meter = {3: 1}

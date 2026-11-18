@@ -90,28 +90,28 @@ def read_tracks(ds, verbose=False):
 
     Each candidate name gets its type from its first non-empty value
     (choose_stat); a name with no type is not read again. Errors from before
-    a name had a type are held, then count as annotation errors.
+    a name had a type are held, then count as annotation errors, also when
+    the name never gets a type. A value its Stat cannot use counts as a
+    "WrongFormat" annotation error.
 
     Args:
         ds (mirdata.core.Dataset): an initialized dataset
         verbose (bool): print every track and error to stderr
 
     Returns:
-        dict: the track counts, annotations, skipped, errors and annotation_errors
+        dict: the track counts, annotations, errors and annotation_errors
 
     """
     track_ids = ds.track_ids
     types = {}  # name -> annotation type, chosen from its first non-empty value
     stats = {}  # name -> the Stat that reads it
-    by_name = set()  # names typed by a word in the name (tempo, key), not by their value
     dropped = set()  # names whose first non-empty value has no type: never read again
     held = {}  # name with no type yet -> {track_id: error} while reading it
     # annotation type -> ids of tracks with at least one such annotation
     tracks_with = {}
-    skipped = {}  # name -> why its values could not be used
     # track_id -> error while creating the track (none of its annotations read)
     errors = {}
-    annotation_errors = {}  # name with a type -> {track_id: error} while reading it
+    annotation_errors = {}  # name -> {track_id: error or unusable value} while reading it
 
     for track_id in track_ids:
         try:
@@ -139,11 +139,6 @@ def read_tracks(ds, verbose=False):
                         continue
                     types[name] = ann_type
                     stats[name] = annotation_types.STATS[ann_type]()
-                    if not any(
-                        type(item).__name__ == ann_type
-                        for _, item in annotation_types.unpack(value)
-                    ):
-                        by_name.add(name)
                     if name in held:
                         annotation_errors[name] = held.pop(name)
                 used = stats[name].add(value, track)
@@ -156,21 +151,19 @@ def read_tracks(ds, verbose=False):
             if used:
                 tracks_with.setdefault(types[name], set()).add(track_id)
                 continue
+            # "WrongFormat" stands in for an exception type, as in error_text()
             got = type(value).__name__
             why = (
-                f"no instrument labels (got {got})"
+                f"WrongFormat: no instrument labels (got {got})"
                 if types[name] == "Instrument"
-                else f"not a mirdata {types[name]} object (got {got})"
+                else f"WrongFormat: not a mirdata {types[name]} object (got {got})"
             )
-            if name in by_name:
-                skipped[name] = why
-            else:
-                annotation_errors.setdefault(name, {})[track_id] = why
+            annotation_errors.setdefault(name, {})[track_id] = why
         if verbose:
             print(f"    {track_id}: ok", file=sys.stderr)
 
-    for name, by_track in held.items():
-        skipped[name] = f"could not be read ({next(iter(by_track.values()))})"
+    # names that raised on every track read, before they ever had a type
+    annotation_errors.update(held)
     annotations = {
         name: {"type": types[name], **stat.summary(), **stat.result()}
         for name, stat in sorted(stats.items())
@@ -181,13 +174,12 @@ def read_tracks(ds, verbose=False):
         "n_tracks_loaded": len(track_ids) - len(errors),
         "tracks_with": {t: len(ids) for t, ids in sorted(tracks_with.items())},
         "annotations": annotations,
-        "skipped": skipped,
         "errors": errors,
         "annotation_errors": {
             prop: {
                 "n_tracks": len(by_track),
                 # tracks with the same message become one entry, most common first
-                "messages": [
+                "logs": [
                     {"error": error, "n_tracks": n}
                     for error, n in collections.Counter(by_track.values()).most_common()
                 ],

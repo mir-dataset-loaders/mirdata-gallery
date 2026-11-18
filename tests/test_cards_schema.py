@@ -82,9 +82,8 @@ ANNOTATION_FIELDS = {
     "n_tracks_loaded",
     "tracks_with",
     "annotations",
-    "skipped",
     "n_missing_files",
-    "n_track_errors",
+    "track_errors",
     "annotation_errors",
 }
 # The fields of an annotation entry, by type, besides type, n_tracks,
@@ -132,25 +131,25 @@ def check_annotation_errors(value):
     """Check a card's annotation_errors field.
 
     Args:
-        value (dict): {property: {"n_tracks", "messages"}}, each message an
-            {"error", "n_tracks"}, with the message counts adding up to n_tracks
+        value (dict): {property: {"n_tracks", "logs"}}, each log an
+            {"error", "n_tracks"}, with the log counts adding up to n_tracks
 
     """
     assert isinstance(value, dict), "annotation_errors should be {property: errors}"
     for prop, failed in value.items():
         where = f"annotation_errors {prop}"
-        keys = isinstance(failed, dict) and set(failed) == {"n_tracks", "messages"}
-        assert keys, f"{where} should hold n_tracks and messages"
+        keys = isinstance(failed, dict) and set(failed) == {"n_tracks", "logs"}
+        assert keys, f"{where} should hold n_tracks and logs"
         assert is_count(failed["n_tracks"]), f"{where} n_tracks should be a count"
-        for message in failed["messages"]:
+        for message in failed["logs"]:
             keys = set(message) == {"error", "n_tracks"}
-            assert keys, f"{where}: each message should hold error and n_tracks"
+            assert keys, f"{where}: each log should hold error and n_tracks"
             text = isinstance(message["error"], str) and message["error"].strip()
             assert text, f"{where}: each error should be non-empty text"
             assert is_count(message["n_tracks"]), f"{where}: each n_tracks a count"
-        total = sum(message["n_tracks"] for message in failed["messages"])
+        total = sum(message["n_tracks"] for message in failed["logs"])
         adds_up = total == failed["n_tracks"]
-        assert adds_up, f"{where}: the message counts should add up to n_tracks"
+        assert adds_up, f"{where}: the log counts should add up to n_tracks"
 
 
 def check_grid(value, where):
@@ -294,13 +293,15 @@ def check_stats(stats):
 
     ann = stats["annotations"]
     if check_part("annotations", ann, ANNOTATION_FIELDS):
-        for key in ("n_tracks", "n_tracks_loaded", "n_missing_files", "n_track_errors"):
+        for key in ("n_tracks", "n_tracks_loaded", "n_missing_files"):
             assert is_count(ann[key]), f"annotations {key} should be a count"
+        failed = ann["track_errors"]
+        keys = isinstance(failed, dict) and set(failed) == {"n_tracks", "logs"}
+        assert keys, "track_errors should hold n_tracks and logs"
         loaded = ann["n_tracks_loaded"] <= ann["n_tracks"]
         assert loaded, "no more tracks should load than there are"
         check_counts(ann["tracks_with"], "tracks_with")
         check_annotation_errors(ann["annotation_errors"])
-        assert isinstance(ann["skipped"], dict), "skipped should be {property: why}"
         for prop, entry in ann["annotations"].items():
             check_entry(prop, entry)
 
