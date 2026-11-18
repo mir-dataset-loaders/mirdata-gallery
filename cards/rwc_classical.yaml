@@ -64,9 +64,11 @@ stats:
         type: SectionData
         n_tracks: 59
         n_annotations: 59
-        labels: {nothing: 149, chorus A: 121, chorus B: 60, verse A: 56, verse B: 42,
-          ending: 36, verse C: 32, chorus C: 26, intro: 19, pre-chorus: 17, verse D: 17,
-          bridge A: 17, post-chorus: 13, chorus D: 9, bridge B: 7, bridge C: 4, bridge D: 1}
+        sections_per_annotation:
+          unit: sections
+          width: 1
+          counts: {2: 3, 3: 1, 4: 5, 5: 6, 6: 5, 7: 2, 8: 3, 9: 2, 10: 2, 11: 9, 12: 2,
+            13: 4, 15: 4, 16: 2, 17: 1, 18: 1, 19: 2, 21: 2, 22: 1, 28: 1, 29: 1}
         section_interval_seconds:
           unit: s
           width: 1

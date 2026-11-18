@@ -4,6 +4,7 @@ One test class per Stat. Numeric fields are compared with grid() of the values
 a Stat should collect; the exact bins are checked by hand only in Test_Grid.
 """
 
+import mirdata.datasets.baf
 import numpy as np
 import pytest
 from mirdata import annotations
@@ -20,6 +21,7 @@ from stats.annotation_types import (
     Notes,
     Sections,
     Tempo,
+    choose_stat,
     grid,
     is_empty,
 )
@@ -51,6 +53,18 @@ def bars(*lengths):
 def events(*labels):
     return annotations.EventData(
         intervals(*[(i, i + 1) for i in range(len(labels))]), "s", list(labels), "open"
+    )
+
+
+def events_extended(*labels):
+    """baf's EventDataExtended: events with a tag each."""
+    return mirdata.datasets.baf.EventDataExtended(
+        intervals(*[(i, i + 1) for i in range(len(labels))]),
+        "s",
+        list(labels),
+        "open",
+        ["tag"] * len(labels),
+        "open",
     )
 
 
@@ -366,14 +380,30 @@ class Test_Sections:
         track2 = annotations.SectionData(intervals((0, 5000)), "ms", ["verse"], "open")
         track3 = annotations.SectionData(intervals((0, 40)), "s")  # no labels
         result = collect(Sections(), track1, track2, track3).result()
-        labels = {"verse": 2, "chorus": 1}
-        assert (
-            result["labels"] == labels
-        ), "labels should count every section label; unlabeled sections add none"
+        assert set(result) == {"sections_per_annotation", "section_interval_seconds"}, (
+            "sections should give only the sections per annotation and the section"
+            " lengths; labels are not counted"
+        )
+        assert result["sections_per_annotation"] == grid([2, 1, 1], "sections"), (
+            "every annotation should add its number of sections, labeled or not,"
+            " on a grid of whole numbers"
+        )
         lengths = grid([10.0, 20.0, 5.0, 40.0], "s")
         assert result["section_interval_seconds"] == lengths, (
             "every section's length in seconds (ms read as s/1000), labeled or not,"
             " should be counted on one 1 s grid"
+        )
+
+    def test_counts_each_annotator(self):
+        three = annotations.SectionData(intervals((0, 10), (10, 20), (20, 30)), "s")
+        one = annotations.SectionData(intervals((0, 30)), "s")
+        two_annotators = annotations.MultiAnnotator(
+            ["ann1", "ann2"], [three, one], annotations.SectionData
+        )
+        result = collect(Sections(), two_annotators).result()
+        assert result["sections_per_annotation"] == grid([3, 1], "sections"), (
+            "a track with two annotators should add one value per annotation"
+            " (3 and 1), not one summed value for the track (4)"
         )
 
 
@@ -392,6 +422,65 @@ class Test_Keys:
         assert (
             result["modes"] == modes
         ), "modes should count the part after the colon; a key without one is (none)"
+
+    def test_plain_strings(self):
+        # giantsteps_key, beatport_key (a list), multivox: one key per track, as text
+        stat = collect(
+            Keys(), "C minor", "E major | E minor", ["E minor ", " E major"], "Fm", "X"
+        )
+        keys = {"E:minor": 2, "E:major": 2, "C:minor": 1, "Fm": 1, "X": 1}
+        assert (
+            stat.result()["keys"] == keys
+        ), "every key in a string, a list or split on | should count, as a root:mode label"
+        modes = {"minor": 3, "major": 2, "(none)": 2}
+        assert (
+            stat.result()["modes"] == modes
+        ), "a key string's mode should count; one without a mode is (none)"
+        assert (stat.n_tracks, stat.n_annotations) == (
+            5,
+            5,
+        ), "each plain value should count as one track with one annotation"
+
+    def test_mode_from_track(self):
+        class Track:  # fma_keys: the key and its mode are two names of the track
+            mode = "Major"
+
+        stat = Keys()
+        stat.add("F#", Track())
+        stat.add("C minor", Track())
+        keys = {"F#:major": 1, "C:minor": 1}
+        assert (
+            stat.result()["keys"] == keys
+        ), "a key without a mode should take the track's mode; one with a mode keeps it"
+
+    def test_not_read(self):
+        stat = Keys()
+        da_tacos = {"key": b"C", "scale": b"major", "strength": 0.8}
+        assert not stat.add(da_tacos), "a dict (da_tacos' essentia estimate) should not be read"
+        assert not stat.add(6), "a number (fma_keys' key_number) should not be read"
+        music21 = [{"time": 0, "key": object()}]
+        assert not stat.add(music21), "a list of non-strings (haydn_op20) should not be read"
+        assert stat.n_tracks == 0, "a value that isn't read should not count as a track"
+
+    def test_key_label(self):
+        class Track:
+            mode = "Major"
+
+        expected = [
+            ("C minor", None, "C:minor"),
+            ("Eb minor dorian", None, "Eb:minor dorian"),
+            (" E major", None, "E:major"),
+            ("A Minor", None, "A:minor"),
+            ("C:minor", None, "C:minor"),
+            ("Fm", None, "Fm"),
+            ("X", None, "X"),
+            ("F#", Track(), "F#:major"),
+            ("C minor", Track(), "C:minor"),
+        ]
+        for key, track, label in expected:
+            assert (
+                Keys.key_label(key, track) == label
+            ), f"{key!r} (track mode {getattr(track, 'mode', None)!r}) should be {label!r}"
 
 
 class Test_Lyrics:
@@ -436,6 +525,11 @@ class Test_Events:
         assert (
             list(result["events"])[0] == "kick"
         ), "labels should come most common first"
+
+    def test_extended(self):
+        result = collect(Events(), events_extended("kick", "snare")).result()
+        expected = {"events": {"kick": 1, "snare": 1}}
+        assert result == expected, "Events should count baf's EventDataExtended labels"
 
 
 class Test_Instrument:
@@ -484,6 +578,95 @@ class Test_Instrument:
             {"piano": "yes"}
         ), "a dict of non-numbers should not be read"
         assert stat.n_tracks == 0, "a value that isn't read should not count as a track"
+
+
+# ---------------------------------------------------------------- choose_stat
+
+
+class Test_ChooseStat:
+    def test_by_value(self):
+        sections = annotations.SectionData(intervals((0, 10)), "s", ["verse"], "open")
+        f0 = annotations.F0Data(
+            np.array([0.0, 0.01]),
+            "s",
+            np.array([440.0, 440.0]),
+            "hz",
+            np.array([1.0, 1.0]),
+            "binary",
+        )
+        chords = annotations.ChordData(intervals((0, 1)), "s", ["C:maj"], "harte")
+        two_annotators = annotations.MultiAnnotator(
+            ["ann1", "ann2"], [sections, sections], annotations.SectionData
+        )
+        chosen = {
+            "beats": choose_stat("beats", beats([1.0, 2.0])),
+            "leadsheet_chords": choose_stat("leadsheet_chords", chords),
+            "pitch_contours": choose_stat("pitch_contours", {"E": f0, "A": f0}),
+            "sections_uppercase": choose_stat("sections_uppercase", two_annotators),
+            "tempo_v2": choose_stat("tempo_v2", tempos([120.0])),
+            "matches": choose_stat("matches", events_extended("kick")),
+        }
+        expected = {
+            "beats": "BeatData",
+            "leadsheet_chords": "ChordData",
+            "pitch_contours": "F0Data",
+            "sections_uppercase": "SectionData",
+            "tempo_v2": "TempoData",
+            "matches": "EventDataExtended",
+        }
+        assert chosen == expected, (
+            "an annotation, or one inside a dict or MultiAnnotator, should give the"
+            " name of its class, whatever the name of the property"
+        )
+
+    def test_by_name(self):
+        for value in (120.0, 96, "125.0", {"tempo_bpm": 80}):
+            assert (
+                choose_stat("tempo", value) == "TempoData"
+            ), f"a plain value under a tempo name should be TempoData ({value!r})"
+        assert (
+            choose_stat("tempo_beats", beats([1.0, 2.0])) == "BeatData"
+        ), "the value should come first: an annotation under a tempo name keeps its own type"
+        key_names = {
+            "key": "C minor",  # giantsteps_key
+            "keys_music21": [{"time": 0, "key": object()}],  # haydn_op20
+            "key_number": 6,  # fma_keys
+        }
+        for name, value in key_names.items():
+            assert (
+                choose_stat(name, value) == "KeyData"
+            ), f"a plain value under a key or keys name should be KeyData ({name})"
+        instrument_names = {
+            "instrument": "flute",
+            "instruments": "Gt, Gt, Bs",
+            "predominant_instrument": ["cel"],  # irmas
+            "instrument_id": 3,  # medley_solos_db: a number, which Instrument skips
+        }
+        for name, value in instrument_names.items():
+            assert choose_stat(name, value) == "Instrument", (
+                "a value under an instrument or instruments name should be"
+                f" Instrument ({name})"
+            )
+
+    def test_none(self):
+        class MyBeats(annotations.BeatData):
+            pass
+
+        not_read = {
+            "title": "Anna (Go To Him)",
+            "duration": 120.0,
+            "tempos": 120.0,
+            "keyboard": "Steinway",
+            "mode": "Major",
+            "is_instrumental": True,
+            "vggish": (np.zeros(2), np.zeros(2)),
+            "my_beats": MyBeats(np.array([1.0]), "s", None, None),
+        }
+        for name, value in not_read.items():
+            assert choose_stat(name, value) is None, (
+                f"{name} should not be read: no class name in STATS, and no tempo,"
+                " key, keys, instrument or instruments word in the name"
+            )
 
 
 # ------------------------------------------------------------ the shared base

@@ -5,7 +5,6 @@ import pytest
 
 import fake_dataset_loader
 from card_builder import (
-    annotation_properties,
     annotations,
     build_card,
     clean_text,
@@ -25,19 +24,17 @@ FIELDS = [
 ]
 
 
-# A card's stats field whose stats read instrument labels
-INSTRUMENT_STATS = {
-    "annotations": {
-        "annotations": {
-            "instrument": {
-                "type": "Instrument",
-                "n_tracks": 1,
-                "n_annotations": 1,
-                "instruments": {"flute": 1},
-            }
-        }
+def stats_with(**types):
+    """A card's stats field whose annotation entries have these types: stats_with(beats="BeatData")."""
+    entries = {name: {"type": ann_type} for name, ann_type in types.items()}
+    return {
+        "computed": {"mode": "local", "index": "abc123"},
+        "annotations": {"annotations": entries},
     }
-}
+
+
+# fake_dataset's stats: its beats and chords
+STATS = stats_with(beats="BeatData", chords="ChordData")
 
 
 @pytest.fixture
@@ -46,118 +43,72 @@ def ds(fake_mirdata):
 
 
 def test_build_card(ds):
-    stats = {"computed": {"mode": "local", "index": "abc123"}}
-    card = build_card(ds, stats=stats)
+    card = build_card(ds, stats=STATS)
     assert list(card) == FIELDS, "fields should come in card order"
     assert card["name"] == "fake_dataset", "name should be the dataset's name"
     license_info, bibtex = fake_dataset_loader.LICENSE_INFO, fake_dataset_loader.BIBTEX
     assert card["license"] == license_info, "license should come from the loader"
     assert card["bibtex"] == bibtex, "bibtex should come from the loader"
     types = ["BeatData", "ChordData"]
-    assert card["annotations"] == types, "annotations should list the Track's types"
+    assert card["annotations"] == types, "annotations should list the stats' types"
     found = ["Beat Tracking", "Chord Recognition"]
-    assert card["tasks"] == found, "tasks should be those of the Track's types"
+    assert card["tasks"] == found, "tasks should be those of the stats' types"
     left = [card["summary"], card["summary_hash"]]
     assert left == [None] * 2, "summary and summary_hash are generate_cards' to fill"
-    assert card["stats"] is stats, "stats should be passed through"
-    assert build_card(ds)["stats"] is None, "stats should be None when not given"
+    assert card["stats"] is STATS, "stats should be passed through"
+    no_stats = build_card(ds)
+    assert no_stats["stats"] is None, "stats should be None when not given"
+    assert no_stats["annotations"] == [], "no stats should give no annotation types"
 
 
-def test_annotations(ds):
+def test_annotations():
     types = ["BeatData", "ChordData"]
     assert (
-        annotations(ds) == types
-    ), "annotations should list the Track's annotation types, sorted"
-    ds.name = "fake_genre"
-    with_genre = types + ["Genre"]
-    assert annotations(ds) == with_genre, "a *_genre dataset should also get Genre"
-    found = annotations(ds)
-    assert (
-        "NoteData" not in found
-    ), "a type the Track does not have should not be listed"
+        annotations(STATS) == types
+    ), "annotations should list the types of the stats entries, sorted"
+    two_chords = stats_with(chords="ChordData", leadsheet_chords="ChordData")
+    assert annotations(two_chords) == [
+        "ChordData"
+    ], "a type with several entries should be listed once"
+    no_entries = [
+        None,
+        {"computed": {}, "error": "loader bug"},
+        {"annotations": {"status": "error", "error": "loader bug"}},
+        stats_with(),
+    ]
+    for stats in no_entries:
+        assert (
+            annotations(stats) == []
+        ), f"stats without entries should give no types ({stats})"
 
 
-def test_tasks(ds, monkeypatch):
+def test_tasks(ds):
     found = ["Beat Tracking", "Chord Recognition"]
-    assert tasks(ds) == found, "tasks should be those of the annotation types, sorted"
-    ds.name = "fake_genre"
-    assert tasks(ds) == found, "Genre should not add a task"
-
-    # no return hints: "lyric" and "event" in the names make LyricData and EventData
-    flag = property(lambda self: False)
-    monkeypatch.setattr(fake_dataset_loader.Track, "lyrics", flag, raising=False)
-    monkeypatch.setattr(fake_dataset_loader.Track, "events", flag, raising=False)
-    both = ["Lyrics Transcription", "Lyrics-to-Audio Alignment"]
-    assert tasks(ds) == found + both, (
-        "a type with two tasks should add both; EventData should add none"
+    assert (
+        tasks(ds, STATS) == found
+    ), "tasks should be those of the annotation types, sorted"
+    lyrics_events = stats_with(
+        lyrics="LyricData", events="EventData", matches="EventDataExtended"
     )
+    both = ["Lyrics Transcription", "Lyrics-to-Audio Alignment"]
+    assert tasks(ds, lyrics_events) == both, (
+        "a type with two tasks should add both; EventData and EventDataExtended"
+        " should add none"
+    )
+    assert tasks(ds, None) == [], "no stats should give no tasks"
 
     ds._multitrack_class = mirdata.core.MultiTrack
-    separation = "Source Separation"
-    assert separation in tasks(ds), "a multitrack loader should add Source Separation"
-
-
-def test_annotations_instrument(ds, monkeypatch):
-    flute = property(lambda self: "flute")
-    flag = property(lambda self: False)
-    monkeypatch.setattr(fake_dataset_loader.Track, "instrument", flute, raising=False)
-    monkeypatch.setattr(
-        fake_dataset_loader.Track, "is_instrumental", flag, raising=False
-    )
-    assert (
-        "Instrument" not in annotations(ds)
-    ), "a property name alone should not add Instrument: it comes from the stats"
-    assert "Instrument" in annotations(
-        ds, INSTRUMENT_STATS
-    ), "stats with an Instrument entry should add Instrument"
-    card = build_card(ds, stats=INSTRUMENT_STATS)
-    assert (
-        "Instrument" in card["annotations"]
-    ), "build_card should pass its stats on to the annotations field"
+    assert tasks(ds, None) == [
+        "Source Separation"
+    ], "a multitrack loader should add Source Separation, even without stats"
 
 
 def test_tasks_instrument(ds):
     task = "Instrument Recognition"
-    assert task not in tasks(ds), "no Instrument should add no Instrument Recognition"
+    assert task not in tasks(ds, STATS), "no Instrument should add no Instrument Recognition"
     assert task in tasks(
-        ds, INSTRUMENT_STATS
+        ds, stats_with(instrument="Instrument")
     ), "Instrument should add Instrument Recognition"
-    card = build_card(ds, stats=INSTRUMENT_STATS)
-    assert task in card["tasks"], "build_card should pass its stats on to the tasks field"
-
-
-def test_annotation_properties(ds):
-    found = annotation_properties(ds)
-    expected = {"beats": "BeatData", "chords": "ChordData"}
-    assert found == expected, (
-        "a property hinted with an annotation type should be found; one hinted as"
-        " something else, with no keyword in its name, should not"
-    )
-
-
-def test_annotation_properties_guess(ds, monkeypatch):
-    # no return hint, and "melody" in its name makes it a guessed F0Data
-    flag = property(lambda self: False)
-    monkeypatch.setattr(
-        fake_dataset_loader.Track, "alternating_melody", flag, raising=False
-    )
-    found = annotation_properties(ds)
-    assert (
-        found["alternating_melody"] == "F0Data"
-    ), "a property without a hint should be guessed from a keyword in its name"
-    declared = annotation_properties(ds, guess=False)
-    expected = {"beats": "BeatData", "chords": "ChordData"}
-    assert (
-        declared == expected
-    ), "guess=False should keep only the properties typed by their hint"
-
-
-def test_annotation_properties_tonic(ds, monkeypatch):
-    tonic = property(lambda self: 440.0)
-    monkeypatch.setattr(fake_dataset_loader.Track, "tonic", tonic, raising=False)
-    assert (
-        "tonic" not in annotation_properties(ds)
-    ), "a tonic is not a key, so it should not be guessed as KeyData"
 
 
 def test_clean_text():

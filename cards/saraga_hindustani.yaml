@@ -84,18 +84,10 @@ stats:
         type: SectionData
         n_tracks: 75
         n_annotations: 75
-        labels: {Ālāp-1: 66, Khyāl (dr̥t tīntāl)-3: 26, Khyāl (vilambit ēktāl)-2: 21,
-          Khyāl (madhya tīntāl)-2: 9, Khyāl (dr̥t ēktāl)-3: 8, Khyāl (madhya tīntāl)-3: 8,
-          Khyāl (vilambit tilavāḍā)-2: 8, Khyāl (dr̥t tīntāl)-2: 6, Khyāl (vilambit jhūmrā)-2: 5,
-          Khyāl (dr̥t tīntāl)-4: 5, Khyāl (dr̥t ēktāl)-4: 5, --1: 5, Tarānā (dr̥t tīntāl)-4: 4,
-          Khyāl (madhya jhaptāl)-2: 4, Tarānā (dr̥t tīntāl)-3: 4, Khyāl (madhya jhaptāl)-3: 3,
-          Khyāl (vilambit jhaptāl)-2: 3, Khyāl (vilambit ēktāl)-1: 2, Khyāl (dr̥t tīntāl)-1: 2,
-          Khyāl (madhya ēktāl)-3: 2, Khyāl (vilambit tīntāl)-2: 2, Ṭhumri (vilambit dīpacaṇḍī)-2: 2,
-          Laggī (dr̥t tīntāl)-3: 2, Bhajan (kēharvā)-1: 1, Bhajan (madhya rūpak)-2: 1,
-          Recitation-3: 1, Khyāl (madhya kēharvā)-4: 1, Khyāl (madhya ikvāi)-1: 1,
-          Ṭhumri (kēharvā)-2: 1, Ṭhumri (madhya ādhā)-2: 1, Ālāp-0: 1, Khyāl (madhya rūpak)-1: 1,
-          Khyāl (dr̥t tīntāl)-0: 1, Khyāl (vilambit tīntāl)-1: 1, Dādrā (madhya dādrā)-2: 1,
-          Khyāl (madhya rūpak)-2: 1}
+        sections_per_annotation:
+          unit: sections
+          width: 1
+          counts: {1: 7, 2: 11, 3: 42, 4: 15}
         section_interval_seconds:
           unit: s
           width: 1

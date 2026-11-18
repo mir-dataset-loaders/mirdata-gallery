@@ -1,7 +1,8 @@
 """The card's "stats" field, made from a computed result, and when to replace it.
 
-A card keeps the numbers, grid counts, statuses and problems, with error
-counts instead of error lists. Its "computed" block records the mode and the
+A card keeps the numbers, grid counts, statuses and problems, with counts
+instead of per-file and per-track error lists; annotation errors keep their
+messages, one per distinct message. Its "computed" block records the mode and the
 index checksum, so a later run knows whether the stats are still current.
 """
 
@@ -37,7 +38,19 @@ def audio_to_card(part):
 
 
 def annotations_to_card(part):
-    """The annotations part as stored in a card: per-file and per-track details become counts."""
+    """The annotations part as stored in a card.
+
+    Per-file and per-track details become counts; annotation errors keep their
+    messages with their counts.
+
+    Args:
+        part (dict): the annotations part of a stats.compute result
+
+    Returns:
+        dict: the card's annotations part, or {"status": "error", "error"}
+            when the part crashed
+
+    """
     if "error" in part:
         return {"status": "error", "error": part["error"]}
     card = {key: part[key] for key in ANNOTATION_KEYS if key in part}
@@ -56,10 +69,7 @@ def annotations_to_card(part):
     }
     card["n_missing_files"] = len(part.get("missing_files", {}))
     card["n_track_errors"] = len(part.get("errors", {}))
-    card["annotation_errors"] = {
-        prop: failed["n_tracks"]
-        for prop, failed in part.get("annotation_errors", {}).items()
-    }
+    card["annotation_errors"] = part.get("annotation_errors", {})
     return card
 
 

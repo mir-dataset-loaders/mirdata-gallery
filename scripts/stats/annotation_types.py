@@ -3,21 +3,21 @@
 A Stat reads one property's annotations track by track (add, read) and
 turns them into grid counts and label counts at the end (result). A property
 can hold several annotations at once (a dict, a MultiAnnotator or a list):
-each one is read, and the track is counted once.
+each one is read, and the track is counted once. choose_stat() picks the
+annotation type of a track's name.
 """
 
 from collections import Counter
 
 import mirdata.annotations
-import mirdata.core
 import numpy as np
 
-# The official mirdata annotation types (BeatData, ChordData, ... TempoData), found by
-# card_builder.annotation_properties. Instrument labels are found by instrument_fields().
+# The official mirdata annotation types (BeatData, ChordData, ... TempoData).
+# STATS maps each one, baf's EventDataExtended and Instrument to the Stat that reads it.
 ANNOTATION_TYPES = {
     cls.__name__ for cls in mirdata.annotations.Annotation.__subclasses__()
 }
-# A field holds instrument labels when its name has one of these words (split at "_")
+# A name holds instrument labels when it has one of these words (split at "_", choose_stat)
 INSTRUMENT_WORDS = {"instrument", "instruments"}
 # A {name: score} value counts the names scored at least this (openmic2018)
 INSTRUMENT_MIN_SCORE = 0.5
@@ -93,21 +93,6 @@ def metadata_bpm(value):
         return None
 
 
-def instrument_fields(track):
-    """Names of a track's fields with the word instrument(s): properties and plain attributes alike."""
-    cls = type(track)
-    names = {
-        a
-        for a in dir(cls)
-        if isinstance(getattr(cls, a, None), (property, mirdata.core.cached_property))
-    } | set(vars(track))
-    return sorted(
-        a
-        for a in names
-        if not a.startswith("_") and INSTRUMENT_WORDS & set(a.lower().split("_"))
-    )
-
-
 def instrument_labels(value):
     """The instrument labels in one field's value, or None when it holds none.
 
@@ -178,8 +163,18 @@ class Stat:
         )
         self.parts = Counter()  # dict keys / annotator ids the annotations came from
 
-    def add(self, value):
-        """Read one track's annotation(s); False when there is no mirdata annotation of this type."""
+    def add(self, value, track=None):
+        """Read one track's annotation(s) of this type.
+
+        Args:
+            value (object): the value of one name of the track
+            track (mirdata.core.Track or None): that track, for a Stat that
+                also reads another of its names (Keys reads its mode)
+
+        Returns:
+            bool: False when there is no mirdata annotation of this type
+
+        """
         found = [(k, v) for k, v in unpack(value) if isinstance(v, self.annotation)]
         if not found:
             return False
@@ -215,8 +210,17 @@ class Tempo(Stat):
         super().__init__()
         self.bpm = []
 
-    def add(self, value):
-        """A plain per-track tempo counts as one annotation; anything else goes through Stat.add."""
+    def add(self, value, track=None):
+        """Read one track's tempo: a plain bpm counts as one annotation, anything else goes through Stat.add.
+
+        Args:
+            value (object): the value of one name of the track
+            track (mirdata.core.Track or None): not used
+
+        Returns:
+            bool: False when there is no tempo to read
+
+        """
         bpm = metadata_bpm(value)
         if bpm is None:
             return super().add(value)  # a TempoData, or False (saraga_hindustani stays skipped)
@@ -472,31 +476,30 @@ class Notes(Stat):
 
 
 class Sections(Stat):
-    """Section labels, and the length of every section interval in seconds."""
+    """How many sections each annotation has, and the length of every section in seconds."""
 
     annotation = mirdata.annotations.SectionData
 
     def __init__(self):
         super().__init__()
+        self.sections_per_annotation = []  # one value per annotation: its sections
         self.section_interval_seconds = []
-        self.labels = Counter()
 
     def read(self, value):
-        if value.labels is not None:
-            self.labels.update(str(label) for label in value.labels)
+        self.sections_per_annotation.append(len(value.intervals))
         lengths = interval_lengths(value)
         if lengths is not None:
             self.section_interval_seconds.extend(lengths.tolist())
 
     def result(self):
         return {
-            "labels": dict(self.labels.most_common()),
+            "sections_per_annotation": grid(self.sections_per_annotation, "sections"),
             "section_interval_seconds": grid(self.section_interval_seconds, "s"),
         }
 
 
 class Keys(Stat):
-    """Key labels and modes of KeyData annotations."""
+    """Key labels and modes of KeyData annotations, or of keys stored as plain strings."""
 
     annotation = mirdata.annotations.KeyData
 
@@ -504,6 +507,36 @@ class Keys(Stat):
         super().__init__()
         self.keys = Counter()
         self.modes = Counter()
+
+    def add(self, value, track=None):
+        """Read one track's keys: plain key strings count as one annotation, anything else goes through Stat.add.
+
+        Args:
+            value (object): the value of one name of the track: a string
+                ('C minor', 'E major | E minor'), a list of strings, or a KeyData
+            track (mirdata.core.Track or None): that track, whose mode a key
+                without one takes (key_label)
+
+        Returns:
+            bool: False when there is no key to read
+
+        """
+        keys = [value] if isinstance(value, str) else value
+        if not isinstance(keys, (list, tuple)) or not all(
+            isinstance(k, str) for k in keys
+        ):
+            return super().add(value)  # a KeyData, or False (da_tacos' dict)
+        labels = [
+            self.key_label(k, track)
+            for item in keys
+            for k in item.split("|")
+            if k.strip()
+        ]
+        self.keys.update(labels)
+        self.modes.update(self.key_mode(k) for k in labels)
+        self.n_annotations += 1
+        self.n_tracks += 1
+        return True
 
     def read(self, value):
         keys = [str(k) for k in value.keys]
@@ -515,6 +548,30 @@ class Keys(Stat):
             "keys": dict(self.keys.most_common()),
             "modes": dict(self.modes.most_common()),
         }
+
+    @staticmethod
+    def key_label(key, track=None):
+        """Write a key string as a KeyData label, "root:mode".
+
+        The first space becomes ":" ('C minor' -> 'C:minor'), a key without a
+        mode takes the track's plain-string mode (fma_keys: 'F#' and 'Major'
+        -> 'F#:major'), and the mode is lowercased. Anything else stays as given.
+
+        Args:
+            key (str): one key, e.g. 'C minor', 'Fm', 'X'
+            track (mirdata.core.Track or None): its track
+
+        Returns:
+            str: the key label
+
+        """
+        key = key.strip()
+        if ":" not in key:
+            key = key.replace(" ", ":", 1)
+        root, _, mode = key.partition(":")
+        if not mode and isinstance(getattr(track, "mode", None), str):
+            mode = track.mode
+        return f"{root}:{mode.strip().lower()}" if mode.strip() else root
 
     @staticmethod
     def key_mode(key):
@@ -535,7 +592,17 @@ class Lyrics(Stat):
         )  # one value per track: its words, syllables, ... over all its annotations
         self.track_lyrics = 0
 
-    def add(self, value):
+    def add(self, value, track=None):
+        """Read one track's lyrics through Stat.add, and keep how many lyrics it has.
+
+        Args:
+            value (object): the value of one name of the track
+            track (mirdata.core.Track or None): not used
+
+        Returns:
+            bool: False when there is no LyricData to read
+
+        """
         self.track_lyrics = 0
         if not super().add(value):
             return False
@@ -581,8 +648,17 @@ class Instrument(Stat):
         super().__init__()
         self.instruments = Counter()
 
-    def add(self, value):
-        """Read one track's field; False when it holds no instrument labels (a number, a flag)."""
+    def add(self, value, track=None):
+        """Read one track's instrument labels (see instrument_labels).
+
+        Args:
+            value (object): the value of one name of the track
+            track (mirdata.core.Track or None): not used
+
+        Returns:
+            bool: False when it holds no instrument labels (a number, a flag)
+
+        """
         labels = instrument_labels(value)
         if labels is None:
             return False
@@ -606,9 +682,44 @@ STATS = {
     "KeyData": Keys,
     "LyricData": Lyrics,
     "EventData": Events,
+    # baf's EventData with a tag per event: Events reads its event labels
+    "EventDataExtended": Events,
+    # instrument labels from the metadata (not a mirdata class): found by name
     "Instrument": Instrument,
 }
 assert all(STATS[name].annotation.__name__ == name for name in ANNOTATION_TYPES)
 assert set(STATS) == ANNOTATION_TYPES | {
-    "Instrument"
-}, "one Stat per official type, plus Instrument"
+    "EventDataExtended",
+    "Instrument",
+}, "one Stat per official annotation type, plus baf's EventDataExtended and Instrument"
+
+
+def choose_stat(name, value):
+    """Choose the annotation type of a name of a track, from its first non-empty value.
+
+    Rule 1, the value: the first unpacked item whose class name is in STATS
+    gives its type. Rule 2, the name (split on "_"): the word "tempo" gives
+    TempoData, "key" or "keys" KeyData, "instrument" or "instruments"
+    Instrument; Tempo, Keys and Instrument also read plain values (120.0,
+    'C minor', 'Gt, Bs'). Anything else is not read.
+
+    Args:
+        name (str): the name of a property or attribute of the track
+        value (object): its value on one track, not empty (is_empty)
+
+    Returns:
+        str or None: the annotation type, a key of STATS, or None when the
+            stats do not read the name
+
+    """
+    for _, item in unpack(value):
+        if type(item).__name__ in STATS:
+            return type(item).__name__
+    words = name.lower().split("_")
+    if "tempo" in words:
+        return "TempoData"
+    if "key" in words or "keys" in words:
+        return "KeyData"
+    if INSTRUMENT_WORDS & set(words):
+        return "Instrument"
+    return None

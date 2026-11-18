@@ -5,11 +5,14 @@ Every expected number comes from the table in tests/fake_dataset_loader.py.
 
 import shutil
 
+import mirdata
+
 import fake_dataset_loader
 from fake_dataset_loader import DATA_HOME
 import stats
 from stats import compute
 from stats.annotation_types import grid
+from stats.annotations import collect_stats_candidates, drop_excluded_names
 
 
 def compute_local(data_home=DATA_HOME, **kwargs):
@@ -181,8 +184,13 @@ def test_compute_broken_annotation_file(fake_mirdata, tmp_path):
     assert failed == {
         "beats"
     }, "only the property whose file is broken should get an error"
-    tracks = set(ann["annotation_errors"]["beats"]["examples"])
-    assert tracks == {"track2"}, "the error should name the track whose file is broken"
+    beat_errors = ann["annotation_errors"]["beats"]
+    assert (
+        beat_errors["n_tracks"] == 1
+    ), "the error should count the one track whose file is broken"
+    assert (
+        len(beat_errors["messages"]) == 1
+    ), "the broken file should give one error message"
     beats, chords = ann["annotations"]["beats"], ann["annotations"]["chords"]
     assert (
         beats["n_tracks"] == 2
@@ -217,40 +225,150 @@ def test_compute_track_error(fake_mirdata, monkeypatch):
     ), "none of the failed track's annotations should be read"
 
 
-def test_compute_not_mirdata_annotation(fake_mirdata, monkeypatch):
+def test_compute_not_an_annotation(fake_mirdata, monkeypatch):
+    # chords is hinted ChordData but returns a dict; alternating_melody returns a bool
     def chords_as_a_dict(path):
         return {"labels": ["C:maj"]} if path else None
 
     monkeypatch.setattr(fake_dataset_loader, "load_chords", chords_as_a_dict)
-    ann = compute_local()["annotations"]
-    tracks = set(ann["annotation_errors"]["chords"]["examples"])
-    assert tracks == {"track1", "track2"}, (
-        "a value that is not the type its hint names should be an annotation error"
-        " for each track that returns one"
-    )
-    assert (
-        "chords" not in ann["annotations"]
-    ), "a property with no value of its type should get no annotations entry"
-    assert (
-        ann["skipped"] == {}
-    ), "a property typed by its hint should be reported as an error, not as skipped"
-    assert (
-        ann["status"] == "incomplete"
-    ), "a value that is not the type its hint names should make the status incomplete"
-
-
-def test_compute_guessed_property(fake_mirdata, monkeypatch):
-    # no return hint, and "melody" in its name makes it a guessed F0Data
     flag = property(lambda self: False)
     monkeypatch.setattr(
         fake_dataset_loader.Track, "alternating_melody", flag, raising=False
     )
     ann = compute_local()["annotations"]
+    assert set(ann["annotations"]) == {"beats"}, (
+        "a name whose first value is not an annotation should get no entry,"
+        " whatever its type hint or its name"
+    )
+    assert ann["skipped"] == {}, "a name dropped for its value should not be listed"
+    assert ann["annotation_errors"] == {}, "a name dropped for its value is not an error"
+    assert ann["status"] == "ok", "a dropped name should not change the status"
+
+
+def test_compute_without_type_hint(fake_mirdata, monkeypatch):
+    # no return hint, and nothing in the name says what it holds
+    onsets = property(lambda self: self.beats)
+    monkeypatch.setattr(fake_dataset_loader.Track, "onsets", onsets, raising=False)
+    ann = compute_local()["annotations"]
+    entry = ann["annotations"]["onsets"]
+    assert entry["type"] == "BeatData", "the type should come from the value"
+    assert entry["n_tracks"] == 3, "the name should be read on every track"
+
+
+def test_compute_tempo_by_name(fake_mirdata, monkeypatch):
+    bpm = {"track1": 120.0, "track2": "80", "track3": "fast"}
+    tempo = property(lambda self: bpm[self.track_id])
+    monkeypatch.setattr(fake_dataset_loader.Track, "tempo", tempo, raising=False)
+    ann = compute_local()["annotations"]
+    entry = ann["annotations"]["tempo"]
     assert (
-        "alternating_melody" in ann["skipped"]
-    ), "a guessed property that is not an annotation should be reported as skipped"
-    assert ann["annotation_errors"] == {}, "a wrong guess from the name is not an error"
-    assert ann["status"] == "ok", "a skipped property should not change the status"
+        entry["type"] == "TempoData"
+    ), "a plain value under the tempo word should be typed TempoData"
+    assert entry["tempo"] == grid(
+        [120, 80], "bpm"
+    ), "every value that is a number should be read as a bpm"
+    assert ann["skipped"] == {
+        "tempo": "not a mirdata TempoData object (got str)"
+    }, "a tempo value that is not a number should be listed in skipped"
+    assert ann["annotation_errors"] == {}, "an unreadable tempo value is not an error"
+    assert ann["status"] == "ok", "a skipped tempo value should not change the status"
+
+
+def test_compute_key_by_name(fake_mirdata, monkeypatch):
+    # fma_keys: the key and its mode are two names; da_tacos: an essentia dict
+    keys = {"track1": "F#", "track2": "E major | E minor", "track3": {"key": b"C"}}
+    modes = {"track1": "Major", "track2": "minor", "track3": "minor"}
+    key = property(lambda self: keys[self.track_id])
+    mode = property(lambda self: modes[self.track_id])
+    monkeypatch.setattr(fake_dataset_loader.Track, "key", key, raising=False)
+    monkeypatch.setattr(fake_dataset_loader.Track, "mode", mode, raising=False)
+    ann = compute_local()["annotations"]
+    entry = ann["annotations"]["key"]
+    assert (
+        entry["type"] == "KeyData"
+    ), "a plain value under the key word should be typed KeyData"
+    assert entry["keys"] == {"F#:major": 1, "E:major": 1, "E:minor": 1}, (
+        "every key in a string should be read; one without a mode takes the"
+        " track's mode"
+    )
+    assert "mode" not in ann["annotations"], "mode alone should not be read"
+    assert ann["skipped"] == {
+        "key": "not a mirdata KeyData object (got dict)"
+    }, "a key value that is not text should be listed in skipped"
+    assert ann["annotation_errors"] == {}, "an unreadable key value is not an error"
+    assert ann["status"] == "ok", "a skipped key value should not change the status"
+
+
+def test_compute_errors_held(fake_mirdata, monkeypatch):
+    def onsets(self):
+        if self.track_id == "track1":
+            raise ValueError("broken onsets file")
+        if self.track_id == "track3":
+            return "not beats"
+        return self.beats
+
+    monkeypatch.setattr(
+        fake_dataset_loader.Track, "onsets", property(onsets), raising=False
+    )
+    ann = compute_local()["annotations"]
+    assert (
+        ann["annotations"]["onsets"]["n_tracks"] == 1
+    ), "only the track whose value is an annotation should be read"
+    errors = ann["annotation_errors"]["onsets"]
+    assert errors == {
+        "n_tracks": 2,
+        "messages": [
+            {"error": "ValueError: broken onsets file", "n_tracks": 1},
+            {"error": "not a mirdata BeatData object (got str)", "n_tracks": 1},
+        ],
+    }, (
+        "an error held before the name had a type, and a later value that is not"
+        " its type, should both be annotation errors"
+    )
+    assert ann["status"] == "incomplete", "annotation errors should make it incomplete"
+
+
+def test_compute_never_read(fake_mirdata, monkeypatch):
+    def spectrogram(self):
+        raise FileNotFoundError("no spectrogram file")
+
+    monkeypatch.setattr(
+        fake_dataset_loader.Track, "spectrogram", property(spectrogram), raising=False
+    )
+    ann = compute_local()["annotations"]
+    assert ann["skipped"] == {
+        "spectrogram": "could not be read (FileNotFoundError: no spectrogram file)"
+    }, "a name that could not be read on any track should be listed in skipped"
+    assert (
+        ann["annotation_errors"] == {}
+    ), "a name that never had a type should not be an annotation error"
+    assert ann["status"] == "ok", "a name never read should not change the status"
+
+
+def test_drop_excluded_names():
+    names = [
+        "beats",
+        "tempo",
+        "_track_metadata",
+        "audio",
+        "audio_mic",
+        "Audio_Mix",
+        "tempo_path",
+        "musicxml_paths",
+    ]
+    assert drop_excluded_names(names) == ["beats", "tempo"], (
+        "private names, names with audio and file paths should be dropped;"
+        " the rest kept, sorted"
+    )
+
+
+def test_collect_stats_candidates(fake_mirdata):
+    ds = mirdata.initialize("fake_dataset", data_home=DATA_HOME)
+    found = collect_stats_candidates(ds.track("track1"))
+    assert found == ["beats", "chords", "title", "track_id"], (
+        "every property and attribute of the track should be a candidate,"
+        " except audio, file paths and private names"
+    )
 
 
 def test_compute_instrument(fake_mirdata, monkeypatch):

@@ -34,8 +34,10 @@ stats:
         type: SectionData
         n_tracks: 28
         n_annotations: 28
-        labels: {charanam: 298, pallavi: 56, anupallavi: 56, muktayiswaram: 56, firstchittiswaram: 56,
-          secondchittiswaram: 56, thirdchittiswaram: 56, fourthchittiswaram: 56, fifthchittiswaram: 6}
+        sections_per_annotation:
+          unit: sections
+          width: 1
+          counts: {23: 6, 24: 9, 25: 8, 26: 2, 30: 3}
         section_interval_seconds:
           unit: s
           width: 1
