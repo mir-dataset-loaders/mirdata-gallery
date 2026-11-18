@@ -451,25 +451,24 @@ class Notes(Stat):
 
 
 class Sections(Stat):
-    """Section labels, and the length of every section interval in seconds."""
+    """How many sections each annotation has, and the length of every section in seconds."""
 
     annotation = mirdata.annotations.SectionData
 
     def __init__(self):
         super().__init__()
+        self.sections_per_annotation = []  # one value per annotation: its sections
         self.section_interval_seconds = []
-        self.labels = Counter()
 
     def read(self, value):
-        if value.labels is not None:
-            self.labels.update(str(label) for label in value.labels)
+        self.sections_per_annotation.append(len(value.intervals))
         lengths = interval_lengths(value)
         if lengths is not None:
             self.section_interval_seconds.extend(lengths.tolist())
 
     def result(self):
         return {
-            "labels": dict(self.labels.most_common()),
+            "sections_per_annotation": grid(self.sections_per_annotation, "sections"),
             "section_interval_seconds": grid(self.section_interval_seconds, "s"),
         }
 

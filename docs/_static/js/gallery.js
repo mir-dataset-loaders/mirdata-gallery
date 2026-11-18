@@ -42,6 +42,35 @@ document.addEventListener("DOMContentLoaded", function () {
         return "Other";
     }
 
+    // A dataset's section of the stable mirdata API page (a dataset without a section
+    // there lands at the top of the page)
+    function docsUrl(name) {
+        return "https://mirdata.readthedocs.io/en/stable/source/mirdata.html#module-mirdata.datasets." + name;
+    }
+
+    // The external-link icon of the links to docsUrl, size pixels wide
+    function docsIcon(size) {
+        return (
+            `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" ` +
+            'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M15 3h6v6"/><path d="M10 14 21 3"/>' +
+            '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>'
+        );
+    }
+
+    // A panel's title as a link to docsUrl, in a new tab, with a small icon at its upper right
+    function docsLink(name) {
+        const link = document.createElement("a");
+        link.className = "panel-docs-link";
+        link.href = docsUrl(name);
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.title = "mirdata documentation";
+        link.textContent = name;
+        link.insertAdjacentHTML("beforeend", docsIcon(11));
+        return link;
+    }
+
     // Read the annotation tags and the license from each panel's "At a glance" box
     const cardData = cards.map((card) => {
         const annotations = Array.from(card.querySelectorAll(".glance-tags code")).map((el) =>
@@ -60,6 +89,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const headerlink = clone.querySelector(".headerlink");
             if (headerlink) headerlink.remove();
             title = clone.textContent.trim();
+            h2.replaceChildren(docsLink(title), ...h2.querySelectorAll(".headerlink")); // the theme's link kept
         }
 
         const tracksRow = Array.from(card.querySelectorAll(".glance-row")).find(
@@ -126,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // matched: the datasets the filters let through, in the list's order.
     const shared = {
         cards, cardData, container, sidebar, listColumn, infoColumn, splitter,
-        selectCard, flashScrollbar, activeItem: null, matched: [],
+        selectCard, flashScrollbar, docsUrl, docsIcon, activeItem: null, matched: [],
     };
 
     mirdataFilters(shared);

@@ -52,7 +52,7 @@ PLOT_FIELDS = {
     "MultiF0Data": {"frequencies": "Pitches (multi-F0)", "polyphony": "Notes at once"},
     "NoteData": {"pitches": "Note pitch"},
     "SectionData": {
-        "labels": "Section labels",
+        "sections_per_annotation": "Sections per track",
         "section_interval_seconds": "Section length",
     },
     "TempoData": {"tempo": "Tempo"},
@@ -78,7 +78,7 @@ NUMBER_FIELDS = {
 # The annotation types this release doesn't plot yet, as the About page's note says. The
 # cards keep them and their tags still show. Genre and Instrument have no plots to hide.
 # The tempo worked out from beats stays: only annotated tempo (TempoData) goes.
-HIDDEN_PLOT_TYPES = {"EventData", "EventDataExtended", "SectionData"}
+HIDDEN_PLOT_TYPES = {"EventData", "EventDataExtended"}
 
 # --- Card rendering ----------------------------------------------------------
 
