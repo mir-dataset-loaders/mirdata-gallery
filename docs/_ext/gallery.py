@@ -30,12 +30,7 @@ from sphinx.util.nodes import nested_parse_with_titles
 
 logger = logging.getLogger(__name__)
 
-MAX_PARTS = 6  # part names written in a "Try it with mirdata" comment; the rest as "…"
-# The plotted fields of each annotation type, in plot order, with their titles
-# ("audio": the audio's, plotted first). A counts field not listed is not
-# plotted ("parts" counts where the annotations came from, not what they hold);
-# a grid, histogram or points not listed is plotted after the listed ones,
-# titled from its name.
+# The plotted fields of each type, in order, with titles; a counts field not listed is not plotted
 PLOT_FIELDS = {
     "audio": {"durations": "Track duration", "sample_rates": "Sample rate"},
     "BeatData": {
@@ -47,6 +42,7 @@ PLOT_FIELDS = {
     "ChordData": {"labels": "Chords"},
     "EventData": {"events": "Events"},
     "F0Data": {"frequencies": "Pitch (F0)"},
+    "Instrument": {"instruments": "Instruments"},
     "KeyData": {"keys": "Keys"},
     "LyricData": {"lyric_unit": "Lyric unit", "lyrics_per_track": "Lyrics per track"},
     "MultiF0Data": {"frequencies": "Pitches (multi-F0)", "polyphony": "Notes at once"},
@@ -58,15 +54,9 @@ PLOT_FIELDS = {
     "TempoData": {"tempo": "Tempo"},
 }
 
-# The label fields drawn as a circle of fifths instead of bars (charts.js,
-# circleSvg), and its rings: a ring per chord quality or per key mode. The
-# rings show what the qualities and modes fields would, so those are not plotted.
 CIRCLE_FIELDS = {("ChordData", "labels"): "chords", ("KeyData", "keys"): "keys"}
 
-# The counts fields whose labels are whole numbers from 0 (charts.js, countsSvg):
-# a bar for every number up to last, empty ones too, the ones from last on in
-# one "≥ last" bar; noun is what one number counts (hover "2 changes"), unit the
-# axis label. The card keeps every number, so last can change without a recompute.
+# Counts of whole numbers: a bar per number below last, the rest in one "≥ last" bar (noun: hover, unit: axis)
 NUMBER_FIELDS = {
     ("BeatData", "meter_changes"): {
         "last": 5,
@@ -75,9 +65,6 @@ NUMBER_FIELDS = {
     },
 }
 
-# The annotation types this release doesn't plot yet, as the About page's note says. The
-# cards keep them and their tags still show. Genre and Instrument have no plots to hide.
-# The tempo worked out from beats stays: only annotated tempo (TempoData) goes.
 HIDDEN_PLOT_TYPES = {"EventData", "EventDataExtended"}
 
 # --- Card rendering ----------------------------------------------------------
@@ -225,7 +212,7 @@ def try_it(name, stats):
 
     No download: it shows what a track gives access to. The lines are grouped
     by type (the order of the annotation tags), A–Z inside a type, each with
-    its type as a comment, plus the part names (up to MAX_PARTS) when the
+    its type as a comment, plus the part names (up to 6) when the
     property holds several annotations. Without stats, only the track.
     """
     lines = [
@@ -244,8 +231,8 @@ def try_it(name, stats):
         for ann_type, code, parts in access:
             comment = ann_type
             if parts:
-                more = ", …" if len(parts) > MAX_PARTS else ""
-                comment += f", one per: {', '.join(parts[:MAX_PARTS])}{more}"
+                more = ", …" if len(parts) > 6 else ""
+                comment += f", one per: {', '.join(parts[:6])}{more}"
             lines.append(f"{code.ljust(width)}  # {comment}")
     return "\n".join(lines)
 

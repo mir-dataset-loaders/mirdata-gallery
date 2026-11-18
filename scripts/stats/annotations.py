@@ -156,7 +156,12 @@ def read_tracks(ds, verbose=False):
             if used:
                 tracks_with.setdefault(types[name], set()).add(track_id)
                 continue
-            why = f"not a mirdata {types[name]} object (got {type(value).__name__})"
+            got = type(value).__name__
+            why = (
+                f"no instrument labels (got {got})"
+                if types[name] == "Instrument"
+                else f"not a mirdata {types[name]} object (got {got})"
+            )
             if name in by_name:
                 skipped[name] = why
             else:

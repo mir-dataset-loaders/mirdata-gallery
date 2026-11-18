@@ -1,4 +1,4 @@
-"""One Stat class per official mirdata annotation type.
+"""One Stat class per official mirdata annotation type, plus Instrument from the metadata.
 
 A Stat reads one property's annotations track by track (add, read) and
 turns them into grid counts and label counts at the end (result). A property
@@ -13,10 +13,14 @@ import mirdata.annotations
 import numpy as np
 
 # The official mirdata annotation types (BeatData, ChordData, ... TempoData).
-# STATS maps each one, and baf's EventDataExtended, to the Stat that reads it.
+# STATS maps each one, baf's EventDataExtended and Instrument to the Stat that reads it.
 ANNOTATION_TYPES = {
     cls.__name__ for cls in mirdata.annotations.Annotation.__subclasses__()
 }
+# A name holds instrument labels when it has one of these words (split at "_", choose_stat)
+INSTRUMENT_WORDS = {"instrument", "instruments"}
+# A {name: score} value counts the names scored at least this (openmic2018)
+INSTRUMENT_MIN_SCORE = 0.5
 # grid() bin width per unit, the same for every dataset so the gallery can add
 # datasets up bin by bin; any other unit (words, syllables, ...) counts whole numbers
 GRID_WIDTHS = {"bpm": 1, "s": 1, "hz": 10, "midi": 1}
@@ -87,6 +91,27 @@ def metadata_bpm(value):
         return float(value)
     except ValueError:
         return None
+
+
+def instrument_labels(value):
+    """The instrument labels in one field's value, or None when it holds none.
+
+    Text gives its labels split at "," and "&" (rwc_popular: 'Gt, Gt, Bs'); a
+    list of texts one label each; a {name: score} dict the names scored at
+    least INSTRUMENT_MIN_SCORE (openmic2018). Labels are kept as written, and
+    a repeated one counts again. A number or a flag gives None.
+    """
+    if isinstance(value, str):
+        value = value.replace("&", ",").split(",")
+    elif isinstance(value, dict):
+        if not all(isinstance(s, (int, float)) for s in value.values()):
+            return None
+        value = [name for name, s in value.items() if s >= INSTRUMENT_MIN_SCORE]
+    if not isinstance(value, (list, tuple)) or not all(
+        isinstance(v, str) for v in value
+    ):
+        return None
+    return [v.strip() for v in value if v.strip()]
 
 
 # ------------------------------------------------------------------- stats
@@ -614,6 +639,38 @@ class Events(Stat):
         return {"events": dict(self.events.most_common())}
 
 
+class Instrument(Stat):
+    """Instrument labels from the metadata: how many times each one is listed."""
+
+    annotation = None  # not a mirdata class: add() reads the value itself
+
+    def __init__(self):
+        super().__init__()
+        self.instruments = Counter()
+
+    def add(self, value, track=None):
+        """Read one track's instrument labels (see instrument_labels).
+
+        Args:
+            value (object): the value of one name of the track
+            track (mirdata.core.Track or None): not used
+
+        Returns:
+            bool: False when it holds no instrument labels (a number, a flag)
+
+        """
+        labels = instrument_labels(value)
+        if labels is None:
+            return False
+        self.instruments.update(labels)
+        self.n_annotations += 1
+        self.n_tracks += 1
+        return True
+
+    def result(self):
+        return {"instruments": dict(self.instruments.most_common())}
+
+
 STATS = {
     "TempoData": Tempo,
     "BeatData": Beats,
@@ -627,11 +684,14 @@ STATS = {
     "EventData": Events,
     # baf's EventData with a tag per event: Events reads its event labels
     "EventDataExtended": Events,
+    # instrument labels from the metadata (not a mirdata class): found by name
+    "Instrument": Instrument,
 }
 assert all(STATS[name].annotation.__name__ == name for name in ANNOTATION_TYPES)
 assert set(STATS) == ANNOTATION_TYPES | {
-    "EventDataExtended"
-}, "one Stat per official annotation type, plus baf's EventDataExtended"
+    "EventDataExtended",
+    "Instrument",
+}, "one Stat per official annotation type, plus baf's EventDataExtended and Instrument"
 
 
 def choose_stat(name, value):
@@ -639,8 +699,9 @@ def choose_stat(name, value):
 
     Rule 1, the value: the first unpacked item whose class name is in STATS
     gives its type. Rule 2, the name (split on "_"): the word "tempo" gives
-    TempoData, "key" or "keys" KeyData; Tempo and Keys also read plain values
-    (120.0, 'C minor'). Anything else is not read.
+    TempoData, "key" or "keys" KeyData, "instrument" or "instruments"
+    Instrument; Tempo, Keys and Instrument also read plain values (120.0,
+    'C minor', 'Gt, Bs'). Anything else is not read.
 
     Args:
         name (str): the name of a property or attribute of the track
@@ -659,4 +720,6 @@ def choose_stat(name, value):
         return "TempoData"
     if "key" in words or "keys" in words:
         return "KeyData"
+    if INSTRUMENT_WORDS & set(words):
+        return "Instrument"
     return None

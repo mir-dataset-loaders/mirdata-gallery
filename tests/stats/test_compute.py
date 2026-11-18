@@ -314,10 +314,13 @@ def test_compute_errors_held(fake_mirdata, monkeypatch):
     assert (
         ann["annotations"]["onsets"]["n_tracks"] == 1
     ), "only the track whose value is an annotation should be read"
-    examples = ann["annotation_errors"]["onsets"]["examples"]
-    assert examples == {
-        "track1": "ValueError: broken onsets file",
-        "track3": "not a mirdata BeatData object (got str)",
+    errors = ann["annotation_errors"]["onsets"]
+    assert errors == {
+        "n_tracks": 2,
+        "messages": [
+            {"error": "ValueError: broken onsets file", "n_tracks": 1},
+            {"error": "not a mirdata BeatData object (got str)", "n_tracks": 1},
+        ],
     }, (
         "an error held before the name had a type, and a later value that is not"
         " its type, should both be annotation errors"
@@ -366,6 +369,35 @@ def test_collect_stats_candidates(fake_mirdata):
         "every property and attribute of the track should be a candidate,"
         " except audio, file paths and private names"
     )
+
+
+def test_compute_instrument(fake_mirdata, monkeypatch):
+    # no return hints: found by the word "instrument" in their names
+    labels = property(lambda self: "Gt, Gt, Bs")
+    number = property(lambda self: 3)
+    monkeypatch.setattr(
+        fake_dataset_loader.Track, "live_instrument", labels, raising=False
+    )
+    monkeypatch.setattr(
+        fake_dataset_loader.Track, "instrument_id", number, raising=False
+    )
+    ann = compute_local()["annotations"]
+    expected = {
+        "type": "Instrument",
+        "n_tracks": 3,
+        "n_annotations": 3,
+        "instruments": {"Gt": 6, "Bs": 3},
+    }
+    assert (
+        ann["annotations"]["live_instrument"] == expected
+    ), "an instrument field should be read on every track, each label counted as listed"
+    assert (
+        ann["tracks_with"]["Instrument"] == 3
+    ), "tracks_with should count the tracks with instrument labels"
+    assert ann["skipped"] == {
+        "instrument_id": "no instrument labels (got int)"
+    }, "a number in an instrument field should be reported as skipped"
+    assert ann["status"] == "ok", "a skipped instrument field should not change the status"
 
 
 def test_compute_crashing_part(fake_mirdata, monkeypatch):

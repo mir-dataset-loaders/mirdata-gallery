@@ -46,6 +46,7 @@ CARD_TYPES = {
 CARD_TASKS = {
     "Beat Tracking",
     "Chord Recognition",
+    "Instrument Recognition",
     "Key Estimation",
     "Lyrics Transcription",
     "Lyrics-to-Audio Alignment",
@@ -100,6 +101,7 @@ ENTRY_FIELDS = {
     "EventData": {"events": COUNTS},
     "EventDataExtended": {"events": COUNTS},
     "F0Data": {"frequencies": GRID},
+    "Instrument": {"instruments": COUNTS},
     "KeyData": {"keys": COUNTS, "modes": COUNTS},
     "LyricData": {"lyric_unit": COUNTS, "lyrics_per_track": GRID},
     "MultiF0Data": {"frequencies": GRID, "polyphony": COUNTS},

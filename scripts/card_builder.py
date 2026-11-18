@@ -20,6 +20,7 @@ TASKS = {
     "NoteData": ["Music Transcription"],
     "SectionData": ["Music Structure Analysis"],
     "TempoData": ["Tempo Estimation"],
+    "Instrument": ["Instrument Recognition"],
 }
 # A loader with a MultiTrack class has the stems to separate
 MULTITRACK_TASK = "Source Separation"

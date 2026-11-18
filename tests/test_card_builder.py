@@ -103,6 +103,14 @@ def test_tasks(ds):
     ], "a multitrack loader should add Source Separation, even without stats"
 
 
+def test_tasks_instrument(ds):
+    task = "Instrument Recognition"
+    assert task not in tasks(ds, STATS), "no Instrument should add no Instrument Recognition"
+    assert task in tasks(
+        ds, stats_with(instrument="Instrument")
+    ), "Instrument should add Instrument Recognition"
+
+
 def test_clean_text():
     text = "\n\n    @misc{fake,   \n      title={Fake}\n    }  \n\n"
     expected = "@misc{fake,\n  title={Fake}\n}"
