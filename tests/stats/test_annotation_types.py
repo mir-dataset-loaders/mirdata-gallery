@@ -284,14 +284,31 @@ def test_sections():
     track2 = annotations.SectionData(intervals((0, 5000)), "ms", ["verse"], "open")
     track3 = annotations.SectionData(intervals((0, 40)), "s")  # no labels
     result = collect(Sections(), track1, track2, track3).result()
-    labels = {"verse": 2, "chorus": 1}
-    assert (
-        result["labels"] == labels
-    ), "labels should count every section label; unlabeled sections add none"
+    assert set(result) == {"sections_per_annotation", "section_interval_seconds"}, (
+        "sections should give only the sections per annotation and the section"
+        " lengths; labels are not counted"
+    )
+    assert result["sections_per_annotation"] == grid([2, 1, 1], "sections"), (
+        "every annotation should add its number of sections, labeled or not,"
+        " on a grid of whole numbers"
+    )
     lengths = grid([10.0, 20.0, 5.0, 40.0], "s")
     assert result["section_interval_seconds"] == lengths, (
         "every section's length in seconds (ms read as s/1000), labeled or not,"
         " should be counted on one 1 s grid"
+    )
+
+
+def test_sections_per_annotation_counts_each_annotator():
+    three = annotations.SectionData(intervals((0, 10), (10, 20), (20, 30)), "s")
+    one = annotations.SectionData(intervals((0, 30)), "s")
+    two_annotators = annotations.MultiAnnotator(
+        ["ann1", "ann2"], [three, one], annotations.SectionData
+    )
+    result = collect(Sections(), two_annotators).result()
+    assert result["sections_per_annotation"] == grid([3, 1], "sections"), (
+        "a track with two annotators should add one value per annotation"
+        " (3 and 1), not one summed value for the track (4)"
     )
 
 
