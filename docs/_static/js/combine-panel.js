@@ -1,6 +1,6 @@
 // Combine mode's button and panel.
 window.mirdataCombinePanel = function (shared) {
-    const { cardData, listColumn, infoColumn, table, selectCard, flashScrollbar, docsUrl } = shared;
+    const { cardData, listColumn, infoColumn, table, selectCard, flashScrollbar, docsUrl, docsIcon } = shared;
 
     // Combine mode: the Combine button switches what a click on a dataset does.
     // Off, the click shows that dataset; on, it adds the dataset to the
@@ -161,12 +161,13 @@ window.mirdataCombinePanel = function (shared) {
         const notes = mirdataCombine.namedNotes(selected.map((d) => ({ name: d.title, notes: d.facts.notes })));
         const plots = mirdataCombine.combinedPlots(datasets, combine.picks);
         if (!plots.length) notes.push("Nothing to plot yet.");
-        // each name opens its dataset's mirdata docs in a new tab, as the icon after a panel's title does
+        // each name opens its dataset's mirdata docs in a new tab, as the icon after a panel's title
+        // does; a small icon at its upper right shows it's a link
         const names = selected
             .map(
                 (d) =>
                     `<a href="${escape(docsUrl(d.title))}" target="_blank" rel="noopener"` +
-                    ` title="mirdata documentation">${escape(d.title)}</a>`
+                    ` title="mirdata documentation">${escape(d.title)}${docsIcon(8)}</a>`
             )
             .join(", ");
         combinedPanel.innerHTML =

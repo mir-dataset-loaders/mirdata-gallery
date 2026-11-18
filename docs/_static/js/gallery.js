@@ -48,7 +48,17 @@ document.addEventListener("DOMContentLoaded", function () {
         return "https://mirdata.readthedocs.io/en/stable/source/mirdata.html#module-mirdata.datasets." + name;
     }
 
-    // The icon after a panel's title: docsUrl, in a new tab
+    // The external-link icon of the links to docsUrl, size pixels wide
+    function docsIcon(size) {
+        return (
+            `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" ` +
+            'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M15 3h6v6"/><path d="M10 14 21 3"/>' +
+            '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>'
+        );
+    }
+
+    // A panel's title as a link to docsUrl, in a new tab, with a small icon at its upper right
     function docsLink(name) {
         const link = document.createElement("a");
         link.className = "panel-docs-link";
@@ -56,12 +66,8 @@ document.addEventListener("DOMContentLoaded", function () {
         link.target = "_blank";
         link.rel = "noopener";
         link.title = "mirdata documentation";
-        link.setAttribute("aria-label", "mirdata documentation");
-        link.innerHTML =
-            '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" ' +
-            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-            '<path d="M15 3h6v6"/><path d="M10 14 21 3"/>' +
-            '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+        link.textContent = name;
+        link.insertAdjacentHTML("beforeend", docsIcon(11));
         return link;
     }
 
@@ -83,7 +89,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const headerlink = clone.querySelector(".headerlink");
             if (headerlink) headerlink.remove();
             title = clone.textContent.trim();
-            h2.insertBefore(docsLink(title), h2.querySelector(".headerlink"));
+            h2.replaceChildren(docsLink(title), ...h2.querySelectorAll(".headerlink")); // the theme's link kept
         }
 
         const tracksRow = Array.from(card.querySelectorAll(".glance-row")).find(
@@ -150,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // matched: the datasets the filters let through, in the list's order.
     const shared = {
         cards, cardData, container, sidebar, listColumn, infoColumn, splitter,
-        selectCard, flashScrollbar, docsUrl, activeItem: null, matched: [],
+        selectCard, flashScrollbar, docsUrl, docsIcon, activeItem: null, matched: [],
     };
 
     mirdataFilters(shared);

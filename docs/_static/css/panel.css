@@ -21,16 +21,20 @@
     padding-bottom: 6px;
 }
 
-/* the icon after the title, to the dataset's mirdata docs (gallery.js, docsLink) */
+/* the title, a link to the dataset's mirdata docs (gallery.js, docsLink): it looks as before
+   (the theme makes links medium weight and underlined), with a small icon at its upper right */
 #content .gallery-cards-information>section>h2 .panel-docs-link {
-    display: inline-flex;
-    vertical-align: middle;
-    margin-left: 6px;
-    color: #94a3b8;
-    text-decoration: none;
+    font-weight: inherit;
+    text-decoration-line: none;
 }
 
-#content .gallery-cards-information>section>h2 .panel-docs-link:hover {
+#content .gallery-cards-information>section>h2 .panel-docs-link svg {
+    vertical-align: super;
+    margin-left: 2px;
+    color: #94a3b8;
+}
+
+#content .gallery-cards-information>section>h2 .panel-docs-link:hover svg {
     color: #a054d8;
 }
 

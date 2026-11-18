@@ -39,9 +39,21 @@
     margin: 0 0 14px;
 }
 
-/* each name links to its mirdata docs (combine-panel.js); the theme makes links medium weight */
+/* each name links to its mirdata docs (combine-panel.js): the text as before (the theme makes
+   links medium weight and underlined), with a small icon at its upper right */
 #content .gallery-cards-information .combine-names a {
     font-weight: inherit;
+    text-decoration-line: none;
+}
+
+#content .gallery-cards-information .combine-names a svg {
+    vertical-align: super;
+    margin-left: 1px;
+    color: #94a3b8;
+}
+
+#content .gallery-cards-information .combine-names a:hover svg {
+    color: #a054d8;
 }
 
 /* The combined panel's datasets again, under the Statistics title (focus a
