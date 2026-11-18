@@ -42,6 +42,29 @@ document.addEventListener("DOMContentLoaded", function () {
         return "Other";
     }
 
+    // A dataset's section of the stable mirdata API page (a dataset without a section
+    // there lands at the top of the page)
+    function docsUrl(name) {
+        return "https://mirdata.readthedocs.io/en/stable/source/mirdata.html#module-mirdata.datasets." + name;
+    }
+
+    // The icon after a panel's title: docsUrl, in a new tab
+    function docsLink(name) {
+        const link = document.createElement("a");
+        link.className = "panel-docs-link";
+        link.href = docsUrl(name);
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.title = "mirdata documentation";
+        link.setAttribute("aria-label", "mirdata documentation");
+        link.innerHTML =
+            '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" ' +
+            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M15 3h6v6"/><path d="M10 14 21 3"/>' +
+            '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+        return link;
+    }
+
     // Read the annotation tags and the license from each panel's "At a glance" box
     const cardData = cards.map((card) => {
         const annotations = Array.from(card.querySelectorAll(".glance-tags code")).map((el) =>
@@ -60,6 +83,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const headerlink = clone.querySelector(".headerlink");
             if (headerlink) headerlink.remove();
             title = clone.textContent.trim();
+            h2.insertBefore(docsLink(title), h2.querySelector(".headerlink"));
         }
 
         const tracksRow = Array.from(card.querySelectorAll(".glance-row")).find(
@@ -126,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // matched: the datasets the filters let through, in the list's order.
     const shared = {
         cards, cardData, container, sidebar, listColumn, infoColumn, splitter,
-        selectCard, flashScrollbar, activeItem: null, matched: [],
+        selectCard, flashScrollbar, docsUrl, activeItem: null, matched: [],
     };
 
     mirdataFilters(shared);

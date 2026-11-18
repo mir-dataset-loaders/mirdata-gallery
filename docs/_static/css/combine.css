@@ -39,6 +39,11 @@
     margin: 0 0 14px;
 }
 
+/* each name links to its mirdata docs (combine-panel.js); the theme makes links medium weight */
+#content .gallery-cards-information .combine-names a {
+    font-weight: inherit;
+}
+
 /* The combined panel's datasets again, under the Statistics title (focus a
    dataset in the plots, or remove it), and a hint under them */
 .combine-chips {

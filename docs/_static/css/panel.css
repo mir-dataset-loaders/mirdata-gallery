@@ -21,6 +21,19 @@
     padding-bottom: 6px;
 }
 
+/* the icon after the title, to the dataset's mirdata docs (gallery.js, docsLink) */
+#content .gallery-cards-information>section>h2 .panel-docs-link {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-left: 6px;
+    color: #94a3b8;
+    text-decoration: none;
+}
+
+#content .gallery-cards-information>section>h2 .panel-docs-link:hover {
+    color: #a054d8;
+}
+
 #content .gallery-cards-information .panel-heading {
     font-size: 1.1rem;
     font-weight: 700;
