@@ -133,6 +133,8 @@ def print_annotations(part_stats):
         for key, value in result.items():
             if key not in ("type", "n_tracks", "n_annotations"):
                 print(f"    {key:<26} {fmt(value)}")
+    for prop, why in part_stats["skipped"].items():
+        print(f"  skipped {prop}: {why}")
     for prop, failed in part_stats["annotation_errors"].items():
         print(
             f"  {prop} failed on {failed['n_tracks']} tracks"

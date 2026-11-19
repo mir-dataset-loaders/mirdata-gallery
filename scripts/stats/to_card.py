@@ -40,6 +40,7 @@ ANNOTATION_KEYS = (
     "n_tracks_loaded",
     "tracks_with",
     "annotations",
+    "skipped",
 )
 
 

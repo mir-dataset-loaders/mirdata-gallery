@@ -39,6 +39,7 @@ ANNOTATIONS = {  # a remote run where track3 failed and one beats file was corru
             "polyphony": {"1": 3, "2": 1},
         },
     },
+    "skipped": {"title": "not a mirdata ChordData object (got str)"},
     "errors": {"track3": "ValueError: cannot build track3"},
     "annotation_errors": {
         "beats": {
@@ -89,6 +90,7 @@ def test_result_to_card_stats():
         "n_tracks_loaded",
         "tracks_with",
         "annotations",
+        "skipped",
         "annotation_errors",
     }
     counts = {"n_missing_files", "track_errors"}

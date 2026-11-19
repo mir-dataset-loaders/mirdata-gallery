@@ -82,6 +82,7 @@ ANNOTATION_FIELDS = {
     "n_tracks_loaded",
     "tracks_with",
     "annotations",
+    "skipped",
     "n_missing_files",
     "track_errors",
     "annotation_errors",
@@ -302,6 +303,7 @@ def check_stats(stats):
         assert loaded, "no more tracks should load than there are"
         check_counts(ann["tracks_with"], "tracks_with")
         check_annotation_errors(ann["annotation_errors"])
+        assert isinstance(ann["skipped"], dict), "skipped should be {property: why}"
         for prop, entry in ann["annotations"].items():
             check_entry(prop, entry)
 
