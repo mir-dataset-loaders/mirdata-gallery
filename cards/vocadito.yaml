@@ -1,14 +1,11 @@
 name: vocadito
-summary: vocadito includes 40 short solo singing excerpts in 7 languages. Annotations
-  provide frame-level f0, note annotations, lyrics, and language. Tasks focus on lyrics
-  transcription, alignment, melody extraction, and music transcription.
+summary: vocadito includes 40 short monophonic singing excerpts in 7 languages. Annotations
+  provide frame-level f0, note annotations, lyrics, and language. The primary MIR
+  tasks are Melody Extraction and Music Transcription.
 annotations:
 - F0Data
-- LyricData
 - NoteData
 tasks:
-- Lyrics Transcription
-- Lyrics-to-Audio Alignment
 - Melody Extraction
 - Music Transcription
 stats:
@@ -72,13 +69,13 @@ stats:
             230: 81, 240: 112, 250: 81, 260: 56, 270: 77, 280: 81, 290: 44, 300: 37,
             310: 27, 320: 38, 330: 23, 340: 31, 350: 29, 360: 19, 370: 15, 380: 14,
             390: 13, 400: 7, 410: 8, 430: 2, 440: 1, 450: 1}
-    skipped:
-      average_pitch_midi: not a mirdata F0Data object (got int)
-      lyrics: not a mirdata LyricData object (got list)
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: f06f0b4a60f213a422dfeb2b0af1c06369c0d220b73992669e8ae7ad20de20d2
+summary_hash: e4191e265773fe1768a1d104d3ba3ef419744972e34e0782fc12ae99d84ae5ac
 bibtex: |-
   @techreport{bittner2021vocadito,
         title={vocadito: A dataset of solo vocals with $f_0$, note, and lyric annotations},

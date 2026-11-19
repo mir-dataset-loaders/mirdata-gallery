@@ -1,0 +1,43 @@
+name: da_tacos
+summary: Da-TACOS includes 25,000 songs with pre-extracted features and metadata for
+  cover song identification, encoded in MP3 format. Annotations provide performance
+  and work titles, artists, release years, and whether songs are instrumental.
+annotations: []
+tasks: []
+stats:
+  computed:
+    mode: local
+    index: 27f5ee0367d0182b06a7b8eca6dce096
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 25000
+    n_audio_files: 0
+    total_seconds: null
+    sample_rates: null
+    durations: null
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 25000
+    n_tracks_loaded: 25000
+    tracks_with: {}
+    annotations: {}
+    skipped:
+      key: not a mirdata KeyData object (got dict)
+    n_missing_files: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
+    annotation_errors: {}
+summary_hash: ef182b1e4504ba04386ceaa3815e3839f6f79d4e4d3021a05fe303c14b460e79
+bibtex: |-
+  @inproceedings{yesiler2019,
+      author = "Furkan Yesiler and Chris Tralie and Albin Correya and Diego F. Silva and Philip Tovstogan and Emilia G{'{o}}mez and Xavier Serra",
+      title = "{Da-TACOS}: A Dataset for Cover Song Identification and Understanding",
+      booktitle = "Proc. of the 20th Int. Soc. for Music Information Retrieval Conf. (ISMIR)",
+      year = "2019",
+      pages = "327--334",
+      address = "Delft, The Netherlands"
+  }
+license: Creative Commons Attribution Non Commercial Share Alike 4.0 International

@@ -3,7 +3,6 @@ summary: The dataset includes multitrack recordings with melody f0 annotations a
   instrument activations, primarily for melody extraction and multi-pitch estimation.
 annotations:
 - F0Data
-- Instrument
 - MultiF0Data
 tasks:
 - Melody Extraction
@@ -185,7 +184,9 @@ stats:
         polyphony: {1: 1775888, 2: 342294, 3: 74525, 4: 8380, 5: 3482}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: a3e56efcc0c675aed87c37d8d07a2a03cdeda1c256b5e94577a591f7b9b91b2b
 bibtex: |-

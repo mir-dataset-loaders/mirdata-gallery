@@ -29,13 +29,64 @@ stats:
     problems: []
     n_tracks: 600
     n_tracks_loaded: 600
-    tracks_with: {}
-    annotations: {}
-    skipped:
-      key: not a mirdata KeyData object (got str)
-      tempo: not a mirdata TempoData object (got int)
+    tracks_with: {KeyData: 600, TempoData: 500}
+    annotations:
+      key:
+        type: KeyData
+        n_tracks: 600
+        n_annotations: 600
+        keys: {'F:minor': 39, 'G:minor': 33, 'E:minor': 28, 'C:minor': 26, 'F:minor aeolian': 24,
+          'A:minor': 23, 'D:minor': 22, 'C:minor aeolian': 22, 'Eb:minor': 21, 'A:minor aeolian': 18,
+          'G:minor aeolian': 16, 'C:major': 16, 'B:minor': 16, 'Bb:minor': 15, 'Gb:minor': 14,
+          'E:minor aeolian': 14, 'F:major': 13, 'Db:minor': 13, 'D:minor aeolian': 13,
+          'G:major': 11, 'Ab:minor': 11, 'D:major': 10, 'E:major': 10, 'B:minor aeolian': 9,
+          'Eb:major': 9, 'Ab:minor aeolian': 8, 'E:minor phrygian': 8, 'Ab:major': 7,
+          'G:minor phrygian': 7, 'Bb:major': 7, 'F:minor phryrgian': 7, 'Gb:minor aeolian': 6,
+          'A:major': 6, 'Bb:minor aeolian': 6, 'F:minor dorian': 5, 'Gb:major': 5,
+          'Eb:minor aeolian': 5, 'A:minor phrygian': 5, 'Bb:minor phrygian': 5, 'C:minor dorian': 5,
+          'C:minor phrygian': 5, 'Db:major': 5, 'Eb:other': 4, 'Gb:minor harmonic': 4,
+          'B:minor dorian': 4, 'Ab:other': 4, 'Bb:other': 4, 'Db:minor harmonic': 4,
+          'Eb:minor dorian': 4, 'Db:minor aeolian': 4, 'C:major ionian': 4, 'C:major mixolydian': 3,
+          'Bb:major ionian': 3, 'B:minor phrygian': 3, 'Ab:major mixolydian': 3, 'Gb:other': 3,
+          'E:minor dorian': 3, 'G:major mixolydian': 3, 'Bb:minor dorian': 3, 'Ab:minor phrygian': 3,
+          'F:minor phrygian': 3, 'E:other': 3, 'A:other': 3, X: 3, 'B:major': 3, 'E:major ionian': 2,
+          'G:major phrygian-major': 2, 'Eb:major mixolydian': 2, 'Eb:minor phrygian': 2,
+          'Eb:minor harmonic': 2, 'F:other': 2, 'G:major ionian': 2, 'A:minor dorian': 2,
+          'Gb:minor dorian': 2, 'Db:minor phrygian': 2, 'Bb:minor harmonic': 2, 'E:major mixolydian': 2,
+          'A:minor harmonic': 2, 'D:major ionian': 2, 'E:minor harmonic': 2, 'G:minor harmonic': 1,
+          'Ab:major ionian': 1, 'F:major ionian': 1, 'Bb:major mixolydian': 1, 'F:minor harmonic': 1,
+          'Gb:minor phrygian': 1, 'G:other': 1, 'D:minor phygian': 1, 'C:minor harmonic': 1,
+          'D:minor dorian': 1, 'Eb:other monotonic': 1, 'C:other monotonic': 1, 'Db:minor dorian': 1,
+          'Gb:major phrygian-major': 1, 'D:minor phrygian': 1, 'Ab:minor dorian': 1,
+          'E:minor melodic': 1, 'G:minor dorian': 1, 'Db:major mixolydian': 1, 'G:minor mixolydian': 1,
+          'E:major phrygian-major': 1, 'D_:major': 1, 'B_:minor aeonian': 1, 'Gb:major ionian': 1,
+          'F#:minor': 1, 'E:other monotonic': 1, 'Ab:minor harmonic': 1, 'Ab:minor mixolydian': 1,
+          'Ab:major dorian': 1, 'B:major aeolian': 1, 'E:major phrygian major': 1,
+          'E_:major ionian': 1, 'A:major ionian': 1, 'Eb:major ionian': 1, 'Db:other': 1,
+          'Eb^:minor': 1, 'B_:other': 1}
+        modes: {minor: 263, minor aeolian: 145, major: 103, minor phrygian: 45, minor dorian: 32,
+          other: 26, minor harmonic: 20, major ionian: 19, major mixolydian: 15, minor phryrgian: 7,
+          major phrygian-major: 4, other monotonic: 3, (none): 3, minor mixolydian: 2,
+          minor phygian: 1, minor melodic: 1, minor aeonian: 1, major dorian: 1, major aeolian: 1,
+          major phrygian major: 1}
+      tempo:
+        type: TempoData
+        n_tracks: 500
+        n_annotations: 500
+        tempo:
+          unit: bpm
+          width: 1
+          counts: {0: 9, 69: 1, 70: 1, 84: 1, 86: 4, 87: 2, 88: 7, 90: 1, 93: 3, 96: 1,
+            99: 1, 108: 1, 109: 1, 110: 1, 113: 3, 114: 1, 115: 2, 116: 6, 117: 8,
+            118: 5, 119: 1, 120: 31, 121: 14, 122: 15, 123: 22, 124: 35, 125: 50,
+            126: 29, 127: 20, 128: 104, 129: 5, 130: 30, 131: 2, 132: 14, 134: 2,
+            135: 7, 136: 6, 137: 1, 138: 10, 139: 2, 140: 26, 141: 1, 150: 1, 162: 1,
+            166: 1, 168: 1, 170: 3, 175: 7}
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: a4b28fc18c8ec2cb2bb8b11508681617ecf26313c4ea0916b36779c3260a2269
 bibtex: |-

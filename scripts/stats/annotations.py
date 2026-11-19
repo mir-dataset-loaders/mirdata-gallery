@@ -92,23 +92,26 @@ def read_tracks(ds, verbose=False):
     (choose_stat); a name with no type is not read again. Errors from before
     a name had a type are held, then count as annotation errors, also when
     the name never gets a type. A value its Stat cannot use counts as a
-    "WrongFormat" annotation error.
+    "WrongFormat" annotation error, or is skipped when the name was typed by
+    a word in it (tempo, key) rather than by its value.
 
     Args:
         ds (mirdata.core.Dataset): an initialized dataset
         verbose (bool): print every track and error to stderr
 
     Returns:
-        dict: the track counts, annotations, errors and annotation_errors
+        dict: the track counts, annotations, skipped, errors and annotation_errors
 
     """
     track_ids = ds.track_ids
     types = {}  # name -> annotation type, chosen from its first non-empty value
     stats = {}  # name -> the Stat that reads it
+    by_name = set()  # names typed by a word in the name (tempo, key), not by their value
     dropped = set()  # names whose first non-empty value has no type: never read again
     held = {}  # name with no type yet -> {track_id: error} while reading it
     # annotation type -> ids of tracks with at least one such annotation
     tracks_with = {}
+    skipped = {}  # name typed by name -> why its values could not be used
     # track_id -> error while creating the track (none of its annotations read)
     errors = {}
     annotation_errors = {}  # name -> {track_id: error or unusable value} while reading it
@@ -139,6 +142,11 @@ def read_tracks(ds, verbose=False):
                         continue
                     types[name] = ann_type
                     stats[name] = annotation_types.STATS[ann_type]()
+                    if not any(
+                        type(item).__name__ == ann_type
+                        for _, item in annotation_types.unpack(value)
+                    ):
+                        by_name.add(name)
                     if name in held:
                         annotation_errors[name] = held.pop(name)
                 used = stats[name].add(value, track)
@@ -151,14 +159,17 @@ def read_tracks(ds, verbose=False):
             if used:
                 tracks_with.setdefault(types[name], set()).add(track_id)
                 continue
-            # "WrongFormat" stands in for an exception type, as in error_text()
             got = type(value).__name__
             why = (
-                f"WrongFormat: no instrument labels (got {got})"
+                f"no instrument labels (got {got})"
                 if types[name] == "Instrument"
-                else f"WrongFormat: not a mirdata {types[name]} object (got {got})"
+                else f"not a mirdata {types[name]} object (got {got})"
             )
-            annotation_errors.setdefault(name, {})[track_id] = why
+            if name in by_name:
+                skipped[name] = why
+            else:
+                # "WrongFormat" stands in for an exception type, as in error_text()
+                annotation_errors.setdefault(name, {})[track_id] = f"WrongFormat: {why}"
         if verbose:
             print(f"    {track_id}: ok", file=sys.stderr)
 
@@ -174,6 +185,7 @@ def read_tracks(ds, verbose=False):
         "n_tracks_loaded": len(track_ids) - len(errors),
         "tracks_with": {t: len(ids) for t, ids in sorted(tracks_with.items())},
         "annotations": annotations,
+        "skipped": skipped,
         "errors": errors,
         "annotation_errors": {
             prop: {

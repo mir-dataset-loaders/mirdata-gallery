@@ -1,0 +1,48 @@
+name: acousticbrainz_genre
+summary: The dataset includes audio from four sources with genre and subgenre annotations
+  from AllMusic, Discogs, Lastfm, and Tagtraum, suited for hierarchical multi-label
+  genre classification. Annotations cover both explicit and inferred genre/subgenre
+  labels, focusing on content-based music genre recognition.
+annotations: []
+tasks: []
+stats:
+  computed:
+    mode: local
+    index: ee2837b04d8dd6ab0507f5b975314b7e
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 4019812
+    n_audio_files: 0
+    total_seconds: null
+    sample_rates: null
+    durations: null
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 4019812
+    n_tracks_loaded: 4019812
+    tracks_with: {}
+    annotations: {}
+    skipped: {}
+    n_missing_files: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
+    annotation_errors: {}
+summary_hash: a3fbfb10515101fe15495ef2f34632abef6df9d0048f8077c51c27723a337cc2
+bibtex: |-
+  @inproceedings{bogdanov2019acousticbrainz,
+    title={The AcousticBrainz genre dataset: Multi-source, multi-level, multi-label, and large-scale},
+    author={Bogdanov, Dmitry and Porter, Alastair and Schreiber, Hendrik and Urbano, Juli{'a}n and Oramas, Sergio},
+    booktitle={Proceedings of the 20th Conference of the International Society for Music Information Retrieval (ISMIR 2019): 2019 Nov 4-8; Delft, The Netherlands.[Canada]: ISMIR; 2019.},
+    year={2019},
+    organization={International Society for Music Information Retrieval (ISMIR)}
+  }
+license: |-
+  This dataset is composed of 4 subdatasets. Three of them are Creative Commons Attribution
+  Non Commercial Share Alike 4.0 International and the other one is non-comercial. Details
+  about which license correspond to each subdataset can be found in the following websites:
+
+  * https://zenodo.org/record/2553414#.X_nxnOn7RUI
+  * https://zenodo.org/record/2554044#.X_nw2en7RUI

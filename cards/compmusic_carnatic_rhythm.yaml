@@ -1,11 +1,13 @@
 name: compmusic_carnatic_rhythm
 summary: The dataset includes audio excerpts from Carnatic music, annotated with beat
-  positions and taala metadata. The primary MIR task is Beat Tracking.
+  positions and taala metadata. It supports tasks like beat tracking and instrument
+  recognition.
 annotations:
 - BeatData
 - Instrument
 tasks:
 - Beat Tracking
+- Instrument Recognition
 stats:
   computed:
     mode: local
@@ -40,7 +42,7 @@ stats:
     problems: []
     n_tracks: 176
     n_tracks_loaded: 176
-    tracks_with: {BeatData: 176}
+    tracks_with: {BeatData: 176, Instrument: 176}
     annotations:
       beats:
         type: BeatData
@@ -91,12 +93,18 @@ stats:
             0.2, 4.6, 3.1, 14.4, 13.4, 12, -0.1, -1.3, 5.9, -3.9, -1.9, 12.9, 2.7,
             7.8, 2.6, 9.1, 4.7, 2.7, 9.3, 2.3, 9.6, 5.8, 13.2, 2.5, 6.8, 0.5, 3, -1.6,
             4.6, 9.4, 12.1, 2.8, 7.8, 5.7, 5.6, 8.6, 14.6, 1.7, -7.7, 1.6]
-    skipped:
-      num_of_beats: not a mirdata BeatData object (got int)
+      lead_instrument_code:
+        type: Instrument
+        n_tracks: 176
+        n_annotations: 176
+        instruments: {V: 121, L: 23, N: 17, F: 10, S: 4, M: 1}
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: a578dacd9229cfbaa38f57f631d76440004bc0a9fdab445164468a20b67227b5
+summary_hash: fdc7c15c9dbe96790c507ca641b291b1d3cfba7f4f4a0af9fa1bdb368c2aff71
 bibtex: |-
   @article{srinivasamurthy_2014,
     title={Particle Filters for Efficient Meter Tracking with Dynamic Bayesian Networks},

@@ -1,10 +1,13 @@
 name: compmusic_carnatic_varnam
-summary: The dataset includes 28 solo vocal recordings of Carnatic varnams in 7 rāgas,
+summary: The dataset includes 28 solo Carnatic varnam recordings featuring 7 rāgas,
   with annotations for taala cycles and notations in machine-readable format, suitable
-  for music structure analysis.
+  for beat tracking and music structure analysis.
 annotations:
+- BeatData
+- EventData
 - SectionData
 tasks:
+- Beat Tracking
 - Music Structure Analysis
 stats:
   computed:
@@ -28,8 +31,91 @@ stats:
     problems: []
     n_tracks: 28
     n_tracks_loaded: 28
-    tracks_with: {SectionData: 28}
+    tracks_with: {BeatData: 28, EventData: 28, SectionData: 28}
     annotations:
+      notation:
+        type: EventData
+        n_tracks: 28
+        n_annotations: 28
+        events: {',,': 548, GR: 442, SR: 417, RG: 326, RS: 319, DP: 306, PM: 301,
+          ND: 279, 'P,': 266, PD: 253, MP: 252, GM: 250, 'S,': 244, 'D,': 233, 'M,': 204,
+          MG: 204, SN: 198, 'R,': 177, PN: 162, DN: 160, DM: 151, ',M': 151, 'G,': 147,
+          DD: 146, ',R': 146, NS: 143, ',D': 132, 'N,': 126, SD: 118, DS^: 117, GRSR: 106,
+          ',P': 105, 'S,,,': 94, RM: 93, R^S^: 90, 'P,,,': 78, ',S': 76, GP: 76, MD: 74,
+          GG: 73, MR: 72, NDPM: 71, ',N': 68, RGRS: 65, RMPN: 63, ',G': 60, 'S^,': 56,
+          GRSD: 53, DS: 49, S^D: 47, MGRS: 46, GS: 44, ',,SN': 41, MGMR: 40, GMPM: 39,
+          R^G^: 38, NP: 38, ',S^': 37, RR: 37, 'N,,,': 36, 'D,,,': 36, 'P,M,': 35,
+          PG: 35, SNDP: 34, NDRS: 33, SRMP: 33, DPMP: 33, 'D,ND': 32, 'G,G,': 31,
+          S^N: 30, ',R^': 30, 'S,NS': 30, ',,NS': 30, 'DDS^,': 28, DS^DM: 28, 'D,,M': 28,
+          'PDS,': 28, 'R,,R': 28, ',DPN': 28, PP: 27, ',,DP': 27, DS^DD: 27, 'PM,R': 27,
+          G^R^: 26, SRGM: 26, DG: 26, 'R,,,': 25, RSND: 25, RN: 24, MPDN: 24, GMPD: 24,
+          PMGM: 24, SRGR: 24, DNSR: 24, DNPD: 24, 'D,D,': 24, ',,N,': 24, 'M,DM': 23,
+          'M,GM': 23, GSRG: 23, 'MGM,': 23, GRGM: 22, DPMG: 22, 'GR,S': 22, SG: 22,
+          DNDP: 22, 'S,RG': 22, NN: 21, 'PDN,': 21, SS: 21, GMRG: 20, DMGR: 20, ',MPD': 19,
+          ',MGR': 19, ',,D,': 19, ',,SD': 19, ',,MP': 19, NDPD: 19, GPGR: 19, RGPG: 19,
+          GGDD: 19, 'P,GG': 19, DPGP: 19, ',,P,': 18, ',,,,': 18, 'MPD,': 18, MPGM: 18,
+          'RGM,': 18, PNSR: 18, RGMP: 17, SP: 16, SNDN: 16, 'RS,N': 16, NR: 15, 'GRS,': 15,
+          'P,MG': 15, ',MDM': 15, GRSN: 15, SRNS: 15, DNDM: 15, PMPD: 15, PDSR: 15,
+          'N,SR': 15, SM: 14, SDSR: 14, RSRG: 14, S^R^: 14, DR: 14, DGRS: 14, MRGR: 14,
+          'R^,': 13, SNRS: 13, DS^R^S^: 13, RGSR: 13, 'RSR,': 13, GRRG: 13, PS^: 12,
+          DPS^N: 12, 'G,M,': 12, DPGR: 12, 'G,R,': 12, 'SN,P': 12, DR^: 11, ',G^': 11,
+          'M,G,': 11, 'M,,,': 11, ',RGM': 11, RSNS: 11, PMGR: 10, RGMG: 10, S^DMD: 10,
+          'R^S^,D': 10, MDS^D: 10, RGMD: 10, ',S^R^G^': 10, ',GRS': 10, 'RN,S': 10,
+          NSRG: 10, 'GRR,': 10, SGRS: 10, G^M^: 9, PS: 9, R^N: 9, 'P,,M': 9, S^S^: 9,
+          G^S^: 9, 'RG,M': 9, 'R,S,': 9, S^R^G^R^: 9, ',SND': 9, SRSP: 9, 'NDP,': 9,
+          'S,R,': 9, 'P,,D': 9, ',P,D': 9, 'G,RG': 9, DPDP: 9, RRGR: 9, 'N,PM': 9,
+          'P,MD': 8, DPDM: 8, 'GR,G': 8, 'MG,R': 8, 'DM,G': 8, RP: 8, 'PM,P': 8, PDND: 8,
+          ',RSN': 8, SNSR: 8, ',,GM': 8, 'R,D,': 8, 'P,D,': 8, 'NS,R': 8, DPDS^: 8,
+          GGPP: 8, 'P,GR': 8, R^S^R^S^: 8, PMDD: 8, GMPN: 8, 'GMR,': 8, PDMP: 8, PMDN: 8,
+          RSNR: 8, PDPN: 7, 'D,PM': 7, MPMG: 7, ',GMP': 7, PMDP: 7, MGRG: 7, 'G,,,': 7,
+          'R,N,': 7, ',,SR': 7, 'P,,P': 7, 'DPM,': 6, 'R^S^,N': 6, ',DPM': 6, ',RND': 6,
+          PDPS: 6, SNGR: 6, 'RG,R': 6, PMNP: 6, DNPM: 6, RSSN: 6, PMRG: 6, MPRG: 6,
+          GM^: 5, G^G^: 5, R^D: 5, M^G^: 5, 'R,G,': 5, SRSS: 5, 'DMD,': 5, MDSD: 5,
+          ',SDS': 5, GGRS: 5, ',MRG': 5, 'SR,D': 5, DMDS^: 5, ',S^DS^': 5, S^S^DD: 5,
+          ',MDD': 5, ',R^GM^': 5, 'R^G^,M': 5, G^G^R^S^: 5, R^G^R^S^: 5, R^DR^S^: 5,
+          RGMR: 5, ',GSR': 5, 'GS,R': 5, SDMD: 5, ',RGS': 5, 'RM,D': 5, 'DS^,R^': 5,
+          G^S^R^G^: 5, M^G^R^G^: 5, ',R^S^D': 5, 'M,D,': 5, ',,S^,': 5, 'D,M,': 5,
+          ',,G,': 5, ',R,G': 5, 'DS,R': 5, GMDS^: 5, ',DMG': 5, GSRS: 5, S^DMG: 5,
+          M^R^: 5, 'S,,S^': 5, 'S^R^,R^': 5, 'S^,,S^': 5, DR^S^D: 5, ',S^DM': 5, 'M^R^,G^': 5,
+          R^S^DS^: 5, RGRR: 5, 'S,SR': 5, 'SND,': 5, SRPM: 5, MPDR: 5, 'S,MP': 5,
+          DDPM: 5, PDRM: 5, 'PDM,': 5, 'S,ND': 5, 'R,SG': 5, DSRM: 5, DPMR: 5, MDPN: 5,
+          MPSR: 5, ',PSN': 5, 'DP,D': 5, ',PND': 5, NDDS: 5, 'D,,P': 5, 'M,,P': 5,
+          ',N,D': 5, ',P,M': 5, 'D,NP': 5, 'S,RM': 5, 'MP,M': 5, GRND: 5, DMPD: 5,
+          SNDR: 5, DSRG: 5, DSRP: 5, DSMP: 5, ',,RS': 5, ',,PM': 5, DPND: 5, ',DND': 5,
+          ',,DS': 5, 'RM,P': 5, RMPD: 5, SMPD: 5, MPDS: 5, ',RMP': 5, 'SS,S': 4, NNDD: 4,
+          NDND: 4, 'ND,G': 4, 'DP,M': 4, 'PG,M': 4, NDNP: 4, ',SRG': 4, NDPN: 4, 'SR,N': 4,
+          ',MD,': 4, PNDR: 4, DGRN: 4, ',RN,': 4, 'SD,N': 4, PDNS: 4, 'P,DP': 4, ',MGM': 4,
+          'S,RN': 4, ',SDN': 4, NG: 4, NSND: 4, PMPM: 4, NSNG: 4, 'DN,S': 4, ',NGR': 4,
+          ',,DG': 4, RSNP: 4, 'M,PD': 4, 'NP,D': 4, 'NSR,': 4, 'SN,D': 4, RGGM: 4,
+          SRSN: 4, DSND: 4, PNDP: 4, 'MG,M': 4, S^P: 4, SSRR: 4, GGRR: 4, SRSD: 4,
+          SRGP: 4, GPGG: 4, RRSD: 4, GPGP: 4, DDPG: 4, 'DDP,': 4, PGDP: 4, DGDP: 4,
+          'G^R^,S^': 4, ',DPD': 4, 'S^D,P': 4, SRSG: 4, GRGP: 4, 'GPD,': 4, GPDP: 4,
+          DS^R^G^: 4, 'R^,G^S^': 4, ',R^D,': 4, 'S^P,D': 4, SRGS: 4, ',DP,': 4, GS^: 4,
+          'G,GR': 4, 'G,GP': 4, DDSR: 4, 'G,GG': 4, 'G,GS^': 4, 'P,DD': 4, 'R,SD': 4,
+          'S^S^,D': 4, 'S^,R^G^': 4, DS^DP: 4, ',,SS': 4, RRGG: 4, PPDD: 4, G^R^DS^: 4,
+          PDS^D: 4, S^DGP: 4, R^S^DP: 4, N_S: 4, 'R,GR': 4, N_SRG: 4, DPMD: 4, NNSP: 4,
+          ',RGG': 4, MDPP: 4, DNDD: 4, PPDP: 4, 'NNS,': 4, ',RNS': 4, PDPP: 4, 'R,,G': 4,
+          'DNS,': 4, 'P,DN': 4, ',SPD': 4, 'MP,N': 4, ',,M,': 4, ',MR,': 4, GMSR: 4,
+          SRSR: 4, SRNR: 4, SDNS: 4, DMPM: 4, 'N,,S': 4, SNSN: 4, 'P,,R': 4, ',PMP': 4,
+          'MD,D': 4, 'GMP,': 4, 'R,DP': 4, DDNS: 4, 'R,R,': 4, SNSD: 4, 'SS,P': 4,
+          'P,RR': 4, ',NSR': 4, NS^: 3, P^M^: 3, S^R: 3, NR^: 3, M^M^: 3, SS^: 3,
+          RNDD: 3, 'PPS,': 3, 'GRG,': 3, 'M,M,': 3, ',PS^N': 3, 'DR^S^,': 3, ',D,P': 3,
+          'S,DD': 3, PNND: 3, GRSM: 3, MPPD: 3, 'PD,D': 3, PMMP: 3, ',PMG': 3, 'MD,P': 3,
+          S^NDP: 3, S^NDR^: 3, 'S^,,,': 3, PDPS^: 3, NS^G^R^: 3, G^M^G^M^: 3, 'R^,P^M^': 3,
+          'R^,,R^': 3, S^NDD: 3, 'PS^,N': 3, DNS^R: 3, ',GMR': 3, 'PS^,P': 3, 'DPN,': 3,
+          'NR,S': 3, GRPM: 3, ',PGR': 3, 'PN,D': 3, ',GRG': 3, MPDP: 3, 'S^,NR^': 3,
+          ',S^R^N': 3, R^S^G^R^: 3, 'M^M^,G^': 3, R^S^NN: 3, 'SS^,R^': 3, NDDP: 3,
+          ',DM,': 3, ',ND,': 3, 'P,,S': 3, ',NR,': 3, 'SG,R': 3, ',G,M': 3, ',NRS': 3,
+          'P,MP': 3, RSGR: 3, PR: 3, GD: 3, M^G: 3, MGMP: 3, DMDP: 3, MPSP: 3, MGRP: 3,
+          NDPR: 3, SMGR: 3, PMGD: 3, PS^ND: 3, R^S^M^G: 3, R^S^R^N: 3, R^S^PD: 3,
+          MDPG: 3, MRGM: 3, 'DM,P': 3, PDMD: 3, 'N,DP': 3, ',RPM': 3, 'G,RS': 3, ',NDP': 3,
+          RSMG: 3, DDMG: 3, MPMP: 3, 'DPS^,': 3, 'ND,P': 3, S^NR^S^: 3, G^R^G^M^: 3,
+          ',G^R^S^': 3, 'R^N,D': 3, 'R^,S^N': 3, 'DPP,': 3, NSRN: 3, 'PM,N': 3, PNPM: 3,
+          ',,MR': 3, SNPM: 3, ',RSR': 3, 'NS,N': 3, 'P,PM': 3, NPNN: 3, 'S,SN': 3,
+          NPNS: 3, 'NP,M': 3, ',,R,': 3, 'N,P,': 3, 'M,,R': 3, 'S,S,': 3, 'R,M,': 3,
+          'P,N,': 3, PMPN: 3, ',,PN': 3, RRSN: 3, 'PNS,': 3, GRRS: 3, PMRS: 3, MPNP: 3,
+          NSNP: 3, GN: 3, NM: 3, NSPN: 3, 'SRS,': 3, NNSR: 3, SRMR: 3, SRGN: 3, SRPN: 3,
+          SMPN: 3, RMPS: 3, RMNS: 3, PNMP: 3, 'NM,P': 3, NSRS: 3}
       sections:
         type: SectionData
         n_tracks: 28
@@ -47,11 +133,31 @@ stats:
             34: 2, 35: 1, 38: 2, 39: 3, 40: 4, 41: 5, 42: 9, 43: 9, 44: 6, 45: 6,
             46: 4, 47: 4, 48: 1, 49: 2, 50: 1, 51: 4, 52: 1, 53: 1, 54: 1, 55: 1,
             56: 1, 57: 1, 58: 2, 59: 1, 61: 1, 71: 1, 85: 1, 94: 1}
+      taala:
+        type: BeatData
+        n_tracks: 28
+        n_annotations: 28
+        meter: {}
+        meter_changes: {}
+        tempo_from_beats:
+          unit: bpm
+          width: 1
+          counts: {63: 1, 64: 1, 66: 2, 75: 2, 78: 1, 82: 2, 85: 2, 87: 1, 88: 3,
+            89: 2, 90: 1, 91: 4, 92: 1, 93: 2, 95: 1, 96: 1, 97: 1}
+        tempo_changes:
+          tempo: [89.9, 85.7, 64, 82.1, 89.8, 66.6, 92, 82.8, 88.8, 85.3, 75.3, 90.4,
+            93.1, 97.9, 88, 92.8, 64, 95.4, 91.1, 66.6, 96.5, 87.7, 88.8, 93, 75.8,
+            78.6, 91, 91.7]
+          change: [16, 31, -1.1, 5, 11.9, 13.2, 8.1, 14.2, 8.3, 28.8, 9.3, -0.2, 6.6,
+            6.2, 5.6, 2.2, 7.2, 17.3, 7.2, 14, 20.3, 16, 11.9, 19.5, 4.2, 7.9, 2.3,
+            3.5]
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: c1bcc3c4fb38fd2a4405b21d16d9bed7353b2327b72beb2f92dafad67dfafedc
+summary_hash: 75e9bc3e2a79b91db0bc8542d7174bf8f56ac16079a67f72314ae48f391d22b3
 bibtex: |-
   @dataset{koduri_g_k_2014_1257118,
     author       = {Koduri, G. K. and

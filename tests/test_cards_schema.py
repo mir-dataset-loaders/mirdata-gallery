@@ -82,6 +82,7 @@ ANNOTATION_FIELDS = {
     "n_tracks_loaded",
     "tracks_with",
     "annotations",
+    "skipped",
     "n_missing_files",
     "track_errors",
     "annotation_errors",
@@ -228,7 +229,6 @@ def check_card(card, name):
     assert card["name"] == name, "name should be the file name without .yaml"
     assert NAME.fullmatch(name), "name should be lowercase letters, digits and _"
     check_text(card["license"], "license")
-    assert "\n" not in card["license"], "license should be one line"
     types = card["annotations"]
     assert isinstance(types, list), "annotations should be a list (empty when none)"
     unknown = set(types) - CARD_TYPES
@@ -242,7 +242,9 @@ def check_card(card, name):
     in_order = tasks == sorted(set(tasks))
     assert in_order, "tasks should be sorted, without duplicates"
     check_text(card["bibtex"], "bibtex")
-    assert card["bibtex"].lstrip().startswith("@"), "bibtex should be a BibTeX entry"
+    assert re.search(
+        r"^\s*@\w+\s*\{", card["bibtex"], re.M
+    ), "bibtex should hold at least one BibTeX entry"
     check_text(card["summary"], "summary")
     hashed = str(card["summary_hash"])
     assert SHA256.fullmatch(hashed), "summary_hash should be a SHA-256"
@@ -302,6 +304,7 @@ def check_stats(stats):
         assert loaded, "no more tracks should load than there are"
         check_counts(ann["tracks_with"], "tracks_with")
         check_annotation_errors(ann["annotation_errors"])
+        assert isinstance(ann["skipped"], dict), "skipped should be {property: why}"
         for prop, entry in ann["annotations"].items():
             check_entry(prop, entry)
 

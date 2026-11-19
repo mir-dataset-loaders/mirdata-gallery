@@ -1,20 +1,17 @@
 name: saraga_hindustani
-summary: The dataset includes 108 Hindustani music tracks with annotations for melody,
-  rhythm, structure, and tempo. It provides manual section and tempo annotations,
-  rhythmic cycle boundaries, phrase transcriptions, and automatically extracted pitch
-  and tonic. The primary MIR tasks are Lyrics Transcription, Lyrics-to-Audio Alignment,
-  Melody Extraction, Music Structure Analysis, and Tempo Estimation.
+summary: The dataset includes 108 Hindustani music tracks with time-aligned annotations
+  for sections, tempos, rhythmic cycles, phrases, and audio features like pitch and
+  tonic. It supports tasks such as beat tracking, melody extraction, and music structure
+  analysis.
 annotations:
+- BeatData
+- EventData
 - F0Data
-- LyricData
 - SectionData
-- TempoData
 tasks:
-- Lyrics Transcription
-- Lyrics-to-Audio Alignment
+- Beat Tracking
 - Melody Extraction
 - Music Structure Analysis
-- Tempo Estimation
 stats:
   computed:
     mode: local
@@ -46,8 +43,74 @@ stats:
     problems: []
     n_tracks: 108
     n_tracks_loaded: 108
-    tracks_with: {F0Data: 108, SectionData: 75}
+    tracks_with: {BeatData: 70, EventData: 53, F0Data: 108, SectionData: 75}
     annotations:
+      phrases:
+        type: EventData
+        n_tracks: 53
+        n_annotations: 53
+        events: {PnS: 85, dS: 73, nS: 66, Gr: 61, DS: 61, DNr: 43, NSr: 41, dNS: 40,
+          rP: 37, DPm: 36, GrS: 35, mR: 33, GmRS: 33, grS: 32, PS: 31, dMGr: 31, GRS: 31,
+          dMm: 31, SND: 31, PNS: 30, DNS: 29, NrG: 29, Gmr: 29, NDP: 27, PG: 26, NdP: 25,
+          DnP: 25, NrGm: 25, GmP: 24, SrG: 23, rND: 23, DPGrS: 23, Nd: 23, PMG: 23,
+          rS: 22, nDP: 21, DND: 21, Sm: 20, RnSm: 20, GmR: 20, MGrS: 20, MdNS: 20,
+          nd: 20, nSG: 20, PnSDP: 20, GmG: 19, MdS: 19, MgrS: 19, nSm: 19, rN: 19,
+          MPN: 18, mgRS: 18, Pr: 17, rgrS: 17, rmP: 16, mD: 16, gS: 16, GmND: 16,
+          dN: 16, GmMG: 15, Pnr: 15, RDS: 14, MD: 14, SmG: 14, DnPGPm: 14, rm: 14,
+          SR: 14, grnd: 14, mMG: 14, rNdP: 13, gmPn: 13, NSN: 13, gMd: 13, PNSN: 13,
+          rMP: 13, DrS: 12, NSG: 12, GMPN: 12, NSRGm: 12, mPgm: 11, mRP: 11, DSrS: 11,
+          gnS: 11, GmPn: 11, RMPN: 11, rg: 11, DnS: 11, GmRn: 11, PRG: 10, Pn: 10,
+          NDS: 10, MDN: 10, DNSDnP: 10, NMd: 10, GP: 10, Sn: 10, GMd: 10, PMd: 9,
+          RGm: 9, DMGr: 9, PmG: 9, mGP: 9, Md: 9, mr: 9, dnS: 9, RMP: 9, RmP: 8, gmP: 8,
+          gMPN: 8, DNrS: 8, SD: 8, RmR: 8, rgdm: 8, rnS: 8, DG: 8, RS: 8, PNSr: 7,
+          PGMG: 7, SM: 7, SgM: 7, gPd: 7, gRSD: 7, Pmr: 7, Dnr: 7, nSD: 7, mdS: 7,
+          NRG: 6, RGmP: 6, Pmg: 6, GmPNS: 6, nP: 6, PDSrS: 6, gmPdP: 6, Snd: 6, ngS: 6,
+          dm: 6, NSd: 6, rgP: 6, MGRS: 6, NSDP: 6, rM: 6, Nrm: 6, DmPG: 6, MPNS: 5,
+          MgRS: 5, gMPnS: 5, NRS: 5, NrS: 5, PN: 5, SMGP: 5, gmn: 5, MGP: 5, mgR: 5,
+          SDP: 5, PDS: 5, gRm: 5, gmD: 5, nPmr: 5, mPn: 5, SGmP: 5, PR: 5, NSRmR: 5,
+          NSR: 5, rGMD: 5, RG: 5, RPG: 5, RGPRS: 4, GmPN: 4, GMSNS: 4, PNSM: 4, rDS: 4,
+          gMgP: 4, SgrS: 4, gm: 4, SDrS: 4, dmgS: 4, ng: 4, ndm: 4, PMg: 4, gr: 4,
+          SRSP: 4, SRG: 4, MPGMG: 4, PNSG: 4, GMP: 4, ND: 4, mdnSrS: 4, rMPd: 3, nSgMP: 3,
+          gMP: 3, nSMgRS: 3, PmRG: 3, Pm: 3, rGrP: 3, SP: 3, GMPNS: 3, PNSMG: 3, gmSR: 3,
+          mS: 3, rGMd: 3, PGrS: 3, DPG: 3, PDmP: 3, DmP: 3, MG: 3, gmdn: 3, SGm: 3,
+          mrS: 3, rmPn: 3, SgMP: 3, mRS: 3, NSRSN: 3, SGmG: 3, DPGS: 3, SnD: 3, GmGRS: 3,
+          DGP: 3, PSr: 2, dMr: 2, Mr: 2, MPd: 2, PGr: 2, nSRg: 2, DNRGmP: 2, GmDN: 2,
+          PmGR: 2, NRGmP: 2, RGmPDNDP: 2, SNP: 2, GmD: 2, GMG: 2, rG: 2, GN: 2, GMPNSRSN: 2,
+          GMGSN: 2, SNPGMG: 2, MGR: 2, GPm: 2, mPDNS: 2, MrG: 2, GPDS: 2, PSn: 2,
+          gRS: 2, mGrS: 2, PDmPmr: 2, SrS: 2, mPGrS: 2, DNGrS: 2, DNrGrS: 2, DNrND: 2,
+          rNDP: 2, gPn: 2, PdS: 2, gmdnSrS: 2, gR: 2, drS: 2, gSn: 2, Srm: 2, mdn: 2,
+          dNSm: 2, PNDSNR: 2, SmGMS: 2, SGMG: 2, GmNDMG: 2, PDn: 2, dP: 2, NdM: 2,
+          RGPG: 2, PnSD: 2, PdM: 1, rGrS: 1, dMG: 1, NSrS: 1, MdSrNdP: 1, rPrS: 1,
+          Pdr: 1, dr: 1, rMr: 1, MPNSr: 1, MGrP: 1, PSdMr: 1, rPMdPrP: 1, rMdMrP: 1,
+          rMPdMr: 1, PdMGr: 1, NSrNdP: 1, rMPNSr: 1, NMrnPr: 1, MrGrS: 1, rPrGr: 1,
+          SNSr: 1, PMdMGrs: 1, SPMdMGrs: 1, SPMdMrP: 1, SPGrS: 1, GPGrS: 1, gnSPnS: 1,
+          gMPNS: 1, gMnS: 1, dMPnS: 1, PnSRnS: 1, gMPnSnPgRS: 1, nDPgRS: 1, nSRgRnS: 1,
+          MgRnS: 1, RNS: 1, MPg: 1, SgMPgR: 1, nSMgP: 1, PgM: 1, PDMg: 1, MgP: 1,
+          nSgMgRS: 1, PgMP: 1, gMPnDP: 1, PnSRg: 1, PngRnDMPS: 1, DPgMP: 1, SNDNR: 1,
+          RGS: 1, NRGS: 1, DSN: 1, NP: 1, mRG: 1, mNP: 1, NRGRGm: 1, PmGMR: 1, NDPS: 1,
+          GmDPmGR: 1, mND: 1, PmGmDP: 1, DNRGMGSN: 1, GMGSNGR: 1, mDN: 1, SNGMR: 1,
+          NRGMGS: 1, SNDNRGmP: 1, PmRGPRS: 1, SRGmP: 1, RGmPRS: 1, PDNSRG: 1, GMR: 1,
+          RmRGMR: 1, DP: 1, NSRGmPDNSN: 1, DNSR: 1, GmDNS: 1, DNRGM: 1, PRGRS: 1,
+          DNRDS: 1, NSGMG: 1, GPmPGMG: 1, NMG: 1, PmGMGSN: 1, GPSNSG: 1, PSNDmP: 1,
+          P: 1, mPGMG: 1, PNSRN: 1, GMPNSRSNDPmPGMG: 1, GDmP: 1, GMPNGMG: 1, GMPNSRSNPGMG: 1,
+          SN: 1, N: 1, SPSN: 1, GMPNSN: 1, GMPDmPN: 1, NSGMPNSMGRSNDPGMG: 1, GMPNSNS: 1,
+          PRNS: 1, PNSGS: 1, GMPNSGSN: 1, PNSGMPNS: 1, GMPSN: 1, NSGMPNSNDPGMG: 1,
+          PNSGRS: 1, SNRSNPGMG: 1, NSGMP: 1, GMPS: 1, PNSGMPMG: 1, GS: 1, DN: 1, mGRGRS: 1,
+          mPDGPm: 1, rNdM: 1, rNd: 1, DSrG: 1, SGPG: 1, SrGP: 1, DNrGrND: 1, DNrm: 1,
+          DNG: 1, GmDm: 1, DGrS: 1, rNP: 1, PDrS: 1, DNGDP: 1, DNGSm: 1, PDmPGr: 1,
+          PDNP: 1, PGrSmP: 1, DPr: 1, SDPr: 1, PrS: 1, rDNGrS: 1, DNrG: 1, mPrS: 1,
+          DmPGrS: 1, DPDmP: 1, SmPGrS: 1, DNGrNDrS: 1, mDPGrS: 1, GrSND: 1, SDPGrS: 1,
+          DNrGrDNrS: 1, DNmPG: 1, SmDPGrS: 1, SNDPGrS: 1, PDmPGrS: 1, g: 1, gPdnd: 1,
+          PgmrS: 1, SgmPdP: 1, Pdmg: 1, gmdPmrS: 1, gmPnPmrS: 1, grgmgrS: 1, SrmgrS: 1,
+          gPnPdnmg: 1, gmPnd: 1, nSdSndP: 1, Pdmnd: 1, dnSrSdmrS: 1, PnSnd: 1, PdnPgSrgS: 1,
+          gmPmrS: 1, PnrnPg: 1, gmmmgrS: 1, rnP: 1, gPS: 1, gPds: 1, dnSrs: 1, gnrSd: 1,
+          SnrSgrS: 1, rnPmr: 1, gmdnSRs: 1, PdnSRg: 1, gmdnSrSNS: 1, mmgmmg: 1, SgmPdnPgdP: 1,
+          gPNgPnPg: 1, nSrS: 1, gmmgrS: 1, rNS: 1, DSRgR: 1, PnR: 1, RmPn: 1, nR: 1,
+          ns: 1, mgRs: 1, md: 1, ? '' : 1, PMR: 1, MRn: 1, Rns: 1, RM: 1, RnS: 1,
+          Sgm: 1, dn: 1, mg: 1, mPG: 1, nrS: 1, PmrS: 1, gmd: 1, SRGmPm: 1, PRS: 1,
+          mRNSN: 1, NSRMP: 1, PNDNS: 1, mDn: 1, DnSG: 1, SGMPMP: 1, SmGNDMG: 1, SGM: 1,
+          SGMPMG: 1, GMPNDPMG: 1, GMPGR: 1, GMPDPM: 1, Dn: 1, DnD: 1, DnDP: 1, rgM: 1,
+          MdN: 1, dmMm: 1, GmMm: 1, dmgrm: 1, DGmG: 1, mSR: 1, SRS: 1, mdN: 1, RGP: 1}
       pitch:
         type: F0Data
         n_tracks: 108
@@ -80,6 +143,31 @@ stats:
             1500: 21, 1510: 20, 1520: 14, 1530: 5, 1540: 3, 1550: 5, 1560: 4, 1570: 4,
             1590: 1, 1600: 2, 1610: 3, 1630: 4, 1640: 5, 1650: 5, 1660: 2, 1670: 1,
             1740: 5}
+      sama:
+        type: BeatData
+        n_tracks: 70
+        n_annotations: 70
+        meter: {}
+        meter_changes: {}
+        tempo_from_beats:
+          unit: bpm
+          width: 1
+          counts: {3: 1, 4: 2, 5: 1, 6: 1, 7: 4, 8: 3, 9: 5, 10: 6, 11: 7, 12: 9,
+            13: 11, 14: 4, 15: 4, 16: 3, 17: 3, 18: 2, 23: 1, 29: 1, 34: 1, 35: 1}
+        tempo_changes:
+          tempo: [14.3, 34.3, 16.4, 15.9, 9.9, 14.3, 8.6, 14.7, 18.4, 6.8, 13.1, 13.9,
+            10.9, 12.2, 13.4, 17.7, 7.3, 15.7, 7, 12.2, 7.3, 8, 13.4, 8.1, 17.3, 3.5,
+            11.5, 18.9, 13.6, 13, 14.9, 4.8, 29.6, 11.5, 11.6, 12.5, 7, 4.9, 11.9,
+            13.6, 15.4, 15, 11.6, 10.8, 12, 5.7, 10.5, 12.5, 9.6, 10.6, 11, 12.1,
+            16.1, 12.5, 16.7, 9.5, 11.9, 13.1, 35.3, 12.7, 13.8, 11.8, 17.2, 9.9,
+            13.8, 23.1, 13.8, 12.9, 9.7, 10.2]
+          change: [1540.2, 9.9, 982.7, 124.9, 635, 841.2, 284.4, 966.8, 242.4, 6.3,
+            1957.9, 201.5, 730, 623.4, 1700.2, 1376.4, 126.5, 975, 71.6, 630.9, 198.2,
+            104.3, 988.2, 123.5, 1429.7, 324.7, 1204.9, 1843.1, 3098.8, 2250.3, 37.3,
+            253.3, 4.3, 1529.4, 89.7, 7.5, 4.7, 210.5, 160.3, 1706.9, 1347, 620.5,
+            314.1, 252.8, 687.3, 130.3, 969.3, 257.2, 1305.4, 246.3, 1002.2, 52.3,
+            1192.1, 58.4, 1387.8, 73.2, 927.7, 56.1, 34.2, 825.3, 78.6, 891.7, 1176.7,
+            24, 1194, 660, 1434.2, 1009.5, 92.1, 1381.8]
       sections:
         type: SectionData
         n_tracks: 75
@@ -114,12 +202,13 @@ stats:
             1767: 1, 1812: 1, 2048: 1, 2160: 1, 2293: 1, 2307: 1, 2321: 1, 2417: 1,
             2478: 1, 2643: 1}
     skipped:
-      phrases: not a mirdata LyricData object (got EventData)
       tempo: not a mirdata TempoData object (got dict)
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: 06daa9c0133aa2dde9bed9d52a3f6c6a1025007f5ba6f721af87f8746d72826a
+summary_hash: fe779e0d9d3daa69e64005d7c86257ca9b72ad2e5393a220bc730b2879566de5
 bibtex: |-
   @dataset{bozkurt_b_2018_4301737,
     author       = {Bozkurt, B. and

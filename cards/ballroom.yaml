@@ -29,7 +29,7 @@ stats:
     problems: []
     n_tracks: 698
     n_tracks_loaded: 698
-    tracks_with: {BeatData: 698}
+    tracks_with: {BeatData: 698, TempoData: 698}
     annotations:
       beats:
         type: BeatData
@@ -157,10 +157,24 @@ stats:
             -1.6, 1.7, 0, 0, -1.7, -0.7, 0, 0.7, 0, -2.9, 4.3, 0.5, -1.7, 0, -1.6,
             -2.9, 0, -1.7, 0, 0, 0, 2.3, 0.8, 1.8, 0.3, -1.7, 0.3, 0, -1.7, -1.7,
             0, 1.2, 0, 0, 0, 1.6, -1.6, 0, 1.6, 1]
-    skipped:
-      tempo: not a mirdata TempoData object (got float)
+      tempo:
+        type: TempoData
+        n_tracks: 698
+        n_annotations: 698
+        tempo:
+          unit: bpm
+          width: 1
+          counts: {60: 1, 68: 1, 72: 1, 74: 1, 76: 5, 80: 2, 81: 1, 84: 38, 86: 1,
+            87: 60, 88: 6, 90: 3, 91: 1, 92: 9, 94: 2, 96: 14, 98: 1, 100: 68, 102: 27,
+            104: 39, 106: 1, 108: 3, 109: 1, 112: 3, 115: 2, 116: 8, 117: 2, 118: 1,
+            120: 11, 122: 3, 123: 1, 124: 84, 128: 76, 130: 1, 132: 12, 135: 1, 136: 4,
+            141: 1, 144: 1, 153: 4, 160: 3, 164: 3, 168: 7, 172: 21, 174: 11, 176: 17,
+            177: 18, 180: 37, 200: 20, 202: 1, 204: 39, 208: 17, 214: 1, 219: 1, 224: 1}
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: d14ee70df7d4aeb92e6da69c96a62e1790bc8dc019896b888cab1d531875f5b6
 bibtex: |-

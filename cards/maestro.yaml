@@ -126,10 +126,11 @@ stats:
             93: 24870, 94: 21252, 95: 16558, 96: 12856, 97: 13702, 98: 9585, 99: 10988,
             100: 7950, 101: 4599, 102: 2242, 103: 1413, 104: 642, 105: 400, 106: 80,
             107: 39, 108: 12}
-    skipped:
-      midi: not a mirdata NoteData object (got PrettyMIDI)
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: 63b0de6d07ed1d6bf0604a82393cb0792f398980ea30af5802b0940300621371
 bibtex: |-

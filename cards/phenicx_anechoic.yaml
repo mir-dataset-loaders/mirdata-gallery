@@ -1,11 +1,9 @@
 name: phenicx_anechoic
 summary: The PHENICX-Anechoic Dataset includes denoised anechoic recordings of symphonic
-  music passages, with annotations for musical note onsets and offsets, suitable for
-  tasks like music transcription and source separation.
-annotations:
-- NoteData
+  music passages from Classical and Romantic periods, with annotations for musical
+  note onsets and offsets, suitable for source separation tasks.
+annotations: []
 tasks:
-- Music Transcription
 - Source Separation
 stats:
   computed:
@@ -31,9 +29,13 @@ stats:
     annotations: {}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 38
+    track_errors:
+      n_tracks: 38
+      logs:
+      - error: KeyError
+        n_tracks: 38
     annotation_errors: {}
-summary_hash: ce3a99aa60a2a507e277944985315119bf220230fef0bf0cebf7687c919694e7
+summary_hash: c62642e44ef79657f0565ad01f9c02504d7bd239c524d6b6bfa723a12ee4ed61
 bibtex: |-
   @article{miron2016score,
     title={Score-informed source separation for multichannel orchestral recordings},

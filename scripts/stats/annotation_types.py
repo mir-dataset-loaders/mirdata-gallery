@@ -223,7 +223,7 @@ class Tempo(Stat):
         """
         bpm = metadata_bpm(value)
         if bpm is None:
-            return super().add(value)  # a TempoData, or False (saraga_hindustani: a WrongFormat error)
+            return super().add(value)  # a TempoData, or False (saraga_hindustani stays skipped)
         self.bpm.append(bpm)
         self.n_annotations += 1
         self.n_tracks += 1

@@ -1,11 +1,10 @@
 name: four_way_tabla
-summary: The Four-Way Tabla Dataset includes 236 audio recordings of tabla strokes
-  with onset annotations for four stroke types, suitable for beat tracking and stroke
-  classification tasks.
-annotations:
-- BeatData
-tasks:
-- Beat Tracking
+summary: The Four-Way Tabla Dataset includes 236 audio samples of tabla solo with
+  onset annotations for four stroke types, suitable for tasks like onset detection
+  and stroke classification. Annotations are provided for b, d, rb, and rt strokes,
+  with audio samples at 44.1 kHz, 16-bit depth, and .wav format.
+annotations: []
+tasks: []
 stats:
   computed:
     mode: local
@@ -35,9 +34,31 @@ stats:
     annotations: {}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
-    annotation_errors: {onsets_b: 236, onsets_d: 236, onsets_rb: 236, onsets_rt: 236}
-summary_hash: 5255950595158b557796541d77ab6043b31d526124b749bd5f32f54406236d70
+    track_errors:
+      n_tracks: 0
+      logs: []
+    annotation_errors:
+      onsets_b:
+        n_tracks: 236
+        logs:
+        - error: 'ValueError: bad delimiter value'
+          n_tracks: 236
+      onsets_d:
+        n_tracks: 236
+        logs:
+        - error: 'ValueError: bad delimiter value'
+          n_tracks: 236
+      onsets_rb:
+        n_tracks: 236
+        logs:
+        - error: 'ValueError: bad delimiter value'
+          n_tracks: 236
+      onsets_rt:
+        n_tracks: 236
+        logs:
+        - error: 'ValueError: bad delimiter value'
+          n_tracks: 236
+summary_hash: b2d2636351888bd4d63593d65dd2bf6f04d0cf75ed1f98596bf7aa335fd54ea0
 bibtex: |-
   @article{RohitMA2021,
       author = {M.A, Rohit and Bhattacharjee, Amitrajit and Rao, Preeti},

@@ -81,13 +81,24 @@ stats:
     problems: []
     n_tracks: 5489
     n_tracks_loaded: 5489
-    tracks_with: {}
-    annotations: {}
+    tracks_with: {KeyData: 5489}
+    annotations:
+      key:
+        type: KeyData
+        n_tracks: 5489
+        n_annotations: 5489
+        keys: {'C:major': 545, 'A:minor': 488, 'E:minor': 374, 'D:major': 364, 'G:major': 351,
+          'D:minor': 313, 'E:major': 294, 'C:minor': 285, 'A:major': 261, 'G:minor': 242,
+          'F:major': 214, 'B:minor': 214, 'F:minor': 163, 'B:major': 162, 'Bb:major': 149,
+          'D#:major': 149, 'D#:minor': 143, 'C#:minor': 135, 'Bb:minor': 121, 'F#:major': 117,
+          'F#:minor': 108, 'G#:major': 106, 'C#:major': 100, 'G#:minor': 91}
+        modes: {major: 2812, minor: 2677}
     skipped:
-      key: not a mirdata KeyData object (got str)
       key_number: not a mirdata KeyData object (got int)
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: 3f42ab2b8b448507b71a8cf9fedf3a3a06eefbe2cdcd249907fb1c54ca20151f
 bibtex: |-

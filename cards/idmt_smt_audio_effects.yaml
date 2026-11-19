@@ -1,13 +1,12 @@
 name: idmt_smt_audio_effects
-summary: The dataset includes 55,044 mono and stereo WAV files of electric guitar
+summary: The dataset includes 55,044 mono and stereo audio files of electric guitar
   and bass notes with 11 different audio effects. Annotations provide information
-  on applied effects, guitar/bass types, and plucking styles. The primary MIR task
-  is music transcription.
+  on the applied effects and instrument details. The primary MIR task is Instrument
+  Recognition.
 annotations:
 - Instrument
-- NoteData
 tasks:
-- Music Transcription
+- Instrument Recognition
 stats:
   computed:
     mode: local
@@ -28,14 +27,20 @@ stats:
     problems: []
     n_tracks: 55044
     n_tracks_loaded: 55044
-    tracks_with: {}
-    annotations: {}
-    skipped:
-      midi_nr: not a mirdata NoteData object (got int)
+    tracks_with: {Instrument: 55044}
+    annotations:
+      instrument:
+        type: Instrument
+        n_tracks: 55044
+        n_annotations: 55044
+        instruments: {G: 20592, B: 20592, P: 13860}
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: 7dc7c981c75fc297b7ba833d7753fd10729d429491a5058ed335ceae9f85e219
+summary_hash: 28ee222aae35a16e71654fdf9f79f4b0da36530fe1cad50b999c720ce78ca4a2
 bibtex: |-
   @dataset{stein_michael_2023_7544032,
     author       = {Stein, Michael},

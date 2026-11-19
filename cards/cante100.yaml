@@ -68,7 +68,9 @@ stats:
             550: 79, 580: 31, 620: 26, 650: 6, 690: 11}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: 6ab91cae680ec7f97bb660c24a97b09f30f313ffb424d37d48776427cf3e28c8
 bibtex: |-

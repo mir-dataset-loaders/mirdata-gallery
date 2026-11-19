@@ -1,0 +1,181 @@
+name: haydn_op20
+summary: The dataset includes 30 pieces by Joseph Haydn in symbolic format, annotated
+  with harmonic analyses. It supports tasks such as chord recognition and key estimation.
+annotations:
+- ChordData
+- KeyData
+tasks:
+- Chord Recognition
+- Key Estimation
+stats:
+  computed:
+    mode: local
+    index: 1a63b52c3273fe2b1b37dc96c50f7bf4
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 24
+    n_audio_files: 0
+    total_seconds: null
+    sample_rates: null
+    durations: null
+  annotations:
+    status: incomplete
+    problems: []
+    n_tracks: 24
+    n_tracks_loaded: 24
+    tracks_with: {ChordData: 15, KeyData: 2}
+    annotations:
+      chords:
+        type: ChordData
+        n_tracks: 15
+        n_annotations: 15
+        labels: {G-major triad: 165, D-major triad: 126, A-major triad: 124, E-major triad: 116,
+          Bb-major triad: 115, C-major triad: 110, F-major triad: 101, Eb-major triad: 98,
+          D-dominant seventh chord: 80, C-minor triad: 73, G-minor triad: 73, C-dominant seventh chord: 69,
+          F-dominant seventh chord: 62, G-dominant seventh chord: 60, F-minor triad: 56,
+          E-minor triad: 54, A-dominant seventh chord: 54, B-dominant seventh chord: 53,
+          E-dominant seventh chord: 51, D-minor triad: 50, B-major triad: 48, B-minor triad: 39,
+          A-minor triad: 35, Ab-major triad: 33, Bb-dominant seventh chord: 30, F#-diminished seventh chord: 27,
+          F#-dominant seventh chord: 26, F#-major triad: 22, F#-diminished triad: 19,
+          C#-minor triad: 18, B-diminished seventh chord: 17, D#-diminished triad: 16,
+          F#-minor triad: 16, C#-diminished triad: 16, A#-diminished seventh chord: 15,
+          B-diminished triad: 14, E-diminished triad: 13, C#-diminished seventh chord: 13,
+          Bb-minor triad: 12, G-minor seventh chord: 12, G#-diminished triad: 12,
+          Eb-dominant seventh chord: 11, E-diminished seventh chord: 10, E-minor seventh chord: 10,
+          D-diminished triad: 9, Db-major triad: 8, A-diminished seventh chord: 8,
+          Bb-major seventh chord: 8, F-minor seventh chord: 7, A-diminished triad: 7,
+          D-minor seventh chord: 7, G#-diminished seventh chord: 7, D#-diminished seventh chord: 7,
+          C#-dominant seventh chord: 6, C-minor seventh chord: 5, Eb-major seventh chord: 5,
+          G#-minor triad: 5, B-minor seventh chord: 5, A#-diminished triad: 5, E#-diminished seventh chord: 5,
+          D-diminished seventh chord: 4, G#-major triad: 4, D#-German augmented sixth chord in root position: 4,
+          E-augmented triad: 4, C#-German augmented sixth chord in root position: 3,
+          E#-dominant seventh chord: 3, A#-major triad: 3, A-augmented triad: 3, G#-dominant seventh chord: 3,
+          Ab-major seventh chord: 2, A-minor seventh chord: 2, F##-diminished seventh chord: 2,
+          G-diminished triad: 2, F-augmented triad: 2, D-augmented triad: 2, C#-major triad: 2,
+          E#-Italian augmented sixth chord: 2, G#-Italian augmented sixth chord: 2,
+          Bb-minor seventh chord: 2, B-Italian augmented sixth chord: 2, G-diminished seventh chord: 2,
+          E#-German augmented sixth chord in root position: 2, B-augmented triad: 2,
+          E-augmented seventh chord: 2, F#-German augmented sixth chord in root position: 1,
+          Bb-augmented triad: 1, Eb-augmented triad: 1, enharmonic equivalent to minor seventh chord above E: 1,
+          F#-Italian augmented sixth chord: 1, C-diminished triad: 1, A-German augmented sixth chord in root position: 1,
+          E#-major triad: 1, F-major seventh chord: 1, G#-German augmented sixth chord in root position: 1,
+          G-augmented triad: 1, B-German augmented sixth chord in root position: 1,
+          Ab-dominant seventh chord: 1, Ab-augmented triad: 1, D-major seventh chord: 1,
+          A#-minor triad: 1, D#-Italian augmented sixth chord: 1, G-major seventh chord: 1,
+          B-augmented seventh chord: 1, A#-dominant seventh chord: 1, F#-augmented triad: 1,
+          A#-German augmented sixth chord in root position: 1}
+        qualities: {maj: 2361}
+      keys:
+        type: KeyData
+        n_tracks: 2
+        n_annotations: 2
+        keys: {'A:major': 8, 'D:major': 7, 'E:major': 1}
+        modes: {major: 16}
+    skipped:
+      keys_music21: not a mirdata KeyData object (got list)
+    n_missing_files: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
+    annotation_errors:
+      chords:
+        n_tracks: 9
+        logs:
+        - error: 'TypeError: Expected str or int: got <class ''NoneType''>'
+          n_tracks: 9
+      keys:
+        n_tracks: 22
+        logs:
+        - error: 'TypeError: Expected str or int: got <class ''NoneType''>'
+          n_tracks: 9
+        - error: 'ValueError: keys [''f:minor'', ''c:minor'', ''c:minor'', ''f:minor'',
+            ''f:minor'', ''c:minor'', ''c:minor'', ''c:minor'', ''c:minor'', ''c:minor'',
+            ''c:minor'', ''f:minor'', ''f:minor'', ''g:minor''] don''t conform to
+            key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''f:minor'', ''f:minor'', ''f:minor'', ''bb:minor'',
+            ''f:minor'', ''c:minor'', ''c:minor'', ''c:minor'', ''c:minor'', ''f:minor'',
+            ''c:minor'', ''g:minor'', ''c:minor'', ''g:minor'', ''c:minor'', ''g:minor'',
+            ''c:minor'', ''c:minor'', ''c:minor''] don''t conform to key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''d:minor'', ''g:minor'', ''d:minor'', ''e:minor'',
+            ''f#:minor'', ''g:minor'', ''d:minor'', ''d:minor'', ''a:minor'', ''d:minor'',
+            ''a:minor'', ''d:minor'', ''a:minor'', ''a:minor'', ''a:minor'', ''c:minor'',
+            ''e:minor''] don''t conform to key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''c:minor'', ''f:minor'', ''c:minor'', ''f:minor'',
+            ''c:minor'', ''c:minor'', ''c:minor'', ''bb:minor'', ''f:minor'', ''c:minor'',
+            ''f:minor'', ''c:minor'', ''g:minor'', ''c:minor'', ''g:minor'', ''c:minor'',
+            ''g:minor'', ''g:minor'', ''c:minor'', ''g:minor'', ''c:minor'', ''c:minor'',
+            ''f:minor'', ''f:minor'', ''f:minor'', ''f:minor'', ''c:minor'', ''f:minor'',
+            ''c:minor'', ''f:minor'', ''f:minor'', ''f:minor'', ''f:minor'', ''c:minor'',
+            ''f:minor'', ''c:minor'', ''f:minor'', ''c:minor''] don''t conform to
+            key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''e:minor'', ''c:minor'', ''c:minor'', ''c:minor'',
+            ''c:minor'', ''c:minor'', ''f:minor'', ''f:minor''] don''t conform to
+            key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''g:minor'', ''a:minor'', ''g:minor'', ''g:minor'',
+            ''c:minor'', ''g:minor'', ''g:minor'', ''c:minor'', ''g:minor'', ''c:minor'',
+            ''g:minor'', ''c:minor'', ''g:minor'', ''c:minor'', ''g:minor'', ''c:minor'',
+            ''g:minor'', ''c:minor'', ''g:minor'', ''c:minor'', ''f:minor'', ''f:minor'',
+            ''f:minor'', ''c:minor'', ''f:minor'', ''c:minor'', ''f:minor'', ''c:minor'',
+            ''f:minor'', ''c:minor'', ''f:minor'', ''c:minor''] don''t conform to
+            key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''d:minor'', ''a:minor'', ''d:minor'', ''b:minor'',
+            ''e:minor'', ''a:minor'', ''d:minor'', ''e:minor'', ''a:minor''] don''t
+            conform to key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''g:minor'', ''g:minor'', ''g:minor'', ''g:minor'',
+            ''c:minor'', ''c:minor'', ''f:minor'', ''c:minor'', ''c:minor'', ''c:minor'',
+            ''c:minor'', ''f:minor'', ''c:minor'', ''g:minor'', ''c:minor'', ''g:minor'',
+            ''c:minor'', ''g:minor'', ''c:minor'', ''g:minor'', ''eb:minor'', ''c:minor'',
+            ''g:minor'', ''g:minor'', ''g:minor'', ''c:minor'', ''g:minor'', ''c:minor'',
+            ''g:minor''] don''t conform to key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''e:minor'', ''d:minor'', ''a:minor'', ''e:minor'',
+            ''e:minor'', ''e:minor'', ''e:minor'', ''a:minor'', ''a:minor'', ''f#:minor'',
+            ''b:minor'', ''e:minor'', ''b:minor'', ''b:minor'', ''e:minor'', ''b:minor'',
+            ''e:minor'', ''b:minor'', ''b:minor'', ''b:minor'', ''b:minor'', ''b:minor'',
+            ''b:minor'', ''b:minor'', ''e:minor'', ''b:minor'', ''e:minor'', ''d:minor'',
+            ''d:minor'', ''b:minor'', ''e:minor'', ''b:minor''] don''t conform to
+            key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''f:minor'', ''f:minor'', ''f:minor'', ''f:minor'',
+            ''f:minor'', ''f:minor'', ''f:minor'', ''bb:minor'', ''f:minor'', ''bb:minor'',
+            ''f:minor'', ''f:minor'', ''bb:minor'', ''f:minor'', ''f:minor'', ''f:minor'',
+            ''f:minor'', ''d:minor''] don''t conform to key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''g:minor'', ''d:minor'', ''g:minor'', ''g:minor'',
+            ''g:minor'', ''d:minor'', ''d:minor'', ''d:minor'', ''d:minor'', ''g:minor'']
+            don''t conform to key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''f#:minor'', ''c#:minor'', ''b:minor'', ''b:minor'',
+            ''a#:minor'', ''b:minor'', ''b:minor'', ''a:minor'', ''e:minor''] don''t
+            conform to key_unit key-mode'
+          n_tracks: 1
+        - error: 'ValueError: keys [''f#:minor'', ''f#:minor'', ''f#:minor'', ''f#:minor'',
+            ''f#:minor'', ''g#:minor'', ''f#:minor'', ''d#:minor'', ''c#:minor'',
+            ''f#:minor'', ''c#:minor''] don''t conform to key_unit key-mode'
+          n_tracks: 1
+      keys_music21:
+        n_tracks: 9
+        logs:
+        - error: 'TypeError: Expected str or int: got <class ''NoneType''>'
+          n_tracks: 9
+summary_hash: a3351be6405f629e698bba2c0710f56667133f9338ea64931ac6b8309f3fd2e9
+bibtex: |-
+  @dataset{nestor_napoles_lopez_2017_1095630,
+    author={N'apoles L'opez, N'estor},
+    title={{Joseph Haydn - String Quartets Op.20 - Harmonic Analysis Annotations Dataset}},
+    month=dec,
+    year=2017,
+    publisher={Zenodo},
+    version={v1.1-alpha},
+    doi={10.5281/zenodo.1095630},
+    url={https://doi.org/10.5281/zenodo.1095630}
+  }
+license: Creative Commons Attribution Non Commercial Share Alike 4.0 International.

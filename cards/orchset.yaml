@@ -1,10 +1,12 @@
 name: orchset
 summary: The Orchset dataset includes 64 audio excerpts of symphonic music, with annotations
-  for melody extraction.
+  for melody extraction. The primary MIR tasks are Instrument Recognition and Melody
+  Extraction.
 annotations:
 - F0Data
 - Instrument
 tasks:
+- Instrument Recognition
 - Melody Extraction
 stats:
   computed:
@@ -28,7 +30,7 @@ stats:
     problems: []
     n_tracks: 64
     n_tracks_loaded: 64
-    tracks_with: {F0Data: 64}
+    tracks_with: {F0Data: 64, Instrument: 64}
     annotations:
       melody:
         type: F0Data
@@ -44,12 +46,19 @@ stats:
             730: 4789, 780: 7860, 830: 2725, 880: 4661, 930: 3464, 980: 5530, 1040: 3378,
             1100: 2804, 1170: 3013, 1240: 1405, 1310: 1037, 1390: 451, 1470: 464,
             1560: 423, 1660: 769, 1760: 42, 2090: 79}
-    skipped:
-      alternating_melody: not a mirdata F0Data object (got bool)
+      predominant_melodic_instruments:
+        type: Instrument
+        n_tracks: 64
+        n_annotations: 64
+        instruments: {strings: 54, winds: 27, brass: 15, combination with string: 1,
+          woodwinds: 1}
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: 8f2603de97e9796f456727ad48a21394aadfad2fed12139523a747dde41bbcae
+summary_hash: 5fd777b6159959a0551cb299cd7130542bd8a9a10892b293aba16157576da5fc
 bibtex: |-
   @article{bosch2016evaluation,
       title={Evaluation and combination of pitch estimation methods for melody extraction in symphonic classical music},

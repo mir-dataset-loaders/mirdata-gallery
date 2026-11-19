@@ -28,13 +28,51 @@ stats:
     problems: []
     n_tracks: 1486
     n_tracks_loaded: 1486
-    tracks_with: {}
-    annotations: {}
-    skipped:
-      key: not a mirdata KeyData object (got list)
-      tempo: not a mirdata TempoData object (got int)
+    tracks_with: {KeyData: 1486, TempoData: 779}
+    annotations:
+      key:
+        type: KeyData
+        n_tracks: 1486
+        n_annotations: 1486
+        keys: {'C:minor': 129, 'F:minor': 128, 'E:minor': 97, 'D:minor': 92, 'C#:minor': 85,
+          'G:minor': 81, 'A:minor': 81, X: 73, 'B:minor': 68, 'D#:minor': 55, 'A#:minor': 55,
+          'G#:minor': 54, 'F#:minor': 52, 'C#:major': 49, 'D:major': 46, 'E:major': 45,
+          'G:major': 43, 'G#:major': 41, 'F:major': 40, 'A#:major': 38, 'A:major': 36,
+          'F#:major': 35, 'C:major': 32, 'B:major': 30, 'D#:major': 30, 'Ab:major': 6,
+          'F:minor phrygian': 5, 'B:other': 4, 'F:other': 4, 'Bb:major': 3, 'C:minor phrygian': 3,
+          'Bb:other': 3, 'C#:other': 3, 'A:other': 2, 'A#:major mixolydian': 2, 'E:minor dorian': 2,
+          'D:major mixolydian': 2, x: 2, 'G:other': 2, 'Eb:major': 2, 'B:minor phrygian': 1,
+          'B:major phrygian-major': 1, 'D:major phrygian-major': 1, 'G#:major mixolydian-b6': 1,
+          'D#:major mixolydian': 1, 'C:major mixolydian': 1, 'E:other': 1, 'A:major mixolydian': 1,
+          'F:major lydian': 1, 'D#:other': 1, 'A:minor phrygian': 1, 'F#:major mixolydian': 1,
+          'C#:major mixolydian': 1, 'A:minor phrygian-major': 1, 'Ab:major phrygian-major': 1,
+          'C#:minor phrygian': 1, 'C:minor dorian': 1, 'F#_:minor': 1, 'F^:minor': 1,
+          'C:other': 1, 'G#_:minor': 1, 'A^:minor': 1}
+        modes: {minor: 981, major: 476, (none): 75, other: 21, minor phrygian: 11,
+          major mixolydian: 9, major phrygian-major: 3, minor dorian: 3, major mixolydian-b6: 1,
+          major lydian: 1, minor phrygian-major: 1}
+      tempo:
+        type: TempoData
+        n_tracks: 779
+        n_annotations: 779
+        tempo:
+          unit: bpm
+          width: 1
+          counts: {0: 5, 66: 1, 68: 2, 70: 1, 74: 2, 77: 1, 79: 1, 80: 2, 82: 1, 84: 3,
+            85: 4, 86: 6, 87: 8, 88: 5, 89: 5, 90: 11, 92: 7, 93: 3, 94: 2, 95: 6,
+            96: 1, 98: 3, 99: 1, 100: 6, 101: 2, 102: 4, 104: 3, 105: 5, 107: 3, 108: 2,
+            109: 1, 110: 1, 111: 7, 112: 1, 113: 2, 114: 2, 115: 7, 116: 8, 117: 5,
+            118: 3, 119: 3, 120: 34, 121: 3, 122: 12, 123: 20, 124: 23, 125: 42, 126: 44,
+            127: 39, 128: 108, 129: 18, 130: 37, 131: 7, 132: 9, 133: 7, 134: 13,
+            135: 15, 136: 17, 137: 5, 138: 15, 139: 3, 140: 58, 141: 2, 142: 23, 143: 6,
+            144: 8, 145: 16, 146: 1, 147: 2, 148: 4, 149: 1, 150: 15, 151: 1, 152: 1,
+            153: 1, 154: 1, 156: 1, 158: 4, 160: 1, 164: 2, 165: 2, 169: 1, 170: 3,
+            174: 2, 175: 4, 188: 1, 195: 1}
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: 6355e1e5ed0c1d06f15430143c83cc632e3d0005a18d71a471865ccd54b44925
 bibtex: |-
