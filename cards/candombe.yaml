@@ -52,7 +52,9 @@ stats:
             31.3, 1.8, 2.2, 26.1, 11.5, -3.4, 20.1, 8, 11.4]
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: 9df994b6e37f9bdc919210c06c28bec9ababa318857d8f648b1fec88e2ba2fd0
 bibtex: |-

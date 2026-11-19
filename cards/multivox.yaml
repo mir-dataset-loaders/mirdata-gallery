@@ -1,0 +1,61 @@
+name: multivox
+summary: MULTIVOX includes a-cappella vocal performances with synchronized 360° video
+  and audio, featuring 6- and 16-singer configurations. Key estimation is the primary
+  MIR task.
+annotations:
+- KeyData
+tasks:
+- Key Estimation
+stats:
+  computed:
+    mode: local
+    index: 88d49145da4f30d4fc60ef4d31b611ac
+  audio:
+    status: ok
+    problems: []
+    n_tracks: 154
+    n_audio_files: 438
+    total_seconds: 10844.2
+    sample_rates: {44.1k: 154}
+    durations:
+      unit: s
+      width: 1
+      counts: {10: 1, 11: 1, 13: 1, 14: 2, 15: 1, 16: 3, 17: 3, 18: 8, 19: 4, 20: 3,
+        21: 4, 22: 3, 23: 1, 24: 2, 25: 5, 26: 3, 27: 1, 28: 2, 29: 2, 31: 1, 32: 1,
+        33: 1, 34: 2, 35: 3, 36: 2, 37: 4, 38: 6, 39: 3, 40: 2, 42: 2, 49: 1, 50: 1,
+        51: 2, 55: 1, 56: 1, 57: 3, 65: 1, 66: 2, 68: 1, 71: 4, 72: 1, 73: 2, 75: 2,
+        77: 1, 78: 1, 79: 2, 83: 1, 85: 1, 87: 1, 88: 2, 92: 1, 94: 1, 95: 1, 97: 1,
+        98: 1, 99: 1, 100: 1, 103: 1, 105: 1, 108: 1, 111: 3, 112: 1, 113: 2, 116: 1,
+        118: 1, 120: 1, 126: 1, 136: 1, 138: 1, 141: 1, 142: 2, 147: 1, 148: 1, 149: 1,
+        150: 1, 152: 1, 153: 1, 159: 1, 161: 1, 162: 1, 188: 1, 194: 1, 196: 1, 199: 1,
+        203: 1, 204: 1, 205: 1, 208: 1, 209: 1, 210: 1, 211: 1, 225: 1}
+  annotations:
+    status: ok
+    problems: []
+    n_tracks: 154
+    n_tracks_loaded: 154
+    tracks_with: {KeyData: 150}
+    annotations:
+      key:
+        type: KeyData
+        n_tracks: 150
+        n_annotations: 150
+        keys: {C: 76, G: 14, Am: 12, F: 12, C#m: 11, Gm: 9, Fm: 8, A: 8}
+        modes: {(none): 150}
+    skipped: {}
+    n_missing_files: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
+    annotation_errors: {}
+summary_hash: d34abc28d0035a5c52ce88f134f6a2623419f16fa80829b9d56cf59970a36f0f
+bibtex: |-
+  @inproceedings{meza2025multivox,
+   author = {Meza, G. and Sepúlveda, M. and Roman, A. S. and Sigal Sefchovich, J. R. and Roman, I. R.},
+   title = {{MULTIVOX: A Spatial Audio-Visual Dataset of Singing Groups}},
+   booktitle = {Proceedings of the AES International Conference on Artificial Intelligence and Machine Learning for Audio (AES AIMLA)},
+   year = {2025},
+   address = {London},
+   doi = {10.5281/zenodo.17058101}
+  }
+license: Creative Commons Attribution 4.0 International (CC-BY-4.0)

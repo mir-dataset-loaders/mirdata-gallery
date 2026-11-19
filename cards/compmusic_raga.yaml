@@ -3,6 +3,7 @@ summary: The dataset includes full-length audio recordings of Carnatic and Hindu
   music, with associated rāga labels for 480 Carnatic and 300 Hindustani recordings.
   It supports melody extraction and rāga recognition tasks.
 annotations:
+- EventData
 - F0Data
 tasks:
 - Melody Extraction
@@ -67,8 +68,13 @@ stats:
     problems: []
     n_tracks: 477
     n_tracks_loaded: 477
-    tracks_with: {F0Data: 477}
+    tracks_with: {EventData: 477, F0Data: 477}
     annotations:
+      nyas_segments:
+        type: EventData
+        n_tracks: 477
+        n_annotations: 477
+        events: {nyas: 289131}
       pitch:
         type: F0Data
         n_tracks: 477
@@ -140,9 +146,16 @@ stats:
             1580: 112, 1590: 62, 1600: 36, 1610: 79, 1620: 73, 1630: 68, 1640: 73,
             1650: 170, 1660: 410, 1670: 63, 1680: 47, 1690: 25, 1700: 32, 1710: 53,
             1720: 91, 1730: 308, 1740: 168}
+      tani_segments:
+        type: EventData
+        n_tracks: 148
+        n_annotations: 148
+        events: {tani: 263}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: b4ee729315c199aa45c65ec33c2a6351be9a5294d6af96418f8263e230d01cb0
 bibtex: |-

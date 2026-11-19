@@ -1,12 +1,11 @@
 name: tinysol
 summary: TinySOL includes 2913 single-note samples from 14 instruments, suitable for
-  melody extraction and fundamental frequency estimation. Annotations provide a 5-fold
-  split for research reproducibility.
+  instrument recognition tasks. Annotations provide instrument labels and a balanced
+  5-fold split for evaluation.
 annotations:
-- F0Data
 - Instrument
 tasks:
-- Melody Extraction
+- Instrument Recognition
 stats:
   computed:
     mode: local
@@ -28,15 +27,28 @@ stats:
     problems: []
     n_tracks: 2913
     n_tracks_loaded: 2913
-    tracks_with: {}
-    annotations: {}
-    skipped:
-      pitch: not a mirdata F0Data object (got str)
-      pitch_id: not a mirdata F0Data object (got int)
+    tracks_with: {Instrument: 2913}
+    annotations:
+      instrument_abbr:
+        type: Instrument
+        n_tracks: 2913
+        n_annotations: 2913
+        instruments: {Acc: 689, Cb: 309, Va: 309, Vc: 291, Vn: 284, Hn: 134, Bn: 126,
+          ClBb: 126, Fl: 118, Tbn: 117, BTb: 108, Ob: 107, ASax: 99, TpC: 96}
+      instrument_full:
+        type: Instrument
+        n_tracks: 2913
+        n_annotations: 2913
+        instruments: {Accordion: 689, Contrabass: 309, Viola: 309, Cello: 291, Violin: 284,
+          French Horn: 134, Bassoon: 126, Clarinet in Bb: 126, Flute: 118, Trombone: 117,
+          Bass Tuba: 108, Oboe: 107, Alto Saxophone: 99, Trumpet in C: 96}
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: fcc5fe0033656029e4e76e677099ef7143e402cf581b305dc7119e3540a25c61
+summary_hash: 4c9bb631fcfb1053059cb111de6733524052595471999c3fa8f8c8a3b86b89e5
 bibtex: |-
   @inproceedings{cella2020preprint,
     author={Cella, Carmine Emanuele and Ghisi, Daniele and Lostanlen, Vincent and

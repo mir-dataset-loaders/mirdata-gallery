@@ -1,11 +1,12 @@
 name: medley_solos_db
-summary: 'The dataset includes 3-second audio clips of solo recordings from MedleyDB
-  and solosDB, containing one of eight instruments: clarinet, distorted electric guitar,
-  female singer, flute, piano, tenor saxophone, trumpet, or violin. It is used for
-  automatic musical instrument recognition.'
+summary: 'The dataset includes 3-second audio clips of solo recordings, containing
+  one of eight instruments: clarinet, distorted electric guitar, female singer, flute,
+  piano, tenor saxophone, trumpet, or violin. Annotations specify the instrument present,
+  facilitating instrument recognition.'
 annotations:
 - Instrument
-tasks: []
+tasks:
+- Instrument Recognition
 stats:
   computed:
     mode: local
@@ -26,13 +27,22 @@ stats:
     problems: []
     n_tracks: 21571
     n_tracks_loaded: 21571
-    tracks_with: {}
-    annotations: {}
-    skipped: {}
+    tracks_with: {Instrument: 21571}
+    annotations:
+      instrument:
+        type: Instrument
+        n_tracks: 21571
+        n_annotations: 21571
+        instruments: {piano: 6032, violin: 5971, flute: 3555, distorted electric guitar: 1854,
+          female singer: 1744, clarinet: 1311, trumpet: 627, tenor saxophone: 477}
+    skipped:
+      instrument_id: no instrument labels (got int)
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: 6f9a988ff13f1d8b2878f7f99bd94ebec3bcd2452e507276847b19dad68cf8d0
+summary_hash: edfa1e22a9f87e5ba813909ab392bc34b4936bb2140b0577d8226d89cff6290b
 bibtex: |-
   @inproceedings{lostanlen2019ismir,
       title={Deep Convolutional Networks in the Pitch Spiral for Musical Instrument Recognition},

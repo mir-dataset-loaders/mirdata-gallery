@@ -108,7 +108,9 @@ stats:
     annotations: {}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: 1fbcf97fa94f3b02cd31a71667ea68c6cecd6bd4acbf19ec2cf3994a6bea47e8
 bibtex: |-

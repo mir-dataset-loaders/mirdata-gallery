@@ -1,11 +1,13 @@
 name: medleydb_pitch
 summary: The dataset includes monophonic, f0-annotated stems from multitrack recordings,
-  with annotations for melody extraction and instrument recognition.
+  with instrument activations. It supports tasks like instrument recognition, melody
+  extraction, and music transcription.
 annotations:
 - F0Data
 - Instrument
 - NoteData
 tasks:
+- Instrument Recognition
 - Melody Extraction
 - Music Transcription
 stats:
@@ -34,8 +36,17 @@ stats:
     problems: []
     n_tracks: 103
     n_tracks_loaded: 103
-    tracks_with: {F0Data: 103, NoteData: 77}
+    tracks_with: {F0Data: 103, Instrument: 103, NoteData: 77}
     annotations:
+      instrument:
+        type: Instrument
+        n_tracks: 103
+        n_annotations: 103
+        instruments: {male singer: 36, female singer: 15, trumpet: 6, clarinet: 5,
+          violin: 5, dizi: 5, erhu: 5, double bass: 4, electric bass: 4, flute: 3,
+          french horn: 2, cello: 2, viola: 2, tenor saxophone: 2, bamboo flute: 1,
+          oboe: 1, baritone saxophone: 1, bass clarinet: 1, alto saxophone: 1, soprano saxophone: 1,
+          piccolo: 1}
       notes_pyin:
         type: NoteData
         n_tracks: 77
@@ -113,9 +124,11 @@ stats:
             3250: 2, 3280: 5, 3640: 12, 3650: 6, 3660: 2}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: f22c221c1492dc8152cdbb4350b74d7d7c3769cbe16f7bcac5cc8a1783c2d37f
+summary_hash: 4753b010edd3ed5980585a44274ae14f9122e1867f67763badc475a900acca6b
 bibtex: |-
   @inproceedings{bittner2014medleydb,
       Author = {Bittner, Rachel M and Salamon, Justin and Tierney, Mike and Mauch, Matthias and Cannam, Chris and Bello, Juan P},

@@ -1,12 +1,13 @@
 name: compmusic_hindustani_rhythm
 summary: The dataset includes two-minute stereo mp3 audio excerpts from Hindustani
-  music, annotated with time-stamped matras and sam positions, and provides metadata
-  for taal and lay. The primary MIR task is Beat Tracking.
+  music, annotated with sam, vibhaag, and matras positions, and metadata for taal,
+  lay, artist, and raag. Tasks include beat tracking and instrument recognition.
 annotations:
 - BeatData
 - Instrument
 tasks:
 - Beat Tracking
+- Instrument Recognition
 stats:
   computed:
     mode: local
@@ -27,7 +28,7 @@ stats:
     problems: []
     n_tracks: 151
     n_tracks_loaded: 151
-    tracks_with: {BeatData: 151}
+    tracks_with: {BeatData: 151, Instrument: 151}
     annotations:
       beats:
         type: BeatData
@@ -76,12 +77,18 @@ stats:
             26, 6.8, 4.1, -0.1, 4.2, -2, 2.1, 0, 7.7, 2.7, 0.6, -0.8, -1.1, -0.8,
             0.7, 3.3, 7, -0.2, -0.8, -0.2, 3.3, -2.3, 10.4, 5.3, 16.7, -0.5, 11.5,
             -0.4, 9.4, 2.4, 13.9, -5.2, 1.6, 2.9, 8.2, 4.5, 12.1, 2.4, 1.5]
-    skipped:
-      num_of_beats: not a mirdata BeatData object (got int)
+      lead_instrument_code:
+        type: Instrument
+        n_tracks: 151
+        n_annotations: 151
+        instruments: {V: 127, R: 10, B: 4, S: 3, D: 3, L: 3, F: 1}
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: e4fd74fc98d274e4bea78bee4b399d34adbff80e3fe1f3b1fb0f49e4745e8654
+summary_hash: 6f238d637cfa5bbd0eaba662af98aa90d705ba922854f3463c750fffdafe6318
 bibtex: |-
   @inproceedings{Srinivasamurthy2016,
       author = {Srinivasamurthy, Ajay and Holzapfel, Andre and Cemgil, Ali and Serra, Xavier},

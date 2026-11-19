@@ -198,8 +198,35 @@ stats:
             187: 1, 326: 1}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
-    annotation_errors: {chords: 4, key: 1, sections: 8}
+    track_errors:
+      n_tracks: 0
+      logs: []
+    annotation_errors:
+      chords:
+        n_tracks: 4
+        logs:
+        - error: 'ValueError: chords [''B:sus2''] don''t conform to chord_unit harte'
+          n_tracks: 1
+        - error: 'ValueError: chords [''E:sus2(b7)''] don''t conform to chord_unit
+            harte'
+          n_tracks: 1
+        - error: 'ValueError: chords [''A:sus2'', ''A:sus2'', ''A:sus2'', ''A:sus2'',
+            ''A:sus2'', ''A:sus2'', ''A:sus2'', ''A:sus2'', ''A:sus2'', ''A:sus2'',
+            ''A:sus2'', ''A:sus2'', ''A:sus2''] don''t conform to chord_unit harte'
+          n_tracks: 1
+        - error: 'ValueError: chords [''Bb:sus2(b7)'', ''Bb:sus2(b7)''] don''t conform
+            to chord_unit harte'
+          n_tracks: 1
+      key:
+        n_tracks: 1
+        logs:
+        - error: 'ValueError: keys [''C#:modal''] don''t conform to key_unit key-mode'
+          n_tracks: 1
+      sections:
+        n_tracks: 8
+        logs:
+        - error: 'ValueError: Interval start times must be smaller than end times'
+          n_tracks: 8
 summary_hash: bba4a990ebe5d42a54c31632d4cee3fbfe1c50952183e155482bd8ae0aa6b8de
 bibtex: |-
   @inproceedings{mauch2009beatles,

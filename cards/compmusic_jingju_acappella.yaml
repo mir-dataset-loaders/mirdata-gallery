@@ -87,7 +87,9 @@ stats:
             307: 1, 333: 1, 341: 1, 366: 1, 384: 1}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
 summary_hash: b8f54ccf8d21c2833e794b42d2e732ce72505b7b5401a2899bb1adea2a07444f
 bibtex: |-

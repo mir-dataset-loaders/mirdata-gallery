@@ -1,12 +1,11 @@
 name: good_sounds
 summary: The Good-Sounds dataset includes monophonic recordings of single notes and
   scales from 12 instruments, annotated as "Good" or "Bad" with five sub-classes for
-  "Bad". The primary MIR task is Melody Extraction.
+  "Bad". The primary MIR task is Instrument Recognition.
 annotations:
-- F0Data
 - Instrument
 tasks:
-- Melody Extraction
+- Instrument Recognition
 stats:
   computed:
     mode: local
@@ -30,14 +29,22 @@ stats:
     problems: []
     n_tracks: 16308
     n_tracks_loaded: 16308
-    tracks_with: {}
-    annotations: {}
-    skipped:
-      pitch_reference: not a mirdata F0Data object (got int)
+    tracks_with: {Instrument: 16308}
+    annotations:
+      instrument:
+        type: Instrument
+        n_tracks: 16308
+        n_annotations: 16308
+        instruments: {clarinet: 3358, flute: 2308, cello: 2118, trumpet: 1883, violin: 1852,
+          sax_alto: 1436, piccolo: 776, sax_tenor: 680, sax_soprano: 668, sax_baritone: 576,
+          oboe: 494, bass: 159}
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: a65ba6dfed3c21f413da0a168a90cda419d36b829fbc6bf5c0dd8f593d377a14
+summary_hash: 711fb9b97dc2bf43b797ab1cc7a8ed24042716986b915e192ba5bcec5cfc5a69
 bibtex: |-
   @inproceedings{romani2015real,
     title={A Real-Time System for Measuring Sound Goodness in Instrumental Sounds},

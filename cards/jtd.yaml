@@ -1,15 +1,9 @@
 name: jtd
 summary: The Jazz Trio Database (JTD) includes 1,294 multitrack jazz performances,
-  with audio content comprising raw stereo and unmixed piano, bass, and drums. Annotations
-  provide beat and downbeat timestamps, MIDI transcriptions, and onset timestamps
-  for the unmixed audio, supporting tasks like beat tracking and music transcription.
-annotations:
-- BeatData
-- EventData
-- NoteData
+  with annotations for beats, downbeats, and onsets, and audio files for raw, unmixed
+  piano, bass, and drums. The primary MIR tasks include beat tracking and onset detection.
+annotations: []
 tasks:
-- Beat Tracking
-- Music Transcription
 - Source Separation
 stats:
   computed:
@@ -57,7 +51,7 @@ stats:
   annotations:
     status: error
     error: 'ValueError: cannot convert float NaN to integer'
-summary_hash: 4a56e0dbbdcf496c64dbab7d237afe75cb8b4bac969d0f9a3647c99985fd3372
+summary_hash: 55ef8ad2405ed7349fe11aca6f4633ee62c3943540c893c1236b378724726b5b
 bibtex: |-
   @article{jazz-trio-database
       title = {Jazz Trio Database: Automated Annotation of Jazz Piano Trio Recordings Processed Using Audio Source Separation},

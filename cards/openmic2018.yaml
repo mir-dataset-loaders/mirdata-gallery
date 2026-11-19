@@ -1,11 +1,11 @@
 name: openmic2018
-summary: The dataset includes 20000 10-second excerpts from polyphonic recordings,
-  partially annotated for 20 instrument categories with confidence ratings. The primary
-  MIR task involves classifying the presence or absence of instruments in each audio
-  excerpt.
+summary: The dataset includes 20000 10-second excerpts from polyphonic audio recordings,
+  partially annotated for 20 instrument categories. The primary MIR task is Instrument
+  Recognition.
 annotations:
 - Instrument
-tasks: []
+tasks:
+- Instrument Recognition
 stats:
   computed:
     mode: local
@@ -26,13 +26,23 @@ stats:
     problems: []
     n_tracks: 20000
     n_tracks_loaded: 20000
-    tracks_with: {}
-    annotations: {}
+    tracks_with: {Instrument: 20000}
+    annotations:
+      instruments:
+        type: Instrument
+        n_tracks: 20000
+        n_annotations: 20000
+        instruments: {violin: 1172, piano: 1170, trumpet: 1146, guitar: 1138, saxophone: 1135,
+          cymbals: 1111, drums: 1106, synthesizer: 1091, voice: 988, trombone: 864,
+          mandolin: 845, cello: 823, ukulele: 738, mallet_percussion: 733, banjo: 732,
+          flute: 647, organ: 602, bass: 549, clarinet: 532, accordion: 489}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: 010a205e788dd245cd053e48eeb7f0a1097f9c219e91bcaf98ca118c732aef7e
+summary_hash: 505df867b80bd5cd05c15f28a7e8a0e03f8bd8a9df1764b7f79557a3ba7d59a2
 bibtex: |-
   @inproceedings{DBLP:conf/ismir/HumphreyDM18,
     author    = {Eric Humphrey and

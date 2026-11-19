@@ -22,7 +22,7 @@ stats:
       width: 1
       counts: {4: 4, 5: 8966}
   annotations:
-    status: incomplete
+    status: ok
     problems: []
     n_tracks: 8970
     n_tracks_loaded: 8970
@@ -45,8 +45,10 @@ stats:
             99: 2, 100: 2, 101: 1, 102: 1, 103: 1, 104: 1}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
-    annotation_errors: {note_name: 8280}
+    track_errors:
+      n_tracks: 0
+      logs: []
+    annotation_errors: {}
 summary_hash: 248153a7b828d65dcfa0225b6b4a866a3c21bcf334f9d7e16522b181a5dabc23
 bibtex: |-
   @techreport{pedroza2022egfxset,

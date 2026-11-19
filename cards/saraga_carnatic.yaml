@@ -1,16 +1,15 @@
 name: saraga_carnatic
-summary: The dataset includes 249 Carnatic Music tracks with annotations for melody,
-  rhythm, structure, and tempo, along with automatically extracted pitch and tonic.
-  Tasks involve lyrics transcription, alignment, melody extraction, structure analysis,
-  and tempo estimation.
+summary: The dataset includes 249 Carnatic Music tracks with multitrack audio for
+  168 tracks, featuring annotations for beat tracking, melody extraction, music structure
+  analysis, and tempo estimation, stored as timestamps and transcriptions.
 annotations:
+- BeatData
+- EventData
 - F0Data
-- LyricData
 - SectionData
 - TempoData
 tasks:
-- Lyrics Transcription
-- Lyrics-to-Audio Alignment
+- Beat Tracking
 - Melody Extraction
 - Music Structure Analysis
 - Tempo Estimation
@@ -27,8 +26,109 @@ stats:
     problems: []
     n_tracks: 249
     n_tracks_loaded: 249
-    tracks_with: {F0Data: 197, SectionData: 119}
+    tracks_with: {BeatData: 130, EventData: 100, F0Data: 197, SectionData: 119, TempoData: 132}
     annotations:
+      phrases:
+        type: EventData
+        n_tracks: 100
+        n_annotations: 100
+        events: {gmnns: 18, srgrsnsrgrs: 15, gmpgmpnmps: 14, pgmdd: 12, dmgrs: 12,
+          smpddndndpmpm: 11, ggnpgr: 11, mgpds: 11, mpmgrgss: 11, gmdnrsndmpgsrg: 11,
+          mrggrrss: 11, sndpd: 10, mgsdndp: 10, ssdpmgmrsn: 10, nmgrs: 10, nspmpsnpmp: 10,
+          mmndsnndds: 9, nsnsnsndp: 9, sggsgmpnp: 9, pdsnd: 9, mgsrgppg: 9, pdsndgm: 9,
+          mpgrgssrrg: 9, gmpgmgr: 9, mpddppmg: 9, rdsrgsrgpgdpd: 9, srmpdp: 8, sgrgpm: 8,
+          ndmdnsndn: 8, gmgrs: 8, nsggm: 8, snpmgmrs: 8, nsrgmgrs: 8, rndp: 8, gmdsndpmgrgrs: 7,
+          sdns: 7, ndmdndmgr: 7, sndmgm: 7, snpds: 7, gmppsnpp: 7, mpdns: 7, pmgmgrs: 7,
+          nrndp: 6, srndmp: 6, pdndpmgrr: 6, pdssndd: 6, pmgmrgrs: 6, nnsdndp: 6,
+          sndpmgrsrg: 6, rgsdndps: 6, mmppddnnnddp: 6, snndp: 6, pdpdnsrs: 6, srgmpdsrgmgrsnd: 6,
+          pmgmrgmrs: 6, drssddpgpd: 6, dnsrgrs: 6, mpdpmgrgndp: 6, drssddp: 5, pgmndd: 5,
+          dmgmr: 5, dpmpgrs: 5, srndn: 5, dpmrgdp: 5, sndpmgr: 5, pnsnsnpm: 5, gmpdnsrsndpmgrs: 5,
+          gmpmgr: 5, pdnspmg: 5, sndmgrs: 5, dsndmm: 5, pppmggrr: 5, srg: 5, rpmgsrmp: 5,
+          rsnsns: 5, pdnsns: 5, gmdmrs: 5, mgmpdp: 5, ndmnns: 5, pppdpmgmgm: 5, snpmrgmrs: 5,
+          pnsrsnsdp: 5, pgmpnsdp: 5, nsrgsnsdnp: 5, pnsrnsrgrrs: 5, ngrrsnd: 5, srgrsnsdnd: 5,
+          srsndpp: 5, srgprs: 4, mmgrs: 4, dnsrgmpmgr: 4, sgrs: 4, pdnsdnnddpm: 4,
+          sgrsrsrndm: 4, srgsppmgmpmgrs: 4, ssndmmnns: 4, pddpmgrr: 4, sndddrsnpp: 4,
+          ndpmpdndnss: 4, ndpdpmpgmp: 4, pdpdnrsndpm: 4, pmdpmrgr: 4, nddnsr: 4, dmpdnsrr: 4,
+          rgmrggrsrs: 4, nsrsnd: 4, rgmgr: 4, ddgrs: 4, rrrpmgrmgrsns: 4, mgrssndp: 4,
+          mpmpdps: 4, gmdndnrs: 4, pmgmgrr: 4, mgpd: 4, nnsnsggm: 4, srsmgpmdp: 4,
+          sggrsrns: 4, srgmgrgrgmgg: 4, rgmpmd: 4, ndppdpmgmppmgr: 4, nsrgrsnsdnd: 4,
+          pnddpmgrr: 4, rpmgsrrr: 4, mpnsrrr: 4, sndmmgmdns: 4, pndpmpgmp: 4, nsgmpnsnp: 4,
+          mdmgmrr: 3, rssnnddm: 3, pdsrgsrgrss_mohanam: 3, mdnsndndm_vasanta: 3, mdpmprs: 3,
+          mdpmrs: 3, mpgrs: 3, srndp: 3, mgrgrmppp: 3, ppmgrssgg: 3, pdnndp: 3, mpgrsrns: 3,
+          pnsrsgr: 3, pdnsrgrsndpmgrs: 3, pdpdnsrgsrmgg: 3, srgmpdmgpd: 3, srgnsrdnd: 3,
+          dnsrgr: 3, pssndnp: 3, ppdnss: 3, dnsrsndp: 3, mgsmgm: 3, gmpndpdns: 3,
+          snddns: 3, pmdppgmgr: 3, rgmrgrs: 3, gmddmdndn: 3, gmpdp: 3, srgrsrsnd: 3,
+          ppmgrr: 3, sgsnsndns: 3, gmdpmprs: 3, nsgrssndm: 3, pmgmr: 3, mgmgmgrr: 3,
+          srgmrgs: 3, pdsdndp: 3, rpmgmrs: 3, nrsnsd: 3, ndggr: 3, pmgrs: 3, gmnnsns: 3,
+          ndmnnss: 3, sndpdgmp: 3, pmprmrrmpmp: 3, smmpnd: 3, pgmp: 3, nsrs: 3, rggmpmp: 3,
+          npdmp: 3, dpggsrs: 3, srgmdnrs: 3, ndnsndpm: 2, rrrpmgrgrssrn: 2, sddrssddp: 2,
+          gpdssdrsdpd: 2, mndnssnrss: 2, ndnssnrss: 2, pmndpmgrgr: 2, pdnsrggrsndpdn: 2,
+          gmdnsnrs_vasanta: 2, nsgrg: 2, gmpnds: 2, mdgmp: 2, dpgrgmpdp: 2, ngrs: 2,
+          nsggrsrs: 2, rmpndp: 2, snmrsndp: 2, ssngrsn: 2, gmpdnddpmgr: 2, gmgrgsdnrsnd: 2,
+          dnsrgs: 2, srggmrrpgrsn: 2, nsdnp: 2, gmpmgrsn: 2, sdpmdp: 2, sdpmgmrgm: 2,
+          ngr: 2, dpndpmgr: 2, mpgrgm: 2, rmrsrmpns: 2, mpnsrssns: 2, mnpmrmsrs: 2,
+          psprmp: 2, pdpmgrg: 2, sdpm: 2, mmmmgrsnsggmm: 2, gmpdndmgr: 2, ? '' : 2,
+          pmpdpmgmr: 2, rgmpmgmrmgrs: 2, ppmnpmgmp: 2, gndp: 2, ggrsnddndpmpdn: 2,
+          rgmdmgrs: 2, drsndmm: 2, pdrnd: 2, pdnndpmg: 2, dndgrr: 2, spmg: 2, mpdnsrss: 2,
+          gmdpmgrs: 2, pdmgm: 2, dnsdpm: 2, mgmndnpdnrss: 2, pdnsrgrs: 2, srggrsrs: 2,
+          srgrgm: 2, ppmdpmrgrrsns: 2, mpdpssdpmgmrsn: 2, dmpdnsr: 2, sgggrmmgrsrns: 2,
+          pdgmp: 2, ndpdgmp: 2, ndpdgmpp: 2, ddggrr: 2, gmndmgrs: 2, rmgr: 2, rmgrr: 2,
+          pmnpmrrs: 2, rmpnsn: 2, gdppmgrr: 2, mpgrrs: 2, mpndmpmg: 2, mpmpdp: 2,
+          mdnsnnp: 2, gmpmgrs: 2, ndmgrsggm: 2, nnsngrs: 2, nddndp: 2, pdnsndndp: 2,
+          srgmgrrs: 2, pdndpm: 2, sndndp: 2, pmgrr: 2, dsgrsnd: 2, sndppmgr: 2, pdsrgrsnd: 2,
+          srgrsnpds: 2, pdgmpmnd: 2, mgmndnpdnrssdpmgm: 2, rrsnpmrsrg: 2, rpggmrs: 2,
+          gmdnsrsnrsnp: 2, nsrsndn: 2, nddpmgrgmpmgrs: 2, ndgpgrs: 2, nndpdpgrgsrn: 2,
+          ssrsdpd: 2, gmppsnpnpmmg: 2, sndnsnp: 2, ssndnsnp: 2, srgmgrsn: 2, sdpdmpsdp: 2,
+          nsrgmrgrs: 2, pmrgrs: 2, srmpmrgrs: 2, pmrggrrs: 2, srrgrssnrsnp: 2, pmrrggrrsn: 2,
+          rrgrsnp: 2, dndppmpdm: 2, mssndpdss: 2, dsmmsndpds: 2, pndnpmpmgm: 2, nsrsndp: 2,
+          srgrsnd: 2, ddgrg: 2, nsrpmgrs: 2, mpnsrsndp: 2, srgrnsrsndpm: 2, pdnpmgpmgrss: 2,
+          srgmpdndpmrpgr: 2, ndpmgrgs: 2, gmdmgmgrsn: 2, srddnndpmm: 2, pdnpdnsrmgrs: 2,
+          rgmpdndp: 2, pppmnpmgmp: 2, pdndnsnnddm: 2, snndmgmgs: 2, nsnpmgpmgmgs: 2,
+          rmpnnndsndp: 1, mgpmmgrms: 1, ndnsndppm: 1, mmgmpmmgr: 1, mmgmpmgr: 1, nnndnsndp: 1,
+          nnnsndp: 1, gdprssrdsrggrrgpgg: 1, gpdprs: 1, ddrssdp: 1, ggdppggr: 1, gmnddnsndnp: 1,
+          prrssndpmgmpgm: 1, smgmnd: 1, gmpdndpmgr: 1, ssrsrgrsndd: 1, nsgmpnddpmgpp_sindhubhairavi: 1,
+          ggmgrsndp: 1, nndpdp: 1, mdmrs: 1, rsnsdpdp: 1, gmgrsndp: 1, dpmpmgrs: 1,
+          rgmdmg: 1, mdmgrgrs: 1, nsgrmgrs: 1, gmpndpmdmg: 1, nrsnddp: 1, ppgrssrsrsndn: 1,
+          ppgrsrgmgrs: 1, nngrs: 1, srsnddns: 1, gmgrgs: 1, grgmpdnrs: 1, mpnndpdp: 1,
+          drsnddns: 1, nrssnnddp: 1, nnpmpnsnddp: 1, pmdnsrs: 1, pnsdndp: 1, ndpmgrsrgmpmdns: 1,
+          mdnsrsnsndndp: 1, mpdpdpmggrsn: 1, sngrs: 1, ndpmgrgmpmgrs: 1, dnsndpdgmp: 1,
+          rsndpdns: 1, mpdnsdnsns: 1, dnsssndndp: 1, dnssndndp: 1, srsndns: 1, pdnrssndpdmg: 1,
+          pdnrssnddpmg: 1, ssmmppmpdndppnddpmm: 1, nsrgmdpprs: 1, rsndp: 1, npgrmp: 1,
+          pmpmmrgsrmp: 1, nsrmpnmpnspggrsn: 1, nnrssnnnddp: 1, gmpdpmgpgrrs: 1, dnsndpmg: 1,
+          nndp: 1, mpnsnprnsrs: 1, rmpnpmrmr: 1, dnndpmgrgmpdps: 1, pdpsssrs: 1, nsgrs: 1,
+          pmgmpmgrsnrg: 1, sndnmd: 1, gmpdpdndpmr: 1, sndpdnsrgrs: 1, srpmrgrs: 1,
+          ddpmgrr: 1, srmpdndpmdd: 1, rsrdpdndpmdd: 1, pdmrs: 1, mpdmgrmpdd: 1, rgmpmgmrgrs: 1,
+          pmddns: 1, pmdnsr: 1, pdsnddndp: 1, ndpmgrgmpmdnsr: 1, pnsgmpgr: 1, srsnddndp: 1,
+          pdsndndp: 1, srsnddndpp: 1, ggsgmpnp: 1, sgsgmpnp: 1, rgmpgrs: 1, rsndppdndpm: 1,
+          rsndpmpdndpm: 1, rgsrsnddns: 1, rrmrggsrs: 1, grmgsgrss: 1, grmgrsgrss: 1,
+          gmggrsgrs: 1, grmggrgrs: 1, ppmpgmgrs: 1, gmrgmpmgrs: 1, smgpmdpp: 1, pmnpmgmgmpp: 1,
+          gmpndp: 1, gmpnsndp: 1, sgmpgrs: 1, dsrgmg: 1, pdnndmg: 1, sndmpgrsrg: 1,
+          srgmpmggpmmgrss: 1, srgmpmgrgpmgrss: 1, pdrsndn: 1, pdnsndn: 1, pdnsrgsrggrsnssrsd: 1,
+          nsrsnndpm: 1, srgrggrsnn: 1, ssdnrsndpm: 1, gmpdnsnndd: 1, pdnsrgsrggrsnsrs: 1,
+          mgmnddnsdnp: 1, sdpmgm: 1, pndpmgmndd: 1, pdpdnrssdpmgm: 1, ssndsrsndpd: 1,
+          ssdnsrsndpd: 1, dnsgrmgs: 1, gmndns: 1, smgmndnpdns: 1, sndndpm: 1, sndndpmg: 1,
+          gmggrsrs: 1, ssnddns: 1, grgprgsdndp: 1, ggrsrgm: 1, dsggrsrgrgrsdndp: 1,
+          rgsdndp: 1, gmpdndp: 1, gmpdndd: 1, ggrr: 1, rmpnddpmgr: 1, nsrmsrs: 1,
+          gmggmgsrs: 1, pdnsdnp: 1, pmggrrsrr: 1, dnsgrdnrs: 1, pdndmpdpmpg: 1, pdndmpg: 1,
+          dpmrsndpssgg: 1, gmdrs: 1, rrsnpdprs: 1, gmrs: 1, nrsp: 1, srpg: 1, grsnsdns: 1,
+          mdnsp: 1, gmdnsss: 1, gmrssnrsp: 1, gmndm: 1, pdndmgr: 1, sndmgr: 1, dnrsndpgmp: 1,
+          mgmngnpdnrssdpmgm: 1, nsnsnpnpmg: 1, gmpgmpmps: 1, rgmdpmgmrgs: 1, grgpmmgrs: 1,
+          pdndpmpmg: 1, gmgsgsnddpmgrg: 1, gmgssndn: 1, sdpmgmm: 1, pdndpdpmgrg: 1,
+          grsrmpsn: 1, nddndmp: 1, pdnsndp: 1, pdnsnddp: 1, pdndpdrsndp: 1, drsndp: 1,
+          drsnd: 1, drnd: 1, rpmgs: 1, snmrgmrs: 1, srgmrs: 1, pmgmrrsn: 1, gmrsrs: 1,
+          snrsnpsnrs: 1, rpggmrsrs: 1, srpgmrs: 1, rgmpdndpmpdgrpgr: 1, ndggpgr: 1,
+          rpmngpgr: 1, pdndpmgpgr: 1, ndpmgrpgr: 1, srdsrgg: 1, ggrsrgprs: 1, ppdprg: 1,
+          drssddpd: 1, drssdpgpd: 1, mpdnsrsndppmdppmm: 1, mgpmdppmmgpmr: 1, sgmgrrs: 1,
+          mgrsgmp: 1, sgmgrs: 1, pnsrsdp: 1, gmpnsrsndpmg: 1, nnndnsndpp: 1, rmpndpdmgpmr: 1,
+          mpmgpmr: 1, mgrgmggs: 1, rgmpmgrgmggs: 1, srsnddnpdpdrs: 1, srsddnpdpdrs: 1,
+          sgrnsdnp: 1, sndpdpmgmp: 1, pndpmdpd: 1, mgmdpdnsndm: 1, mndnpdnsndn: 1,
+          ndnpdnss: 1, smgmndnpdnrs: 1, rgmdppmgmr: 1, pnsrgrs: 1, pdnpmrgrs: 1, ppgrgrs: 1,
+          rrgrsnpmpnns: 1, snpmrgrsn: 1, snpmrgrrsn: 1, smmpdd: 1, mmssmmp: 1, mpmpmmssmmp: 1,
+          mmpdsddpmdpmmgg: 1, mmpdsddpmdppmmgg: 1, mgsrmgss: 1, mgsrmgs: 1, mndnpmpmgm: 1,
+          rgmpgmgr: 1, dpgrgm: 1, grsndp: 1, gmdppmgr: 1, mgrs: 1, gdmgrs: 1, pdnsrsnd: 1,
+          rmpmgrr: 1, rmpsndp: 1, pmpnddpmgrr: 1, nsrpmgsrr: 1, srsndppnsrr: 1, rpmgrr: 1,
+          pnddpmgr: 1, pdpmgrr: 1, mpdpmgr: 1, mpnsrr: 1, nsrpmggrs: 1, pdnpmgpmgrssrgm: 1,
+          dnpdnsrgrs: 1, dndprpgr: 1, gmsrgm: 1, mpdnndmg: 1, pdnsrgmgs: 1, nsrgsm: 1}
       pitch:
         type: F0Data
         n_tracks: 197
@@ -95,6 +195,41 @@ stats:
             1600: 28, 1610: 24, 1620: 32, 1630: 54, 1640: 58, 1650: 81, 1660: 123,
             1670: 166, 1680: 348, 1690: 562, 1700: 2062, 1710: 1273, 1720: 1169, 1730: 1034,
             1740: 3234}
+      sama:
+        type: BeatData
+        n_tracks: 130
+        n_annotations: 130
+        meter: {}
+        meter_changes: {}
+        tempo_from_beats:
+          unit: bpm
+          width: 1
+          counts: {3: 1, 4: 2, 5: 8, 6: 1, 7: 2, 8: 2, 9: 13, 10: 25, 11: 14, 12: 8,
+            13: 4, 14: 6, 15: 3, 17: 1, 18: 1, 19: 3, 20: 3, 21: 3, 22: 2, 23: 2,
+            24: 6, 25: 4, 26: 3, 27: 2, 28: 2, 29: 2, 31: 1, 32: 1, 33: 2, 37: 2,
+            42: 1}
+        tempo_changes:
+          tempo: [13.3, 24.2, 31.9, 24.5, 11.8, 37.4, 10.3, 12.6, 15.1, 20, 10.4,
+            10.3, 6, 11.5, 17.3, 9.7, 14, 11.6, 13.9, 5.4, 12.6, 11, 5, 5, 14.9, 18.7,
+            25.2, 9.6, 25.9, 22.4, 28.6, 10.3, 21.9, 12.9, 7.8, 11.5, 14.3, 10.7,
+            28.2, 24.3, 9.2, 9.7, 11, 24.9, 7.2, 10.4, 27.8, 9.1, 9.5, 33.7, 9.9,
+            5.1, 19.3, 19.6, 29.1, 15.2, 14.8, 11.6, 10.4, 10.8, 24.8, 10.7, 21.1,
+            10.9, 23.2, 5.9, 10.9, 9.1, 9.3, 10.2, 10.3, 12.9, 8.4, 24.6, 8.3, 9.9,
+            10, 10.4, 20.3, 42.3, 11.2, 10.4, 12, 14.3, 23.1, 5.1, 11.2, 32.3, 29.4,
+            21, 10.7, 10.7, 10.4, 3.5, 5.2, 5.1, 25.9, 13.7, 4.8, 12.1, 15.9, 20.8,
+            26.2, 9.8, 9.4, 12.4, 10.3, 14.4, 12.9, 11.2, 11.4, 10.8, 37.5, 13.5,
+            27.5, 9.7, 5.4, 11.1, 33.7, 11.3, 10.6, 10.6, 10.9, 11.2, 25.9, 22.4,
+            21.7, 26.3, 26.3, 11.6]
+          change: [3.8, -0.4, -0.1, 27.7, 21.2, 6.6, 3.5, 3.8, -7.9, 0.2, 50.6, 1.8,
+            5.5, 7.4, 44.5, 10.6, 2.3, 13.3, 4.2, 1.6, 3.7, -0.5, 81.9, 27.1, -5.9,
+            8, 10.4, 14.8, 10.3, 1.5, -0.6, 17.6, 5.1, 3.4, 24.5, 120.7, -0.7, 5.6,
+            5.9, 1.1, 23.9, 10.2, 15, 18.5, 15.5, 43.2, 18.7, 27.6, 18.2, 11.7, 18.3,
+            16.4, 11.4, -8.1, -5.7, -7.5, 4.5, 11.4, 2.4, -3.8, 6.4, 110.1, 2.7, -0.3,
+            12.4, 36, 35.4, 9.6, -7.1, 5.6, -4.6, 11.8, 7.5, 0, 190.4, 4.4, 6.7, 4.4,
+            7.2, 9, 3.4, 2.6, 8.6, -8.6, 2.8, 34.5, 5.7, 2.8, 4.6, 10.8, -1.4, 5.9,
+            8.3, 62.3, -0.2, 9.6, 8, -3.3, 107.2, 3.3, 1.8, 22.5, -8, 1.2, 0.2, -5.8,
+            -3.1, 2.9, 2.5, 3, 96, 4.2, -4.9, -0.3, 1.2, 0.7, 4.7, -0.7, -13.9, 31.8,
+            1.4, 13.4, 11.8, 9.7, 8.6, -0.1, -0.7, -7, -1.8, -5.4]
       sections:
         type: SectionData
         n_tracks: 119
@@ -134,13 +269,27 @@ stats:
             603: 1, 604: 1, 618: 1, 633: 1, 634: 1, 682: 1, 697: 1, 706: 1, 711: 1,
             734: 1, 740: 1, 773: 1, 802: 1, 867: 1, 869: 1, 948: 1, 952: 1, 1007: 1,
             1017: 1, 1021: 1, 1048: 1, 1433: 1}
-    skipped:
-      tempo: not a mirdata TempoData object (got dict)
-      phrases: not a mirdata LyricData object (got EventData)
+      tempo:
+        type: TempoData
+        n_tracks: 132
+        n_annotations: 132
+        tempo:
+          unit: bpm
+          width: 1
+          counts: {-1: 11, 37: 1, 40: 1, 41: 2, 43: 1, 45: 1, 48: 1, 49: 1, 57: 1,
+            63: 1, 66: 1, 67: 1, 68: 1, 69: 1, 70: 1, 73: 4, 74: 3, 75: 2, 76: 3,
+            77: 1, 78: 6, 79: 2, 80: 2, 81: 1, 82: 5, 83: 11, 85: 5, 86: 6, 87: 3,
+            88: 3, 89: 1, 90: 4, 91: 2, 92: 2, 93: 2, 95: 1, 96: 2, 97: 1, 101: 3,
+            103: 3, 106: 1, 108: 1, 110: 1, 111: 1, 112: 1, 114: 2, 116: 1, 118: 1,
+            119: 1, 121: 1, 122: 1, 131: 1, 135: 1, 142: 1, 148: 1, 153: 1, 157: 1,
+            160: 1, 161: 1, 162: 1, 166: 1, 169: 1, 170: 1, 171: 1, 187: 2, 296: 1}
+    skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: 997ed50b62c1bcd913f99dfc331b66be35e232594f6d2ebc31a8251d68c59d21
+summary_hash: f13197947240952f91c127eeb29bdcf752414699a30d9e746c4f3a6cb589640c
 bibtex: |-
   @dataset{bozkurt_b_2018_4301737,
     author       = {Bozkurt, B. and

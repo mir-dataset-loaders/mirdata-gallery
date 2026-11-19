@@ -1,7 +1,8 @@
 name: guitarset
-summary: GuitarSet includes audio recordings of acoustic guitar performances in various
-  styles and tempi, with annotations for pitch, beats, tempo, chords, and keys. Primary
-  MIR tasks include Beat Tracking, Chord Recognition, Key Estimation, and Melody Extraction.
+summary: GuitarSet includes 360 acoustic guitar recordings, each 30 seconds long,
+  covering various styles, players, and tempi, with annotations for pitch, beats,
+  tempo, and chords. Primary tasks include Beat Tracking, Chord Recognition, and Melody
+  Extraction.
 annotations:
 - BeatData
 - ChordData
@@ -9,6 +10,7 @@ annotations:
 - KeyData
 - MultiF0Data
 - NoteData
+- TempoData
 tasks:
 - Beat Tracking
 - Chord Recognition
@@ -16,6 +18,7 @@ tasks:
 - Melody Extraction
 - Multi-pitch Estimation
 - Music Transcription
+- Tempo Estimation
 stats:
   computed:
     mode: local
@@ -38,7 +41,7 @@ stats:
     n_tracks: 360
     n_tracks_loaded: 360
     tracks_with: {BeatData: 360, ChordData: 360, F0Data: 360, KeyData: 360, MultiF0Data: 360,
-      NoteData: 360}
+      NoteData: 360, TempoData: 360}
     annotations:
       beats:
         type: BeatData
@@ -345,11 +348,24 @@ stats:
             1990: 5, 2040: 1, 2090: 5, 2110: 1, 2190: 5, 2210: 1, 2290: 5, 2320: 1,
             2400: 5, 2430: 1, 2510: 5, 2540: 1, 2630: 5, 2660: 1, 2760: 5, 2790: 1,
             2890: 5, 2920: 1, 3020: 5, 3060: 1, 3170: 6, 3280: 279}
+      tempo:
+        type: TempoData
+        n_tracks: 360
+        n_annotations: 360
+        tempo:
+          unit: bpm
+          width: 1
+          counts: {68: 12, 84: 12, 85: 12, 88: 12, 90: 12, 97: 12, 98: 24, 100: 12,
+            107: 12, 108: 12, 110: 12, 112: 12, 114: 12, 117: 12, 119: 24, 129: 12,
+            130: 24, 131: 12, 137: 12, 142: 12, 147: 12, 148: 12, 150: 12, 154: 12,
+            166: 12, 187: 12, 200: 12}
     skipped: {}
     n_missing_files: 0
-    n_track_errors: 0
+    track_errors:
+      n_tracks: 0
+      logs: []
     annotation_errors: {}
-summary_hash: 061765aadcd6d153274c314feffa3cdee068bb97d50dae6045d3df84e25e85fc
+summary_hash: 0901d13895e793cba9f433faa1b198af24f411b8b73d689b91ec17ccd06e0fac
 bibtex: |-
   @inproceedings{xi2018guitarset,
   title={GuitarSet: A Dataset for Guitar Transcription},
