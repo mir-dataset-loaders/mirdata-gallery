@@ -27,7 +27,35 @@ Welcome! The Mirdata Gallery helps you get to know a dataset before you download
 
 .. note::
 
-   The Gallery doesn't support `Section`, `Event`, and `Tempo` annotations yet, or anything that comes from metadata, such as `instrument` and `genre`. We'll be adding them soon, so keep an eye out!
+   The Gallery doesn't support `Event` annotations yet, or anything that comes from metadata, such as `genre`. We'll be adding them soon, so keep an eye out!
+
+Using Mirdata
+-------------
+
+.. container:: landing-quickstart
+
+   .. container:: landing-quickstart-text
+
+      mirdata is a Python library that downloads, validates and loads music
+      datasets through one common interface.
+
+      .. code-block:: bash
+
+         pip install mirdata
+
+      See the `mirdata documentation <https://mirdata.readthedocs.io>`_.
+
+   .. container:: landing-quickstart-code
+
+      .. code-block:: python
+
+         import mirdata
+
+         dataset = mirdata.initialize("rwc_popular")
+         dataset.download()
+         dataset.validate()
+         track = dataset.choice_track()
+         track.beats
 
 How to use the Gallery
 ----------------------
@@ -86,7 +114,7 @@ You may also see a note above the charts:
 - **"Computed from 80 of 100 tracks"** means some files weren't available, so the charts use the rest.
 - **"No statistics yet"** or **"Nothing to plot yet"** means the charts for this dataset aren't ready yet.
 
-Here's what each chart shows, grouped by annotation type:
+Here's what each chart shows, grouped by annotation type. Charts marked *(estimated)* are worked out by the Gallery from the annotations, not given by the dataset:
 
 Audio
 ^^^^^
@@ -97,15 +125,15 @@ Audio
 BeatData
 ^^^^^^^^
 
-- **Tempo:** how fast the music is, in beats per minute, worked out from the beats. For each track, we measure the gaps between neighboring beats, take the median gap, and calculate 60 ÷ gap. If the dataset also has ``TempoData``, you'll see that chart instead.
-- **Tempo changes:** each dot is a track. Its median tempo runs along the bottom, and how much it changes from start to end runs up the side. Dots on the pale band stay within 5%, dots above it speed up and dots below it slow down. Hover over each area to count them. Darker areas are where dots pile up.
-- **Meter:** how many beats each bar has. 3/4 and 3/8 both count as 3.
-- **Meter changes:** how many times that number changes within a track, with 5 or more grouped together.
+- **Tempo** *(estimated)*: how fast the music is, in beats per minute, worked out from the beats. For each track, we measure the gaps between neighboring beats, take the median gap, and calculate 60 ÷ gap. If the dataset also has ``TempoData``, you'll see that chart instead.
+- **Tempo changes** *(estimated)*: each dot is a track. Its median tempo runs along the bottom, and how much it changes from start to end runs up the side. Dots on the pale band stay within 5%, dots above it speed up and dots below it slow down. Hover over each area to count them. Darker areas are where dots pile up.
+- **Meter** *(estimated)*: how many beats each bar has. 3/4 and 3/8 both count as 3.
+- **Meter changes** *(estimated)*: how many times that number changes within a track, with 5 or more grouped together.
 
 TempoData
 ^^^^^^^^^
 
-- *※ TempoData is currently not supported. Please refer to Tempo from BeatData.*
+- **Tempo:** how fast the music is, in beats per minute, as the dataset gives it from the metadata, with one tempo per track. If a track lists several tempos, as in GiantSteps Tempo, we use the most confident one.
 
 ChordData
 ^^^^^^^^^
@@ -135,7 +163,9 @@ MultiF0Data
 
 SectionData
 ^^^^^^^^^^^
-- *※ SectionData is currently not supported*
+
+- **Sections per track:** how many sections, such as verse or chorus, each track is split into. If a track is annotated more than once, as in SALAMI, each annotation counts on its own.
+- **Section length:** how long the sections last, counting every section in the dataset.
 
 LyricData
 ^^^^^^^^^
@@ -146,6 +176,11 @@ LyricData
 EventData
 ^^^^^^^^^
 - *※ EventData is currently not supported*
+
+Instrument
+^^^^^^^^^^
+
+- **Instruments:** which instruments the tracks are labeled with, taken from the dataset's metadata rather than an annotation file. The labels are written exactly as the dataset writes them, so some are short codes, such as ``gel`` or ``V``. A track with several instruments counts once for each. If a dataset gives each instrument a score, as OpenMIC-2018 does, only instruments scored 0.5 or higher count.
 
 Compare datasets
 ~~~~~~~~~~~~~~~~
@@ -163,31 +198,4 @@ Switch Combine off whenever you like to return to the last dataset you clicked. 
 
 
 That's the whole tour. Enjoy exploring the datasets!
-
-Using Mirdata
--------------
-
-.. container:: landing-quickstart
-
-   .. container:: landing-quickstart-text
-
-      mirdata is a Python library that downloads, validates and loads music
-      datasets through one common interface.
-
-      .. code-block:: bash
-
-         pip install mirdata
-
-      See the `mirdata documentation <https://mirdata.readthedocs.io>`_.
-
-   .. container:: landing-quickstart-code
-
-      .. code-block:: python
-
-         import mirdata
-
-         dataset = mirdata.initialize("rwc_popular")
-         dataset.download()
-         track = dataset.choice_track()
-         track.beats
 
