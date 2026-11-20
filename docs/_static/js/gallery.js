@@ -92,11 +92,6 @@ document.addEventListener("DOMContentLoaded", function () {
             h2.replaceChildren(docsLink(title), ...h2.querySelectorAll(".headerlink")); // the theme's link kept
         }
 
-        const tracksRow = Array.from(card.querySelectorAll(".glance-row")).find(
-            (row) => row.querySelector(".glance-label").textContent === "Tracks"
-        );
-        const tracksText = tracksRow ? tracksRow.querySelector(".glance-value").textContent.trim() : "—";
-        const tracks = parseInt(tracksText.replace(/,/g, ""), 10); // NaN for "—"
         // what Combine mode adds up (gallery.py, combine_facts)
         const facts = JSON.parse(card.querySelector(".panel-facts").dataset.facts);
         // the plots gallery.py put on the plot grid: drawn here (charts.js), and
@@ -107,7 +102,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // a list, for datasets with several licenses (the label above gives one for now)
         const licenses = [license];
-        return { card, title, annotations, licenses, tracksText, tracks: isNaN(tracks) ? null : tracks, facts, plots };
+        return { card, title, annotations, licenses, facts, plots };
     });
 
     // Build Layout: Container with Sidebar (Left) and Content Grid (Right)

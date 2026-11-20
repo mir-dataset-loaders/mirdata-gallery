@@ -15,8 +15,8 @@ window.mirdataList = function (shared) {
     const SORTS = {
         "Name (A–Z)": (a, b) => a.title.localeCompare(b.title),
         "Name (Z–A)": (a, b) => b.title.localeCompare(a.title),
-        "Tracks (most first)": (a, b) => (b.tracks ?? -1) - (a.tracks ?? -1),
-        "Tracks (fewest first)": (a, b) => (a.tracks ?? Infinity) - (b.tracks ?? Infinity),
+        "Duration (longest first)": (a, b) => (b.facts.seconds ?? -1) - (a.facts.seconds ?? -1),
+        "Duration (shortest first)": (a, b) => (a.facts.seconds ?? Infinity) - (b.facts.seconds ?? Infinity),
     };
     Object.keys(SORTS).forEach((name) => {
         const option = document.createElement("option");
@@ -34,8 +34,8 @@ window.mirdataList = function (shared) {
     toolbar.append(listCount, tools);
     listColumn.appendChild(toolbar);
 
-    // The table: Dataset, Types (a dot per annotation type, its colour), Tracks,
-    // License; list.css wraps the dots, then drops License, as the list gets
+    // The table: Dataset, Types (a dot per annotation type, its colour), Duration
+    // (the total audio), License; list.css wraps the dots, then drops License, as the list gets
     // narrower
     const table = document.createElement("div");
     table.className = "list-table";
@@ -44,7 +44,7 @@ window.mirdataList = function (shared) {
     [
         ["Dataset", "list-name"],
         ["Types", "list-types"],
-        ["Tracks", "list-tracks"],
+        ["Duration", "list-duration"],
         ["License", "list-license"],
     ].forEach(([label, cls]) => {
         const cell = document.createElement("span");
@@ -77,20 +77,15 @@ window.mirdataList = function (shared) {
             types.appendChild(dot);
         });
         if (sorted.length) types.dataset.tip = sorted.join(", "); // shown at once on hover (panel.js)
-        const tracks = document.createElement("span");
-        tracks.className = "list-cell list-tracks";
-        tracks.textContent = item.tracksText;
-        if (item.tracks !== null) {
-            // "360 tracks" on an icon; the list's column header says it
-            const unit = document.createElement("span");
-            unit.className = "tracks-unit";
-            unit.textContent = item.tracks === 1 ? " track" : " tracks";
-            tracks.appendChild(unit);
-        }
+        const seconds = item.facts.seconds; // null when unknown (gallery.py, combine_facts)
+        const duration = document.createElement("span");
+        duration.className = "list-cell list-duration";
+        // "6.7 h" from one hour up, else "23.6 min" (shorter than the panel's "hours", to fit)
+        duration.textContent = !seconds ? "—" : seconds >= 3600 ? `${(seconds / 3600).toFixed(1)} h` : `${(seconds / 60).toFixed(1)} min`;
         const license = document.createElement("span");
         license.className = "list-cell list-license";
         license.textContent = license.title = item.licenses.join(", ");
-        btn.append(name, types, tracks, license);
+        btn.append(name, types, duration, license);
         btn.addEventListener("click", (e) => {
             const { combine, combineBtn, toggleCombined } = shared;
             // Cmd-click (Mac) or Ctrl-click: Combine mode's click, switching it on first
@@ -112,7 +107,7 @@ window.mirdataList = function (shared) {
     sortRows();
 
     // The list / icon switch: the same rows, laid out as tiles by list.css
-    // (title, type dots, tracks, license). The browser remembers the choice;
+    // (title, type dots, duration, license). The browser remembers the choice;
     // without storage it starts as the list.
     const VIEW_KEY = "mirdata-gallery-view";
     const VIEWS = [

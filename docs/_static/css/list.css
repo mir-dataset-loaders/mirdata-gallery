@@ -78,7 +78,7 @@
 .list-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 96px 64px 128px;
-    grid-template-areas: "name types tracks license";
+    grid-template-areas: "name types duration license";
     gap: 12px;
     align-items: center;
     padding: 12px 16px;
@@ -97,8 +97,8 @@
     gap: 3px;
 }
 
-.list-tracks {
-    grid-area: tracks;
+.list-duration {
+    grid-area: duration;
 }
 
 .list-license {
@@ -108,13 +108,13 @@
     text-overflow: ellipsis;
 }
 
-/* The list's Types, Tracks and License columns, header too, centred (not
+/* The list's Types, Duration and License columns, header too, centred (not
    the icons: their own layout below) */
 .list-table:not(.icon-view) .list-types {
     justify-content: center;
 }
 
-.list-table:not(.icon-view) .list-tracks,
+.list-table:not(.icon-view) .list-duration,
 .list-table:not(.icon-view) .list-license {
     text-align: center;
 }
@@ -182,7 +182,7 @@
 @container dataset-list (max-width: 449px) {
     .list-row {
         grid-template-columns: minmax(0, 1fr) 45px 64px;
-        grid-template-areas: "name types tracks";
+        grid-template-areas: "name types duration";
     }
 
     .list-license {
@@ -282,14 +282,9 @@
     }
 }
 
-/* Only an icon says "tracks" after the number */
-.list-tracks .tracks-unit {
-    display: none;
-}
-
 /* Icon view (list.js, setView): a tile per dataset, 160px wide and as tall
    as the tallest, as many to a line as fit (2 at the list's narrowest, 350px;
-   4 at its widest, 687px): its title, type dots (as in the list), tracks and
+   4 at its widest, 687px): its title, type dots (as in the list), duration and
    license */
 .list-table.icon-view {
     display: grid;
@@ -329,8 +324,4 @@
     align-self: stretch;
     font-size: 0.8rem;
     color: #64748b;
-}
-
-.icon-view .tracks-unit {
-    display: inline;
 }
