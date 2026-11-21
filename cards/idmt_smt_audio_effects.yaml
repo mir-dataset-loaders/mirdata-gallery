@@ -7,6 +7,9 @@ annotations:
 - Instrument
 tasks:
 - Instrument Recognition
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -41,6 +44,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 28ee222aae35a16e71654fdf9f79f4b0da36530fe1cad50b999c720ce78ca4a2
+availability_hash: 93622532b14a9a35d222db6b1bcc4647456e74c40e82e7fd2c341493964c9c69
 bibtex: |-
   @dataset{stein_michael_2023_7544032,
     author       = {Stein, Michael},

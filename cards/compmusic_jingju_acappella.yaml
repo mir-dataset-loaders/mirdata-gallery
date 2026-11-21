@@ -7,6 +7,9 @@ annotations:
 tasks:
 - Lyrics Transcription
 - Lyrics-to-Audio Alignment
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -92,6 +95,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: b8f54ccf8d21c2833e794b42d2e732ce72505b7b5401a2899bb1adea2a07444f
+availability_hash: 2c6a1267b9a0f5be03ab75d297635621d11d1389e6a7801df8835569326cdbbf
 bibtex: |-
   @dataset{rong_gong_2018_1323561,
     author       = {Rong Gong and

@@ -6,6 +6,9 @@ annotations:
 - Instrument
 tasks:
 - Instrument Recognition
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -49,6 +52,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 4c9bb631fcfb1053059cb111de6733524052595471999c3fa8f8c8a3b86b89e5
+availability_hash: 6c97dca033883326f2748196cd7d21d7ee41b8e6f3d5c9df63fdc1575c998833
 bibtex: |-
   @inproceedings{cella2020preprint,
     author={Cella, Carmine Emanuele and Ghisi, Daniele and Lostanlen, Vincent and

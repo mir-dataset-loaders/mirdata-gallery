@@ -9,6 +9,9 @@ annotations:
 tasks:
 - Beat Tracking
 - Music Structure Analysis
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -158,6 +161,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 75e9bc3e2a79b91db0bc8542d7174bf8f56ac16079a67f72314ae48f391d22b3
+availability_hash: 5b2abe2e9ec283e1a8d7c9e7b8044cba4d79862cd744c0879a10f86b437fe99e
 bibtex: |-
   @dataset{koduri_g_k_2014_1257118,
     author       = {Koduri, G. K. and

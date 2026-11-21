@@ -7,6 +7,9 @@ annotations:
 - Instrument
 tasks:
 - Instrument Recognition
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -43,6 +46,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: edfa1e22a9f87e5ba813909ab392bc34b4936bb2140b0577d8226d89cff6290b
+availability_hash: 4782c8995b65a665ccff44e0826654efcb0b043adb819ca03512691605af1a31
 bibtex: |-
   @inproceedings{lostanlen2019ismir,
       title={Deep Convolutional Networks in the Pitch Spiral for Musical Instrument Recognition},

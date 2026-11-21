@@ -9,6 +9,9 @@ annotations:
 tasks:
 - Beat Tracking
 - Tempo Estimation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -84,6 +87,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 7374a4540d5468a863e303f1ff71d796be49a06e83cdcdc28267c81dfee7cc57
+availability_hash: f5665767f02bf8eaf3e45824ae4cf45d150bcf829246b673d5fe109be27a7abc
 bibtex: |-
   @inproceedings{Maia2018AND,
     title={A Novel Dataset of Brazilian Rhythmic Instruments and Some Experiments in Computational Rhythm Analysis},

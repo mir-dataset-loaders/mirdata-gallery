@@ -12,6 +12,9 @@ tasks:
 - Beat Tracking
 - Melody Extraction
 - Music Structure Analysis
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -209,6 +212,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: fe779e0d9d3daa69e64005d7c86257ca9b72ad2e5393a220bc730b2879566de5
+availability_hash: dd61e117049051e39dbba611206a995d161b3ae6fc449008152c40209184fed3
 bibtex: |-
   @dataset{bozkurt_b_2018_4301737,
     author       = {Bozkurt, B. and

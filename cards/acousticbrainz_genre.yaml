@@ -5,6 +5,9 @@ summary: The dataset includes audio from four sources with genre and subgenre an
   labels, focusing on content-based music genre recognition.
 annotations: []
 tasks: []
+availability:
+  audio: not available
+  annotations: public
 stats:
   computed:
     mode: local
@@ -31,6 +34,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: a3fbfb10515101fe15495ef2f34632abef6df9d0048f8077c51c27723a337cc2
+availability_hash: dd6b524e79849bf91f7ba5d27d445b05611b03d168869067640b94e630be8fa7
 bibtex: |-
   @inproceedings{bogdanov2019acousticbrainz,
     title={The AcousticBrainz genre dataset: Multi-source, multi-level, multi-label, and large-scale},

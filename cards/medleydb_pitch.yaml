@@ -10,6 +10,9 @@ tasks:
 - Instrument Recognition
 - Melody Extraction
 - Music Transcription
+availability:
+  audio: on request
+  annotations: public
 stats:
   computed:
     mode: local
@@ -129,6 +132,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 4753b010edd3ed5980585a44274ae14f9122e1867f67763badc475a900acca6b
+availability_hash: 113d39c4bd688c78812a94718cec66f1acad2e282eb903dcadc3eef3d1902620
 bibtex: |-
   @inproceedings{bittner2014medleydb,
       Author = {Bittner, Rachel M and Salamon, Justin and Tierney, Mike and Mauch, Matthias and Cannam, Chris and Bello, Juan P},

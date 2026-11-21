@@ -14,6 +14,9 @@ tasks:
 - Instrument Recognition
 - Melody Extraction
 - Tempo Estimation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -209,6 +212,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 21b0ad4cb55589a006532030c634cc1b9223f301461a64747e76f6e5451191d2
+availability_hash: 630a6582c040eabe42d5b113e50d75003e35d66f875c31ed6de321d99b972662
 bibtex: |-
   @inproceedings{goto2002rwc,
     title={RWC Music Database: Popular, Classical and Jazz Music Databases.},

@@ -4,6 +4,9 @@ summary: The dataset includes 6977 audio samples of 10 mridangam strokes across 
   for stroke recognition tasks.
 annotations: []
 tasks: []
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -33,6 +36,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 95ab3f48e30539c4a02aa8990e269419f5e57820067f346862d6ec016bad8e48
+availability_hash: 79be884d38ff504a8690156c06e23f4c5998c71dfad03d5bce90ee3f43dd1849
 bibtex: |-
   @article{Anantapadmanabhan2013,
       author = {Anantapadmanabhan, Akshay and Bellur, Ashwin and Murthy, Hema A.},

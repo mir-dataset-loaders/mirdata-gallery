@@ -4,6 +4,9 @@ summary: The CIPI dataset includes 652 classical piano scores in MusicXML format
   research in musical complexity and education.
 annotations: []
 tasks: []
+availability:
+  audio: not available
+  annotations: on request
 stats:
   computed:
     mode: local
@@ -1989,6 +1992,7 @@ stats:
             Did you request, download, and store the files as indicated?'
           n_tracks: 1
 summary_hash: d052829195f3baac8041511e7e46f67afe61711db59216bdbe11d3163af3634c
+availability_hash: 4a591b82fffd700e03cab3dfd1dff6442ae140bbb1d144b7b0abd1da588e30e6
 bibtex: |-
   @article{Ramoneda2024,
     author    = {Pedro Ramoneda and Dasaem Jeong and Vsevolod Eremenko and Nazif Can Tamer and Marius Miron and Xavier Serra},

@@ -8,6 +8,9 @@ annotations:
 tasks:
 - Instrument Recognition
 - Melody Extraction
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -59,6 +62,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 5fd777b6159959a0551cb299cd7130542bd8a9a10892b293aba16157576da5fc
+availability_hash: cfd919973298555bfd511be19f1152b9950e5210e4f25dfcb523cab520f6f697
 bibtex: |-
   @article{bosch2016evaluation,
       title={Evaluation and combination of pitch estimation methods for melody extraction in symphonic classical music},

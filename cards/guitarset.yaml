@@ -19,6 +19,9 @@ tasks:
 - Multi-pitch Estimation
 - Music Transcription
 - Tempo Estimation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -366,6 +369,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 0901d13895e793cba9f433faa1b198af24f411b8b73d689b91ec17ccd06e0fac
+availability_hash: e4a7956af85cb7efe18f08af9f8f51edaa51357ae9f1dad620fa54b5c2b19797
 bibtex: |-
   @inproceedings{xi2018guitarset,
   title={GuitarSet: A Dataset for Guitar Transcription},

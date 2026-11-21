@@ -31,16 +31,18 @@ def build_card(ds, stats=None):
 
     stats is the card's stats field, from generate_cards.update_stats() (new,
     kept from the old card, or None); annotations and tasks come from it.
-    summary and summary_hash are left None: the LLM summary is made from the
-    card's tasks, so generate_cards fills them in afterwards.
+    summary, summary_hash, availability and availability_hash are left None:
+    they come from the LLM, so generate_cards fills them in afterwards.
     """
     return {
         "name": ds.name,
         "summary": None,
         "annotations": annotations(stats),
         "tasks": tasks(ds, stats),
+        "availability": None,
         "stats": stats,
         "summary_hash": None,
+        "availability_hash": None,
         "bibtex": bibtex(ds),
         "license": license(ds),
     }

@@ -9,6 +9,9 @@ annotations:
 tasks:
 - Key Estimation
 - Tempo Estimation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -89,6 +92,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: a4b28fc18c8ec2cb2bb8b11508681617ecf26313c4ea0916b36779c3260a2269
+availability_hash: 4157c53049d6311c73538236af481721ba4239d28e280216c0d49aa5e840b121
 bibtex: |-
   @inproceedings{knees2015two,
     title={Two data sets for tempo estimation and key detection in electronic dance music annotated from user corrections},

@@ -1,7 +1,8 @@
 """scripts/generate_cards.py, run end to end through main() like the workflow runs it.
 
 mirdata knows only fake_dataset here, its remotes are on the fake server, and
-llm.summary is a stand-in that records its calls (no model is loaded).
+llm.summary and availability.availability are stand-ins that record their calls
+(no model is loaded).
 """
 
 import os
@@ -11,6 +12,7 @@ import tempfile
 import mirdata
 import pytest
 
+import availability
 import card_builder
 import card_utils
 import fake_dataset_loader
@@ -33,6 +35,19 @@ def llm_calls(monkeypatch):
         return f"Summary of {name}."
 
     monkeypatch.setattr(llm, "summary", summary)
+    return calls
+
+
+@pytest.fixture(autouse=True)
+def availability_calls(monkeypatch):
+    """availability.availability replaced by a stand-in; the list holds the (name, texts) of each call."""
+    calls = []
+
+    def stand_in(name, texts):
+        calls.append((name, texts))
+        return {"audio": "public", "annotations": "public"}
+
+    monkeypatch.setattr(availability, "availability", stand_in)
     return calls
 
 
@@ -260,3 +275,89 @@ def test_generate_cards_broken_dataset(run, monkeypatch, tmp_path, problem):
     assert card is not None, "the other datasets should still get their card"
     broken = tmp_path / "cards" / "broken_dataset.yaml"
     assert not broken.exists(), f"a dataset with a {problem} should be skipped"
+
+
+# ------------------------------------------------------------------ availability
+
+ANSWER = {"audio": "public", "annotations": "public"}  # the stand-in's answer
+
+
+def drop_availability(card):
+    """A card from before the availability field."""
+    del card["availability"], card["availability_hash"]
+
+
+def test_generate_cards_availability(run, availability_calls):
+    card = run()
+    ds = mirdata.initialize("fake_dataset")
+    one_call = [("fake_dataset", availability.loader_texts(ds))]
+    assert availability_calls == one_call, "availability should be asked once, on the loader's texts"
+    assert card["availability"] == ANSWER, "availability should be the answer"
+    hashed = availability.availability_hash(one_call[0][1])
+    assert card["availability_hash"] == hashed, "the hash should be of the loader's texts"
+
+
+def test_generate_cards_availability_rerun(run, availability_calls):
+    first = run()
+    availability_calls.clear()
+    second = run()
+    assert availability_calls == [], "unchanged loader texts should not ask again"
+    assert second["availability"] == first["availability"], "availability should be kept"
+
+
+def test_generate_cards_availability_hand_edit(run, availability_calls, tmp_path):
+    run()
+    edit_card(tmp_path, lambda card: card["availability"].update(audio="on request"))
+    availability_calls.clear()
+    card = run()
+    assert availability_calls == [], "a hand edit alone should not ask again"
+    assert card["availability"]["audio"] == "on request", "the hand edit should be kept"
+
+
+def test_generate_cards_availability_missing(run, availability_calls, tmp_path):
+    run()
+    edit_card(tmp_path, drop_availability)
+    availability_calls.clear()
+    card = run()
+    assert len(availability_calls) == 1, "a card without availability should be asked"
+    assert card["availability"] == ANSWER, "the card should get availability"
+
+
+@pytest.mark.parametrize("change", ["links", "docstring"])
+def test_generate_cards_availability_changed(
+    run, availability_calls, monkeypatch, change
+):
+    first = run()
+    availability_calls.clear()
+    if change == "links":
+        monkeypatch.delitem(fake_dataset_loader.REMOTES, "metadata")
+    else:
+        monkeypatch.setattr(fake_dataset_loader, "__doc__", NEW_DOCSTRING)
+    card = run()
+    assert len(availability_calls) == 1, f"changed {change} should ask again"
+    hashed = availability.availability_hash(availability_calls[0][1])
+    assert card["availability_hash"] == hashed, "the hash should be of the new texts"
+    assert hashed != first["availability_hash"], f"changed {change} should change the hash"
+
+
+def test_generate_cards_availability_force(run, availability_calls):
+    run()
+    availability_calls.clear()
+    run("--force")
+    assert len(availability_calls) == 1, "--force should redo availability"
+
+
+def test_generate_cards_availability_no_summary(run, availability_calls, monkeypatch):
+    card = run("--no-summary")
+    assert availability_calls == [], "--no-summary should not ask"
+    assert card["availability"] is None, "a new card should get no availability"
+    assert card["availability_hash"] is None, "a new card should get no hash"
+
+    first = run()
+    availability_calls.clear()
+    monkeypatch.setattr(fake_dataset_loader, "__doc__", NEW_DOCSTRING)
+    card = run("--no-summary")
+    assert availability_calls == [], "--no-summary should not ask, even for a new docstring"
+    assert card["availability"] == first["availability"], "the old availability should be kept"
+    old_hash = first["availability_hash"]
+    assert card["availability_hash"] == old_hash, "the old hash should be kept"

@@ -7,6 +7,9 @@ annotations:
 - F0Data
 tasks:
 - Melody Extraction
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -60,6 +63,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: cc9f3b6e12d6d5d3782b0fc76668a394a6dd2a8c2897d4a2c743f28df647fb0c
+availability_hash: e42dd1f7269e24cd8a733ed60460ab924a9b1ce2ce267e7df5f593ecb9908ef0
 bibtex: |-
   @article{Plaja-Roglans-2023,
     author = {Plaja-Roglans, Gen{'\i}s and Nuttall, Thomas and Pearson, Lara and Serra, Xavier and Miron, Marius},

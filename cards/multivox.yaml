@@ -6,6 +6,9 @@ annotations:
 - KeyData
 tasks:
 - Key Estimation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -49,6 +52,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: d34abc28d0035a5c52ce88f134f6a2623419f16fa80829b9d56cf59970a36f0f
+availability_hash: 9d0203e32456d5148d4468a181f5b9a464840b2800c563b34a301b0ef8005ba0
 bibtex: |-
   @inproceedings{meza2025multivox,
    author = {Meza, G. and Sepúlveda, M. and Roman, A. S. and Sigal Sefchovich, J. R. and Roman, I. R.},

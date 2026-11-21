@@ -5,6 +5,9 @@ annotations:
 - Instrument
 tasks:
 - Instrument Recognition
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -47,6 +50,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: e147b359a9917e9b8b05e89fa0fa25200590d568f877e2db2936c8a6923130cf
+availability_hash: 9eb5f4a6024c176397af214989a3351e3f5e9df66b69425697b96439f88fe52f
 bibtex: |-
   @dataset{juan_j_bosch_2014_1290750,
     author       = {Juan J. Bosch and Ferdinand Fuhrmann and Perfecto Herrera},

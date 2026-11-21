@@ -6,6 +6,9 @@ annotations:
 - KeyData
 tasks:
 - Key Estimation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -101,6 +104,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 3f42ab2b8b448507b71a8cf9fedf3a3a06eefbe2cdcd249907fb1c54ca20151f
+availability_hash: a2e357ab045551b5a94029993a4a4b867f0e7fe28eef75c84d299926f2575b73
 bibtex: |-
   @inproceedings{
           wong_fma_keys,

@@ -5,6 +5,9 @@ summary: The Four-Way Tabla Dataset includes 236 audio samples of tabla solo wit
   with audio samples at 44.1 kHz, 16-bit depth, and .wav format.
 annotations: []
 tasks: []
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -59,6 +62,7 @@ stats:
         - error: 'ValueError: bad delimiter value'
           n_tracks: 236
 summary_hash: b2d2636351888bd4d63593d65dd2bf6f04d0cf75ed1f98596bf7aa335fd54ea0
+availability_hash: 33c0182361f4ebdaa344e5e4a062020a47b35499e7ba56bee77b7e940225ef96
 bibtex: |-
   @article{RohitMA2021,
       author = {M.A, Rohit and Bhattacharjee, Amitrajit and Rao, Preeti},

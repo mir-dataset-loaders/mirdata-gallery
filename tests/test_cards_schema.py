@@ -19,8 +19,10 @@ FIELDS = [
     "summary",
     "annotations",
     "tasks",
+    "availability",
     "stats",
     "summary_hash",
+    "availability_hash",
     "bibtex",
     "license",
 ]
@@ -58,6 +60,8 @@ CARD_TASKS = {
     "Tempo Estimation",
 }
 STATUSES = {"ok", "incomplete", "needs_local", "error"}
+AVAILABILITY_PARTS = {"audio", "annotations"}
+AVAILABILITY_LABELS = {"public", "on request", "not available", "unknown"}
 MODES = {"remote", "local"}
 NAME = re.compile(r"[a-z0-9_]+")
 SHA256 = re.compile(r"[0-9a-f]{64}")
@@ -248,6 +252,14 @@ def check_card(card, name):
     check_text(card["summary"], "summary")
     hashed = str(card["summary_hash"])
     assert SHA256.fullmatch(hashed), "summary_hash should be a SHA-256"
+    labels = card["availability"]
+    assert isinstance(labels, dict), "availability should be a dict"
+    parts = set(labels)
+    assert parts == AVAILABILITY_PARTS, "availability should have audio and annotations"
+    unknown = set(labels.values()) - AVAILABILITY_LABELS
+    assert not unknown, f"availability should only use known labels, not {unknown}"
+    hashed = str(card["availability_hash"])
+    assert SHA256.fullmatch(hashed), "availability_hash should be a SHA-256"
     assert isinstance(card["stats"], dict), "stats should be computed"
 
 

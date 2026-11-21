@@ -8,6 +8,9 @@ annotations:
 tasks:
 - Key Estimation
 - Tempo Estimation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -75,6 +78,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 6355e1e5ed0c1d06f15430143c83cc632e3d0005a18d71a471865ccd54b44925
+availability_hash: be48e34b948ed89e50f4640abde5cba8ae16b9e56e1d5baeb4684bf4642a027b
 bibtex: |-
   @phdthesis {3897,
       title = {Tonality Estimation in Electronic Dance Music: A Computational and Musically Informed Examination},

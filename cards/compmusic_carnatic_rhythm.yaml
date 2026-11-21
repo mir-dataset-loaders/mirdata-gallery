@@ -8,6 +8,9 @@ annotations:
 tasks:
 - Beat Tracking
 - Instrument Recognition
+availability:
+  audio: on request
+  annotations: on request
 stats:
   computed:
     mode: local
@@ -105,6 +108,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: fdc7c15c9dbe96790c507ca641b291b1d3cfba7f4f4a0af9fa1bdb368c2aff71
+availability_hash: 063e10b0198ae9de6320509b4e798e009dc5ca807b4227d05a2e15ff6c91bd0b
 bibtex: |-
   @article{srinivasamurthy_2014,
     title={Particle Filters for Efficient Meter Tracking with Dynamic Bayesian Networks},

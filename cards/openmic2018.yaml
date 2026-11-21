@@ -6,6 +6,9 @@ annotations:
 - Instrument
 tasks:
 - Instrument Recognition
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -43,6 +46,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 505df867b80bd5cd05c15f28a7e8a0e03f8bd8a9df1764b7f79557a3ba7d59a2
+availability_hash: a3ee65e76f06e0766bc0709a58491ee2f2bc4aa6cb584d27b14135c885d9391a
 bibtex: |-
   @inproceedings{DBLP:conf/ismir/HumphreyDM18,
     author    = {Eric Humphrey and

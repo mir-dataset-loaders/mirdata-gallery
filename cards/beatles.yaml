@@ -11,6 +11,9 @@ tasks:
 - Chord Recognition
 - Key Estimation
 - Music Structure Analysis
+availability:
+  audio: not available
+  annotations: public
 stats:
   computed:
     mode: local
@@ -228,6 +231,7 @@ stats:
         - error: 'ValueError: Interval start times must be smaller than end times'
           n_tracks: 8
 summary_hash: bba4a990ebe5d42a54c31632d4cee3fbfe1c50952183e155482bd8ae0aa6b8de
+availability_hash: 42aac4597c4e45949d1bf9c2f671bb140c0804e968bdfeae6a37ea530a7a2b17
 bibtex: |-
   @inproceedings{mauch2009beatles,
       title={OMRAS2 metadata project 2009},

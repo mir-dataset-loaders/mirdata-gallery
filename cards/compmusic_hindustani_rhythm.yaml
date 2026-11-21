@@ -8,6 +8,9 @@ annotations:
 tasks:
 - Beat Tracking
 - Instrument Recognition
+availability:
+  audio: on request
+  annotations: on request
 stats:
   computed:
     mode: local
@@ -89,6 +92,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 6f238d637cfa5bbd0eaba662af98aa90d705ba922854f3463c750fffdafe6318
+availability_hash: 77f7f8aa99729aa393367ebcb8a53f917b3a0f9c5f653e5aa7efd03701d046d2
 bibtex: |-
   @inproceedings{Srinivasamurthy2016,
       author = {Srinivasamurthy, Ajay and Holzapfel, Andre and Cemgil, Ali and Serra, Xavier},

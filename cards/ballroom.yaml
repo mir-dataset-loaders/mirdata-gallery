@@ -9,6 +9,9 @@ annotations:
 tasks:
 - Beat Tracking
 - Tempo Estimation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -177,6 +180,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: d14ee70df7d4aeb92e6da69c96a62e1790bc8dc019896b888cab1d531875f5b6
+availability_hash: 0d8b0d0a8715ba70f725bcd4575d1479ebed9c86d2759e38cdca4a49295c9dd3
 bibtex: |-
   @ARTICLE{1678001,
       author={Gouyon, F. and Klapuri, A. and Dixon, S. and Alonso, M. and Tzanetakis, G. and Uhle, C. and Cano, P.},

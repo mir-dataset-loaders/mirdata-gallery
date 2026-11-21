@@ -6,6 +6,9 @@ annotations:
 - NoteData
 tasks:
 - Music Transcription
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -50,6 +53,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 248153a7b828d65dcfa0225b6b4a866a3c21bcf334f9d7e16522b181a5dabc23
+availability_hash: a7fa71ef72890482d14dc402452c3a5c4560e9bffa9f21e3133f7925d764f92b
 bibtex: |-
   @techreport{pedroza2022egfxset,
         title={EGFxSet: Electric guitar tones processed through real effects of distortion, modulation, delay and reverb},
