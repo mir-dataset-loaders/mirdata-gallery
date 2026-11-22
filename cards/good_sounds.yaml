@@ -6,6 +6,9 @@ annotations:
 - Instrument
 tasks:
 - Instrument Recognition
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -45,6 +48,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 711fb9b97dc2bf43b797ab1cc7a8ed24042716986b915e192ba5bcec5cfc5a69
+availability_hash: 9079d6b6fedbbb4f6bb5e17937a5be4e0300947ad24dbee6f3c739477bdd1b1c
 bibtex: |-
   @inproceedings{romani2015real,
     title={A Real-Time System for Measuring Sound Goodness in Instrumental Sounds},

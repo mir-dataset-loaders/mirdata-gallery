@@ -7,6 +7,9 @@ annotations:
 tasks:
 - Melody Extraction
 - Multi-pitch Estimation
+availability:
+  audio: on request
+  annotations: on request
 stats:
   computed:
     mode: local
@@ -189,6 +192,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: a3e56efcc0c675aed87c37d8d07a2a03cdeda1c256b5e94577a591f7b9b91b2b
+availability_hash: 5b065f3af75a82a3500d7ce1e5a7331642a123aceaef6c4b1616a841e67319c6
 bibtex: |-
   @inproceedings{bittner2014medleydb,
       Author = {Bittner, Rachel M and Salamon, Justin and Tierney, Mike and Mauch, Matthias and Cannam, Chris and Bello, Juan P},

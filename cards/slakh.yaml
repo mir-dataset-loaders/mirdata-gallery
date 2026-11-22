@@ -1,7 +1,7 @@
 name: slakh
-summary: The slakh dataset includes 2100 multi-track audio recordings (22,090 individual instrument stems) and aligned
-  MIDI files, synthesized from 187 instrument patches, for tasks such as instrument
-  recognition and multi-pitch estimation.
+summary: The slakh dataset includes 2100 multi-track audio recordings (22,090 individual
+  instrument stems) and aligned MIDI files, synthesized from 187 instrument patches,
+  for tasks such as instrument recognition and multi-pitch estimation.
 annotations:
 - Instrument
 - MultiF0Data
@@ -11,6 +11,9 @@ tasks:
 - Multi-pitch Estimation
 - Music Transcription
 - Source Separation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -130,6 +133,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 791ad8ab2baacd4d792692ef224e2760f307b991535be32bcf5ddd77f9608db7
+availability_hash: 62e74e4b865149fedc5f2f448fa993037731d7ea93f1716c20dc8b07ec3fa252
 bibtex: |-
   @inproceedings{manilow2019cutting,
     title={Cutting Music Source Separation Some {Slakh}: A Dataset to Study the Impact of Training Data Quality and Quantity},

@@ -4,6 +4,9 @@ summary: The dataset includes 18,486 full audio tracks with 195 mood/theme tags,
   are provided for each track to predict moods and themes.
 annotations: []
 tasks: []
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -113,6 +116,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 1fbcf97fa94f3b02cd31a71667ea68c6cecd6bd4acbf19ec2cf3994a6bea47e8
+availability_hash: 8d0e298052a3b4f3e15693e8ccf40cb8d2c96e1e2b103b07b5a6c851bc125571
 bibtex: |-
   @conference {bogdanov2019mtg,
       author = "Bogdanov, Dmitry and Won, Minz and Tovstogan, Philip and Porter, Alastair and Serra, Xavier",

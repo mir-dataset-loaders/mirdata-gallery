@@ -5,6 +5,9 @@ annotations:
 - F0Data
 tasks:
 - Melody Extraction
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -68,6 +71,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 9ff25610bc71432f8f70aa227f2d851c46ba55b751eb4b44e0fefb00cbf668b3
+availability_hash: bae6efdff8118d71c7a62275bafa47f0af5c3397cf28915d42c69ff90634b44d
 bibtex: |-
   @inproceedings{salamon2017analysis,
     title={An analysis/synthesis framework for automatic f0 annotation of multitrack datasets},

@@ -8,6 +8,9 @@ annotations:
 tasks:
 - Chord Recognition
 - Music Structure Analysis
+availability:
+  audio: not available
+  annotations: public
 stats:
   computed:
     mode: local
@@ -442,6 +445,7 @@ stats:
         - error: 'ValueError: Interval start times must be smaller than end times'
           n_tracks: 1
 summary_hash: 5384918d252f26b221fdf46706ac5a2579cc5a1e5ba4df9c36be04035a1fc5c2
+availability_hash: 0718246979f6e966987bea00f2182bfc4aa807749548fa1d0cc89f419522f8da
 bibtex: |-
   @inproceedings{burgoyne_billboard,
   author = {Burgoyne, John Ashley and Wild, Jonathan and Fujinaga, Ichiro},

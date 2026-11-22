@@ -6,6 +6,9 @@ annotations:
 - BeatData
 tasks:
 - Beat Tracking
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -57,6 +60,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 9df994b6e37f9bdc919210c06c28bec9ababa318857d8f648b1fec88e2ba2fd0
+availability_hash: 1c370617fcf416890457ee89a0279ac94f304eef886e7872aa80f08ff4a4d77a
 bibtex: |-
   @inproceedings{Nunes2015,
       author = {Leonardo Nunes and Martín Rocamora and Luis Jure and Luiz W. P. Biscainho},

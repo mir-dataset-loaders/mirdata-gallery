@@ -9,6 +9,9 @@ tasks:
 - Melody Extraction
 - Music Transcription
 - Source Separation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -217,6 +220,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: b5b8752fddc94627959029e6d764e3b1edcd017036c297a5e049abc6a45df171
+availability_hash: 4c5642f42d323294d14b006d6ae27eb66f66a2726345142024e27806ee43772f
 bibtex: |-
   @article{RosenzweigCWSGM20_DCS_TISMIR,
       author    = {Sebastian Rosenzweig and Helena Cuesta and Christof Wei{\ss} and Frank Scherbaum and Emilia G{'o}mez and Meinard M{"u}ller},

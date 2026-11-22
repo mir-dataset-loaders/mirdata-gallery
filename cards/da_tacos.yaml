@@ -4,6 +4,9 @@ summary: Da-TACOS includes 25,000 songs with pre-extracted features and metadata
   and work titles, artists, release years, and whether songs are instrumental.
 annotations: []
 tasks: []
+availability:
+  audio: not available
+  annotations: public
 stats:
   computed:
     mode: local
@@ -31,6 +34,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: ef182b1e4504ba04386ceaa3815e3839f6f79d4e4d3021a05fe303c14b460e79
+availability_hash: fe465566a5e2bf690cc936b52da84f8985360879d2ab9d349a102ffba5fb367c
 bibtex: |-
   @inproceedings{yesiler2019,
       author = "Furkan Yesiler and Chris Tralie and Albin Correya and Diego F. Silva and Philip Tovstogan and Emilia G{'{o}}mez and Xavier Serra",

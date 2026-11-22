@@ -13,6 +13,9 @@ tasks:
 - Melody Extraction
 - Music Structure Analysis
 - Tempo Estimation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -290,6 +293,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: f13197947240952f91c127eeb29bdcf752414699a30d9e746c4f3a6cb589640c
+availability_hash: 19fea276b889cb84cb773a41b76fb03249c6f0b8f2a713fb2105aa040d01db83
 bibtex: |-
   @dataset{bozkurt_b_2018_4301737,
     author       = {Bozkurt, B. and

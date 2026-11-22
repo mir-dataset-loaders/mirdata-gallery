@@ -7,6 +7,9 @@ annotations:
 - F0Data
 tasks:
 - Melody Extraction
+availability:
+  audio: on request
+  annotations: public
 stats:
   computed:
     mode: local
@@ -158,6 +161,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: b4ee729315c199aa45c65ec33c2a6351be9a5294d6af96418f8263e230d01cb0
+availability_hash: 68a269443accd7e0f5de4858669a49649f587e9f4e0555bbc8cd017381990203
 bibtex: |-
   @article{gulati_2016,
     author       = {Gulati, Sankalp and Serrà, Joan and Kaustuv Kani, Ganguli

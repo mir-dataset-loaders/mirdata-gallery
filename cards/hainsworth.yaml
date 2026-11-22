@@ -8,6 +8,9 @@ annotations:
 tasks:
 - Beat Tracking
 - Tempo Estimation
+availability:
+  audio: not available
+  annotations: not available
 stats:
   computed:
     mode: local
@@ -114,6 +117,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: c26cf6e4a12400632470f8ec91a7e29556d732e173ef8ea3da0c871e5a15ebc1
+availability_hash: 6af028cbf5f115b7f35b0137f5e5949ff5a89d7c77a09fc1c998c3950aab6126
 bibtex: |-
   @article{article,
   author = {Macleod, Malcolm and Hainsworth, Stephen},

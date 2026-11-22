@@ -5,6 +5,9 @@ annotations:
 - TempoData
 tasks:
 - Tempo Estimation
+availability:
+  audio: not available
+  annotations: public
 stats:
   computed:
     mode: local
@@ -71,6 +74,7 @@ stats:
         - error: 'ValueError: Object should not be empty, use None instead'
           n_tracks: 3
 summary_hash: 4b57b4d101cea59413414ea4ad93f47fcaf2cb7b513cb8cbc5a7403af47fcd0e
+availability_hash: bf09061ef04f634b5e6d9af2761fc24809d9bdc0d2d3c22bdf1052de5ab3f9f1
 bibtex: |-
   @inproceedings{knees2015two,
     title={Two data sets for tempo estimation and key detection in electronic dance music annotated from user corrections},

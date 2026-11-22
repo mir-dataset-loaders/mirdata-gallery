@@ -6,6 +6,9 @@ annotations:
 - NoteData
 tasks:
 - Music Transcription
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -133,6 +136,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 63b0de6d07ed1d6bf0604a82393cb0792f398980ea30af5802b0940300621371
+availability_hash: ca87eeefcbe9a0c4547459ad360caf851ee21e88782e5872efb0e7b0930a5489
 bibtex: |-
   @inproceedings{
     hawthorne2018enabling,

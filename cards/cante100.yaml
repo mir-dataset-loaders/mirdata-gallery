@@ -8,6 +8,9 @@ annotations:
 tasks:
 - Melody Extraction
 - Music Transcription
+availability:
+  audio: on request
+  annotations: public
 stats:
   computed:
     mode: local
@@ -73,6 +76,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 6ab91cae680ec7f97bb660c24a97b09f30f313ffb424d37d48776427cf3e28c8
+availability_hash: 0aa5faf8118e556b5477921d625911e2aabc5479b79b6f4b2724f095c24af3bb
 bibtex: |-
   @dataset{nadine_kroher_2018_1322542,
     author       = {Nadine Kroher and

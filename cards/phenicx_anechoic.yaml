@@ -5,6 +5,9 @@ summary: The PHENICX-Anechoic Dataset includes denoised anechoic recordings of s
 annotations: []
 tasks:
 - Source Separation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -36,6 +39,7 @@ stats:
         n_tracks: 38
     annotation_errors: {}
 summary_hash: c62642e44ef79657f0565ad01f9c02504d7bd239c524d6b6bfa723a12ee4ed61
+availability_hash: d2b653783252a542856487e95807567fcff39df1462e5c49cc22fb78654b3b9c
 bibtex: |-
   @article{miron2016score,
     title={Score-informed source separation for multichannel orchestral recordings},

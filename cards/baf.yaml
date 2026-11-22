@@ -5,6 +5,9 @@ summary: The BAF dataset includes 2,000 reference tracks and 57 hours of TV broa
 annotations:
 - EventDataExtended
 tasks: []
+availability:
+  audio: on request
+  annotations: on request
 stats:
   computed:
     mode: local
@@ -329,6 +332,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: c2f650584efa831f32a17c14c37c8c568cb9e05033f1d635c2afb1a9952b2e4c
+availability_hash: 06c07f0a9513842f5810f477cd993eabd114b99742afdd33c672f00c822fcc01
 bibtex: |-
   @inproceedings{cortes2022BAF,
     author       = {Guillem Cortès and

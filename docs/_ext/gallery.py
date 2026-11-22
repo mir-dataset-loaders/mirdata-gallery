@@ -132,7 +132,15 @@ def overview(data):
 
 
 def at_a_glance(data):
-    """The box of quick facts, with the annotation tags at the bottom. "—" marks a missing value."""
+    """The box of quick facts, with the annotation tags at the bottom.
+
+    Args:
+        data (dict): the card
+
+    Returns:
+        str: the box's HTML; "—" marks a missing value
+
+    """
     stats = data.get("stats") or {}
     audio = stats.get("audio") or {}
     tracks = track_count(stats)
@@ -149,6 +157,7 @@ def at_a_glance(data):
             license_text,
             f' data-license="{html.escape(license_text)}"',
         ),
+        glance_row("Availability", availability_text(data.get("availability"))),
         glance_row("Tasks", ", ".join(data.get("tasks") or [])),
     ]
     rows = "\n".join(rows)
@@ -165,6 +174,24 @@ def at_a_glance(data):
 {tag_html or "—"}
 </div>
 </div>"""
+
+
+def availability_text(labels):
+    """The Availability row's value: "Audio: Not available · Annotations: Public".
+
+    Args:
+        labels (dict or None): the card's availability field
+
+    Returns:
+        str or None: the text; None when the card has no availability
+
+    """
+    if not labels:
+        return None
+    return " · ".join(
+        f"{part.capitalize()}: {labels[part].capitalize()}"
+        for part in ("audio", "annotations")
+    )
 
 
 def track_count(stats):

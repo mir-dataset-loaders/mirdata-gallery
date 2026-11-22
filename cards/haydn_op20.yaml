@@ -7,6 +7,9 @@ annotations:
 tasks:
 - Chord Recognition
 - Key Estimation
+availability:
+  audio: not available
+  annotations: public
 stats:
   computed:
     mode: local
@@ -167,6 +170,7 @@ stats:
         - error: 'TypeError: Expected str or int: got <class ''NoneType''>'
           n_tracks: 9
 summary_hash: a3351be6405f629e698bba2c0710f56667133f9338ea64931ac6b8309f3fd2e9
+availability_hash: 3344cfd2094dc593fd68721964f06a0bfa47e4f19356e52261c21345b7e32acb
 bibtex: |-
   @dataset{nestor_napoles_lopez_2017_1095630,
     author={N'apoles L'opez, N'estor},

@@ -17,8 +17,10 @@ FIELDS = [
     "summary",
     "annotations",
     "tasks",
+    "availability",
     "stats",
     "summary_hash",
+    "availability_hash",
     "bibtex",
     "license",
 ]
@@ -53,8 +55,13 @@ def test_build_card(ds):
     assert card["annotations"] == types, "annotations should list the stats' types"
     found = ["Beat Tracking", "Chord Recognition"]
     assert card["tasks"] == found, "tasks should be those of the stats' types"
-    left = [card["summary"], card["summary_hash"]]
-    assert left == [None] * 2, "summary and summary_hash are generate_cards' to fill"
+    left = [
+        card["summary"],
+        card["summary_hash"],
+        card["availability"],
+        card["availability_hash"],
+    ]
+    assert left == [None] * 4, "the LLM fields are generate_cards' to fill"
     assert card["stats"] is STATS, "stats should be passed through"
     no_stats = build_card(ds)
     assert no_stats["stats"] is None, "stats should be None when not given"

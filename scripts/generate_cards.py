@@ -5,17 +5,19 @@ same way from the command line on your machine (--local for stats from local
 copies of the datasets).
 
 Every run rebuilds the cheap fields (license, annotations, tasks, bibtex). The
-LLM summary and the stats are recomputed only when needed: when the loader
-docstring or the card's tasks changed, or the dataset index changed (recorded
-in the card: summary_hash and stats.computed.index). Datasets whose stats need
-a local run are listed at the end.
+LLM fields and the stats are recomputed only when needed: the summary when the
+loader docstring or the card's tasks changed, the availability when the
+loader's download links, note or docstring changed, the stats when the dataset
+index changed (recorded in the card: summary_hash, availability_hash and
+stats.computed.index). Datasets whose stats need a local run are listed at the
+end.
 
 Usage:
     python scripts/generate_cards.py                     # every dataset -> cards/
     python scripts/generate_cards.py --dataset beatles   # just one
     python scripts/generate_cards.py --missing           # only datasets with no card yet
-    python scripts/generate_cards.py --no-summary        # skip the LLM, keep old summaries
-    python scripts/generate_cards.py --force             # redo every summary
+    python scripts/generate_cards.py --no-summary        # skip the LLM, keep old summaries and availability
+    python scripts/generate_cards.py --force             # redo every summary and availability
     python scripts/generate_cards.py --output some/dir
     python scripts/generate_cards.py --no-stats          # skip the stats, keep old ones
     python scripts/generate_cards.py --force-stats       # recompute every dataset's stats
@@ -29,6 +31,7 @@ import tempfile
 
 import mirdata
 
+import availability
 import card_builder
 import card_utils
 import llm
@@ -99,17 +102,50 @@ def update_summary(ds, old, tasks, options):
     return None, None, "none"  # the loader has no docstring (any more)
 
 
-def generate(names, output_dir, options):
-    """Write a card for each dataset name. Returns (written, skipped).
+def update_availability(ds, old, options):
+    """The availability field and its hash for one card.
 
-    options is a dict with:
-      summary, force_summary: the LLM runs only for datasets whose summary
-        hash (docstring and tasks) is new or changed (or for all of them with force_summary). With
-        summary False it never runs and each card keeps the summary it
-        already has (or gets null).
-      stats, force_stats, local, datasets_dir, fetch_root: see update_stats();
-        stats False keeps every card's stats as they are. Remote runs use the
-        limits in stats/remote.py.
+    It is redone only when the LLM is on and the loader's download links, note
+    or docstring are new or changed (or with force_summary, or when the card
+    has none yet); otherwise the old ones are kept, hand edits included.
+
+    Args:
+        ds (mirdata.core.Dataset): the initialized dataset
+        old (dict): the old card ({} if none)
+        options (dict): see generate()
+
+    Returns:
+        tuple: (availability, availability hash, "new" or "kept" or "none")
+
+    """
+    texts = availability.loader_texts(ds)
+    current = availability.availability_hash(texts)
+    old_value, stored_hash = old.get("availability"), old.get("availability_hash")
+    if options["summary"] and (
+        options["force_summary"] or current != stored_hash or not old_value
+    ):
+        return availability.availability(ds.name, texts), current, "new"
+    return old_value, stored_hash, "kept" if old_value else "none"
+
+
+def generate(names, output_dir, options):
+    """Write a card for each dataset name.
+
+    Args:
+        names (list): the mirdata dataset names
+        output_dir (str): the card directory
+        options (dict): summary, force_summary: each LLM field (summary,
+            availability) is redone only when its hash is new or changed, or
+            for every card with force_summary; with summary False the LLM never
+            runs and each card keeps what it has (or gets null).
+            stats, force_stats, local, datasets_dir, fetch_root: see
+            update_stats(); stats False keeps every card's stats as they are.
+            Remote runs use the limits in stats/remote.py.
+
+    Returns:
+        tuple: (written, skipped): the names written, and {name: reason} for
+            those skipped
+
     """
     os.makedirs(output_dir, exist_ok=True)
     written = []
@@ -130,6 +166,9 @@ def generate(names, output_dir, options):
                 ds, old, card["tasks"], options
             )
             card["summary"], card["summary_hash"] = summary, summary_hash
+            card["availability"], card["availability_hash"], availability_status = (
+                update_availability(ds, old, options)
+            )
         except ModuleNotFoundError as e:
             missing = str(e).replace("No module named ", "").strip("'")
             skipped[name] = f"missing library: {missing}"
@@ -144,7 +183,8 @@ def generate(names, output_dir, options):
         written.append(name)
         print(
             f"  [OK]    {name:30s} | annotations: {len(card['annotations'])}"
-            f" | summary: {summary_status} | stats: {stats_status}, {stats.to_card.status_line(stats_field)}"
+            f" | summary: {summary_status} | availability: {availability_status}"
+            f" | stats: {stats_status}, {stats.to_card.status_line(stats_field)}"
         )
         card_stats_by_name[name] = stats_field
 
@@ -175,12 +215,12 @@ def main():
     parser.add_argument(
         "--no-summary",
         action="store_true",
-        help="Skip the LLM summary; cards keep the summary they already have",
+        help="Skip the LLM (summary and availability); cards keep what they already have",
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Redo every summary even if the docstring and tasks are unchanged",
+        help="Redo every summary and availability even if their inputs are unchanged",
     )
     parser.add_argument(
         "--no-stats",

@@ -5,6 +5,9 @@ annotations:
 - SectionData
 tasks:
 - Music Structure Analysis
+availability:
+  audio: not available
+  annotations: public
 stats:
   computed:
     mode: local
@@ -321,6 +324,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 3ecdb6bde400c59ad7809231332dec7eeb7d5dc5402ab0a4e5936e9eb4ae8dff
+availability_hash: 23dc7b474dbe2520078dae90a3f9f5a8c9d66246bb309ab06e8c5dbaf0e9ecc1
 bibtex: |-
   @inproceedings{smith2011salami,
       title={Design and creation of a large-scale database of structural annotations.},

@@ -8,6 +8,9 @@ annotations:
 tasks:
 - Melody Extraction
 - Music Transcription
+availability:
+  audio: on request
+  annotations: on request
 stats:
   computed:
     mode: local
@@ -93,6 +96,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 287b4c82448e24c7bf68ffd2e917ab9c319ab6664a5f9bc834bdfcdf160183ab
+availability_hash: 79d8273d0fc9db3c6b01a9aa3521ce2eaffe35faf3fc88a9bee5d2d85b02bd76
 bibtex: |-
   Music material:
   @inproceedings{tonas_music,

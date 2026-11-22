@@ -9,6 +9,9 @@ annotations:
 tasks:
 - Melody Extraction
 - Music Structure Analysis
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -120,6 +123,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 7b14892e88ee59ed019d90ba1ea68838b0385796a7dac075390c33e94664d42d
+availability_hash: e2e812041ebc3e2919891aaa18836c3f992ee40e5575b89b202482033a1e1083
 bibtex: |-
   @inproceedings{gulati2015improving,
     author    = {Sankalp Gulati and Joan Serr{\`a} and Xavier Serra},

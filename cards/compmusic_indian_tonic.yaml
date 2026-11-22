@@ -4,6 +4,9 @@ summary: The dataset includes audio excerpts of Indian Art Music, with annotatio
   Hindustani music.
 annotations: []
 tasks: []
+availability:
+  audio: on request
+  annotations: public
 stats:
   computed:
     mode: local
@@ -106,6 +109,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: 495a9c7b9540fbc995169999122cf9dcd77a3bbc66e400634bc3234c67f66c04
+availability_hash: 2514b36978ded8325ccca308557ee5521e8f17d4357e099cbd16156e49df8c17
 bibtex: |-
   @article{Gulati2014,
       author = {Gulati, S. and Bellur, A. and Salamon, J. and Ranjani, H. G. and Ishwar, V. and Murthy, H. A. and Serra, X.},

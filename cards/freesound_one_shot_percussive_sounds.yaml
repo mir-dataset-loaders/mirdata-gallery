@@ -4,6 +4,9 @@ summary: The dataset includes 10,254 one-shot percussive sounds from FreeSound.o
   involves timbral analysis and classification.
 annotations: []
 tasks: []
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -33,6 +36,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: ebba96a116c9ac1b4053d090321ee79376422759a46f1470893c832db10ff7e3
+availability_hash: fef3d30ca9c94e16df3e7e4c11ae08779cd7feb66131bfaa15d2990050f1f88e
 bibtex: |-
   @inproceedings{ramires2020,
       author = "Antonio Ramires and Pritish Chandna and Xavier Favory and Emilia Gómez and Xavier Serra",

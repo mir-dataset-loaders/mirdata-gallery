@@ -8,6 +8,9 @@ annotations:
 tasks:
 - Beat Tracking
 - Tempo Estimation
+availability:
+  audio: public
+  annotations: public
 stats:
   computed:
     mode: local
@@ -251,6 +254,7 @@ stats:
       logs: []
     annotation_errors: {}
 summary_hash: bcc0cdc4e76b09b6ec66022b8b6a97457f526dfc5f1bee681710fc8b1b7f2a88
+availability_hash: 1a5e8618152adafa42a5561870b69737f14a61e9b61ab4fcc1016ca59bea03cc
 bibtex: |-
   @article{tzanetakis2002gtzan,
     title={GTZAN genre collection},
